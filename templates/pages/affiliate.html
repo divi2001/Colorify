@@ -1,0 +1,90 @@
+<!-- templates/pages/affiliate.html -->
+{% extends 'pages/main_base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}Colorify - Affiliate{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-r from-purple-100 via-white to-blue-100">
+    <div class="text-center py-28">
+      <div class="relative inline-block">
+          <h1 class="text-5xl font-semibold mb-2 flex flex-wrap justify-center items-center gap-2">
+              <span>Become an</span>
+              <span class="relative">
+                  <span class="text-blue-600">Affiliate</span>
+                  <svg class="absolute -bottom-5 right-0 w-36 h-4" viewBox="0 0 1200 100">
+                      <path 
+                          d="M0,50 Q600,-80 1200,50" 
+                          stroke="#FF4500" 
+                          stroke-width="25" 
+                          fill="none"
+                      />
+                  </svg>
+              </span>
+          </h1>
+      </div>
+      <p class="text-gray-600 mt-8 max-w-4xl mx-auto px-4">
+          Lorem ipsum dolor sit amet consectetur adipiscing elit felis
+      </p>
+    </div>
+</div>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16  ">
+        <!-- Contact Form Section -->
+         <div class="">
+           <h2 class="text-4xl font-semibold mb-5">Sed rutrum nunc quis</h2>
+           
+           <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Consequatur omnis ducimus, molestiae dolorem alias doloremque rem sint porro asperiores accusantium, earum ea. Nam pariatur laboriosam quod asperiores necessitatibus at ea sunt, ab accusamus quaerat maiores repellendus alias ratione voluptates doloremque deleniti deserunt culpa minus! Totam iusto distinctio molestiae dicta laborum dolorem. Sint hic at qui. Lorem ipsum dolor sit amet consectetur adipisicing elit. Accusamus eum rerum molestiae sequi, mollitia corrupti sint unde qui nihil expedita! Saepe neque ex est rerum velit iste dolores exercitationem sint eaque quo! Ducimus quaerat facere corporis exercitationem quia, possimus neque eum deserunt tempora debitis labore illum provident harum pariatur quibusdam rerum at fugiat? Corrupti, fuga. 
+           </p><p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Laboriosam sed voluptates, perspiciatis accusamus, exercitationem sapiente ratione tempora magni architecto quisquam harum, quo quasi sint impedit quas fugit eos aut adipisci soluta. Non enim corrupti unde earum! Placeat maxime doloremque esse, fugiat nulla voluptatum neque illum perspiciatis, aspernatur quod totam fugit adipisci provident dolores tempore enim.</p>
+          </div>
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <form class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <input type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                        <option value="">Select a subject</option>
+                        <option value="general">General Inquiry</option>
+                        <option value="support">Technical Support</option>
+                        <option value="billing">Billing Question</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div>
+                    <textarea rows="4" placeholder="Message..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300">
+                    Submit Now
+                </button>
+            </form>
+        </div>
+
+        <!-- Summary Section -->
+      </div>
+      
+</main>
+
+{% endblock %}
+
+
+
+

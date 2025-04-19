@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>TIFF Layers with Color Picker</title>
+    <style>
+      .layer-container {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .layer {
+        margin: 20px;
+        text-align: center;
+      }
+      .color-picker-container {
+        margin-top: 10px;
+      }
+      canvas {
+        background: transparent;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr"></script>
+  </head>
+  <body>
+    <h1>TIFF Layers with Real-Time Color Picker (Canvas)</h1>
+    <div class="layer-container">
+      {% for layer in layers %}
+      <div class="layer">
+        <h2>{{ layer.name }}</h2>
+        <canvas
+          id="layer_canvas_{{ forloop.counter }}"
+          width="300"
+          height="300"
+        ></canvas>
+        <div class="color-picker-container">
+          <button id="color-picker-{{ forloop.counter }}">Pick Color</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <script>
+        // Function to flood fill an area with a gradient
+        function floodFillWithGradient1(ctx, x, y, gradientType = 'horizontal', numStops = 5) {
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+
+            // Extract the color of the clicked pixel
+            const startImageData = ctx.getImageData(x, y, 1, 1);
+            const startColor = [startImageData.data[0], startImageData.data[1], startImageData.data[2]];
+
+            // Create a simple way to determine the area to fill
+            const mask = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+            const data = mask.data;
+
+            // Array to keep track of pixels that need to be filled
+            const pixelsToFill = [];
+
+            // Basic flood fill algorithm to find connected pixels of the same color
+            const targetColor = [data[(y * canvasWidth + x) * 4], data[(y * canvasWidth + x) * 4 + 1], data[(y * canvasWidth + x) * 4 + 2]];
+
+            const queue = [[x, y]];
+
+            while (queue.length) {
+                const [px, py] = queue.pop();
+                const pixelIndex = (py * canvasWidth + px) * 4;
+
+                // Check if pixel is within bounds and matches the target color
+                if (px >= 0 && px < canvasWidth && py >= 0 && py < canvasHeight &&
+                    data[pixelIndex] === targetColor[0] &&
+                    data[pixelIndex + 1] === targetColor[1] &&
+                    data[pixelIndex + 2] === targetColor[2]) {
+
+                    pixelsToFill.push([px, py]);
+                    queue.push([px + 1, py]);
+                    queue.push([px - 1, py]);
+                    queue.push([px, py + 1]);
+                    queue.push([px, py - 1]);
+                }
+            }
+
+            // Create the gradient
+            const endPos = gradientType === 'horizontal' ? [canvasWidth - 1, y] : [x, canvasHeight - 1];
+            const endImageData = ctx.getImageData(endPos[0], endPos[1], 1, 1);
+            const endColor = [endImageData.data[0], endImageData.data[1], endImageData.data[2]];
+
+            const colorStops = extractGradientColors(ctx, x, y, gradientType, numStops);
+
+            // Draw the gradient in the area determined by flood fill
+            const gradient = ctx.createLinearGradient(
+                0, 0, gradientType === 'horizontal' ? canvasWidth : 0, gradientType === 'horizontal' ? 0 : canvasHeight
+            );
+
+            colorStops.forEach((color, index) => {
+                const position = index / (colorStops.length - 1);
+                gradient.addColorStop(position, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1)`);
+            });
+
+            ctx.fillStyle = gradient;
+
+            // Fill the identified pixels with the gradient
+            pixelsToFill.forEach(([px, py]) => {
+                ctx.fillRect(px, py, 1, 1);
+            });
+        }
+        function floodFillWithGradient2(ctx, x, y, gradientType = 'horizontal', numStops = 5) {
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+
+            // Extract the color of the clicked pixel
+            const startImageData = ctx.getImageData(x, y, 1, 1);
+            const startColor = [startImageData.data[0], startImageData.data[1], startImageData.data[2]];
+
+            // Create a simple way to determine the area to fill
+            const mask = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+            const data = mask.data;
+
+            // Array to keep track of pixels that need to be filled
+            const pixelsToFill = [];
+
+            // Basic flood fill algorithm to find connected pixels of the same color
+            const targetColor = [data[(y * canvasWidth + x) * 4], data[(y * canvasWidth + x) * 4 + 1], data[(y * canvasWidth + x) * 4 + 2]];
+
+            const queue = [[x, y]];
+
+            while (queue.length) {
+                const [px, py] = queue.pop();
+                const pixelIndex = (py * canvasWidth + px) * 4;
+
+                // Check if pixel is within bounds and matches the target color
+                if (px >= 0 && px < canvasWidth && py >= 0 && py < canvasHeight &&
+                    data[pixelIndex] === targetColor[0] &&
+                    data[pixelIndex + 1] === targetColor[1] &&
+                    data[pixelIndex + 2] === targetColor[2]) {
+
+                    pixelsToFill.push([px, py]);
+                    queue.push([px + 1, py]);
+                    queue.push([px - 1, py]);
+                    queue.push([px, py + 1]);
+                    queue.push([px, py - 1]);
+                }
+            }
+
+            // Create the gradient
+            const endPos = gradientType === 'horizontal' ? [canvasWidth - 1, y] : [x, canvasHeight - 1];
+            const endImageData = ctx.getImageData(endPos[0], endPos[1], 1, 1);
+            const endColor = [endImageData.data[0], endImageData.data[1], endImageData.data[2]];
+
+            const colorStops = extractGradientColors(ctx, x, y, gradientType, numStops);
+
+            // Draw the gradient in the area determined by flood fill
+            const gradient = ctx.createLinearGradient(
+                0, 0, gradientType === 'horizontal' ? canvasWidth : 0, gradientType === 'horizontal' ? 0 : canvasHeight
+            );
+
+            colorStops.forEach((color, index) => {
+                const position = index / (colorStops.length - 1);
+                gradient.addColorStop(position, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1)`);
+            });
+
+            ctx.fillStyle = gradient;
+
+            // Fill the identified pixels with the gradient
+            pixelsToFill.forEach(([px, py]) => {
+                ctx.fillRect(px, py, 1, 1);
+            });
+        }
+
+        // Function to flood fill an area with a watercolor-like gradient
+        function floodFillWithWatercolor3(ctx, x, y, gradientType = 'horizontal', numStops = 5) {
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+
+            // Extract the color of the clicked pixel
+            const startImageData = ctx.getImageData(x, y, 1, 1);
+            const startColor = [startImageData.data[0], startImageData.data[1], startImageData.data[2]];
+
+            // Create a mask to detect the area to be filled
+            const mask = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+            const data = mask.data;
+
+            // Array to keep track of pixels to be filled
+            const pixelsToFill = [];
+
+            // Simple flood fill algorithm to find connected pixels of the same color
+            const targetColor = [data[(y * canvasWidth + x) * 4], data[(y * canvasWidth + x) * 4 + 1], data[(y * canvasWidth + x) * 4 + 2]];
+            const queue = [[x, y]];
+
+            while (queue.length) {
+                const [px, py] = queue.pop();
+                const pixelIndex = (py * canvasWidth + px) * 4;
+
+                // Check if the pixel is within bounds and matches the target color
+                if (px >= 0 && px < canvasWidth && py >= 0 && py < canvasHeight &&
+                    data[pixelIndex] === targetColor[0] &&
+                    data[pixelIndex + 1] === targetColor[1] &&
+                    data[pixelIndex + 2] === targetColor[2]) {
+
+                    pixelsToFill.push([px, py]);
+                    queue.push([px + 1, py]);
+                    queue.push([px - 1, py]);
+                    queue.push([px, py + 1]);
+                    queue.push([px, py - 1]);
+                }
+            }
+
+            // Create the gradient based on the gradient type and the clicked position
+            const gradient = ctx.createLinearGradient(
+                0, 0, gradientType === 'horizontal' ? canvasWidth : 0, gradientType === 'horizontal' ? 0 : canvasHeight
+            );
+
+            // Generate watercolor-like gradient colors with soft transitions
+            const colorStops = extractGradientColors(ctx, x, y, gradientType, numStops);
+
+            colorStops.forEach((color, index) => {
+                const position = index / (colorStops.length - 1);
+                gradient.addColorStop(position, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${Math.random() * 0.3 + 0.7})`); // Adding random opacity for watercolor effect
+            });
+
+            // Set gradient as fill style
+            ctx.fillStyle = gradient;
+
+            // Fill the identified pixels with the watercolor-like gradient
+            pixelsToFill.forEach(([px, py]) => {
+                ctx.fillRect(px, py, 1, 1);
+            });
+
+            // Apply a blur effect to smooth the edges, mimicking watercolor blending
+            ctx.filter = 'blur(2px)';
+            ctx.drawImage(ctx.canvas, 0, 0);
+            ctx.filter = 'none'; // Reset filter after applying the blur
+        }
+        // Flood fill function to apply watercolor gradient
+        function floodFillWithWatercolor(ctx, x, y, color, gradientType = 'horizontal', numStops = 5) {
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+
+            // Get the initial color of the pixel clicked
+            const startImageData = ctx.getImageData(x, y, 1, 1);
+            const startColor = [startImageData.data[0], startImageData.data[1], startImageData.data[2]];
+
+            // Mask to detect the area to be filled
+            const mask = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+            const data = mask.data;
+
+            const pixelsToFill = [];
+
+            // Simple flood fill algorithm to find connected pixels
+            const targetColor = [data[(y * canvasWidth + x) * 4], data[(y * canvasWidth + x) * 4 + 1], data[(y * canvasWidth + x) * 4 + 2]];
+            const queue = [[x, y]];
+
+            while (queue.length) {
+                const [px, py] = queue.pop();
+                const pixelIndex = (py * canvasWidth + px) * 4;
+
+                if (px >= 0 && px < canvasWidth && py >= 0 && py < canvasHeight &&
+                    data[pixelIndex] === targetColor[0] &&
+                    data[pixelIndex + 1] === targetColor[1] &&
+                    data[pixelIndex + 2] === targetColor[2]) {
+
+                    pixelsToFill.push([px, py]);
+                    queue.push([px + 1, py]);
+                    queue.push([px - 1, py]);
+                    queue.push([px, py + 1]);
+                    queue.push([px, py - 1]);
+                }
+            }
+            // Generate gradient stops based on the selected color
+            function generateGradientStops(baseColor, numStops) {
+                const colorStops = [];
+
+                for (let i = 0; i < numStops; i++) {
+                    const factor = i / (numStops - 1);
+
+                    // Gradually blend the color with white for a watercolor-like fade
+                    const blendedColor = [
+                        Math.floor(baseColor[0] + (255 - baseColor[0]) * factor),
+                        Math.floor(baseColor[1] + (255 - baseColor[1]) * factor),
+                        Math.floor(baseColor[2] + (255 - baseColor[2]) * factor)
+                    ];
+
+                    colorStops.push(blendedColor);
+                }
+
+                return colorStops;
+            }
+            // Create the gradient
+            const gradient = ctx.createLinearGradient(
+                0, 0, gradientType === 'horizontal' ? canvasWidth : 0, gradientType === 'horizontal' ? 0 : canvasHeight
+            );
+
+            // Split the selected color into RGB
+            const newColor = color.toRGBA().slice(0, 3);  // Extract RGB from the selected color
+            const colorStops = generateGradientStops(newColor, numStops);
+
+            colorStops.forEach((color, index) => {
+                const position = index / (colorStops.length - 1);
+                gradient.addColorStop(position, `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${Math.random() * 0.3 + 0.7})`);
+            });
+
+            // Set gradient as fill style
+            ctx.fillStyle = gradient;
+
+            // Fill the area with the watercolor-like gradient
+            pixelsToFill.forEach(([px, py]) => {
+                ctx.fillRect(px, py, 1, 1);
+            });
+
+            // Apply a blur to simulate watercolor blending
+            ctx.filter = 'blur(2px)';
+            ctx.drawImage(ctx.canvas, 0, 0);
+            ctx.filter = 'none';
+        }
+
+  // Function to linearly interpolate between two colors
+        function interpolateColor(color1, color2, factor) {
+            return color1.map((comp, i) => Math.round(comp + (color2[i] - comp) * factor));
+        }
+
+        // Extract the gradient colors from the canvas, starting from a clicked position
+        function extractGradientColors(ctx, x, y, gradientType = 'horizontal', numStops = 5) {
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+            const maxDistance = gradientType === 'horizontal' ? canvasWidth : canvasHeight;
+
+            // Get starting color
+            const startImageData = ctx.getImageData(x, y, 1, 1);
+            const startColor = [startImageData.data[0], startImageData.data[1], startImageData.data[2]];
+
+            // Get ending color (from the opposite edge)
+            const endPos = gradientType === 'horizontal' ? [canvasWidth - 1, y] : [x, canvasHeight - 1];
+            const endImageData = ctx.getImageData(endPos[0], endPos[1], 1, 1);
+            const endColor = [endImageData.data[0], endImageData.data[1], endImageData.data[2]];
+
+            // Generate intermediate colors
+            const colorStops = [];
+            for (let i = 0; i <= numStops; i++) {
+                const factor = i / numStops;
+                colorStops.push(interpolateColor(startColor, endColor, factor));
+            }
+
+            return colorStops;
+        }
+
+        // Apply the exact gradient dynamically
+        function applyExactGradient(ctx, x, y, gradientType = 'horizontal') {
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+            const colorStops = extractGradientColors(ctx, x, y, gradientType);
+
+            const gradient = ctx.createLinearGradient(
+                0, 0, gradientType === 'horizontal' ? canvasWidth : 0, canvasHeight
+            );
+
+            // Create gradient stops based on colorStops array
+            colorStops.forEach((color, index) => {
+                const position = index / (colorStops.length - 1);
+                gradient.addColorStop(position, `rgba(${color[0]}, ${color[1]}, ${color[2]}, 1)`);
+            });
+
+            // Apply the gradient over the entire canvas
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        }
+
+        {% for layer in layers %}
+            let img{{ forloop.counter }} = new Image();
+            img{{ forloop.counter }}.src = "{{ layer.path }}";
+            let canvas{{ forloop.counter }} = document.getElementById('layer_canvas_{{ forloop.counter }}');
+            let ctx{{ forloop.counter }} = canvas{{ forloop.counter }}.getContext('2d');
+
+            img{{ forloop.counter }}.onload = function() {
+                canvas{{ forloop.counter }}.width = img{{ forloop.counter }}.width;
+                canvas{{ forloop.counter }}.height = img{{ forloop.counter }}.height;
+                ctx{{ forloop.counter }}.drawImage(img{{ forloop.counter }}, 0, 0);
+            };
+
+            // Add click event to dynamically match and apply gradient based on the object's colors
+            // Update the click event handler to use the gradient fill function
+            // Update the click event handler to use the watercolor gradient fill function
+            canvas{{ forloop.counter }}.onclick = function(event) {
+                const rect = canvas{{ forloop.counter }}.getBoundingClientRect();
+                const x = Math.floor(event.clientX - rect.left);
+                const y = Math.floor(event.clientY - rect.top);
+
+                // Call the function to fill the area with a watercolor-like gradient
+                floodFillWithWatercolor(ctx{{ forloop.counter }}, x, y, 'horizontal');
+            };
+            // Update color picker event to apply gradient fill on color change
+            pickr{{ forloop.counter }}.on('change', (color) => {
+                canvas{{ forloop.counter }}.onclick = function(event) {
+                    const rect = canvas{{ forloop.counter }}.getBoundingClientRect();
+                    const x = Math.floor(event.clientX - rect.left);
+                    const y = Math.floor(event.clientY - rect.top);
+
+                    // Call the watercolor gradient function on canvas click and color change
+                    floodFillWithWatercolor(ctx{{ forloop.counter }}, x, y, color, 'horizontal');
+                };
+            });
+        {% endfor %}
+
+
+    </script>
+  </body>
+</html>

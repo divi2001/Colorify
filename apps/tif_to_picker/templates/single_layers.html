@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>TIFF Layers with Clustered Colors</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+      }
+      .layer-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .layer {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin: 15px;
+        padding: 10px;
+        text-align: center;
+        width: 520px;
+        transition: transform 0.2s;
+      }
+      .layer:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      }
+      canvas {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        width: 100%; /* Make canvas responsive */
+        height: auto;
+      }
+      .color-picker-container {
+        margin-top: 10px;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .pickr .pcr-button {
+        margin: 10px !important;
+        height: 50px !important;
+        width: 50px !important;
+        border-radius: 50% !important;
+      }
+      .pickr .pcr-button::after {
+        border-radius: 50% !important;
+      }
+      .pickr .pcr-button::before {
+        background: none !important;
+      }
+      .pickr .pcr-button:hover {
+        transform: scale(1.1) !important;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr"></script>
+  </head>
+  <body>
+    <h1>TIFF Layers</h1>
+    <div style="text-align: center; margin-bottom: 20px;">
+      <label for="color-count-slider">Number of Colors: </label>
+      <input type="range" id="color-count-slider" min="1" max="10" value="3" oninput="updateColorCountDisplay()">
+      <span id="color-count-display">3</span>
+    </div>
+    <div class="layer-container">
+      {% for layer in layers %}
+      <div class="layer">
+        <h2>{{ layer.name }}</h2>
+        <canvas id="layer_canvas_{{ forloop.counter }}"></canvas>
+        <div
+          class="color-picker-container"
+          id="color-pickers-{{ forloop.counter }}"
+        >
+
+          <!-- Color pickers will be generated here -->
+        </div>
+      </div>
+      {% endfor %}
+
+
+    </div>
+
+    <script>
+      function updateColorCountDisplay() {
+        const sliderValue = document.getElementById('color-count-slider').value;
+        document.getElementById('color-count-display').innerText = sliderValue;
+        updateLayersWithNewColorCount();  // Update all layers with the new color count
+      }
+      // Helper function to calculate color distance
+      function colorDistance(color1, color2) {
+          return Math.sqrt(
+              Math.pow(color1[0] - color2[0], 2) +
+              Math.pow(color1[1] - color2[1], 2) +
+              Math.pow(color1[2] - color2[2], 2)
+          );
+      }
+
+      function rgbToHsl(r, g, b) {
+          r /= 255; g /= 255; b /= 255;
+          const max = Math.max(r, g, b), min = Math.min(r, g, b);
+          let h, s, l = (max + min) / 2;
+
+          if (max === min) {
+              h = s = 0;
+          } else {
+              const d = max - min;
+              s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+              switch (max) {
+                  case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                  case g: h = (b - r) / d + 2; break;
+                  case b: h = (r - g) / d + 4; break;
+              }
+              h /= 6;
+          }
+          return [h, s, l];
+      }
+
+      function hslToRgb(h, s, l) {
+          let r, g, b;
+
+          if (s === 0) {
+              r = g = b = l;
+          } else {
+              const hue2rgb = function hue2rgb(p, q, t) {
+                  if (t < 0) t += 1;
+                  if (t > 1) t -= 1;
+                  if (t < 1 / 6) return p + (q - p) * 6 * t;
+                  if (t < 1 / 3) return q;
+                  if (t < 1 / 2) return p + (q - p) * (2 / 3 - t) * 6;
+                  return p;
+              };
+
+              const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+              const p = 2 * l - q;
+              r = hue2rgb(p, q, h + 1 / 3);
+              g = hue2rgb(p, q, h);
+              b = hue2rgb(p, q, h - 1 / 3);
+          }
+          return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+      }
+
+      // Cluster colors by distinct RGB values and apply color changes directly
+      function getDistinctColors(imageData, threshold = 100, maxColors = 3) {
+        const colorCounts = {};
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const colorKey = `${data[i]},${data[i + 1]},${data[i + 2]}`;
+            if (!colorCounts[colorKey]) {
+                colorCounts[colorKey] = 0;
+            }
+            colorCounts[colorKey]++;
+        }
+
+        // Convert colorCounts to sorted array of distinct colors
+        const colors = Object.entries(colorCounts).map(([key, count]) => ({
+            rgb: key.split(',').map(Number),
+            count: count
+        })).sort((a, b) => b.count - a.count);
+
+        const distinctColors = [];
+        colors.forEach(({ rgb }) => {
+            if (distinctColors.length >= maxColors) return;
+
+            if (distinctColors.every(d => colorDistance(d, rgb) > threshold)) {
+                distinctColors.push(rgb);
+            }
+        });
+
+        return distinctColors;
+      }
+
+
+      function changeHueWithHueAndLightnessTolerance(ctx, targetColor, newColor, hueTolerance, lightnessTolerance) {
+        const canvasWidth = ctx.canvas.width;
+        const canvasHeight = ctx.canvas.height;
+        const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+        const data = imageData.data;
+
+        // Convert target and new colors to HSL
+        const targetHsl = rgbToHsl(targetColor[0], targetColor[1], targetColor[2]);
+        const newHsl = rgbToHsl(newColor[0], newColor[1], newColor[2]);
+
+        for (let i = 0; i < data.length; i += 4) {
+            const currentColor = [data[i], data[i + 1], data[i + 2]];
+            const currentHsl = rgbToHsl(currentColor[0], currentColor[1], currentColor[2]);
+
+            // Check if the pixel's hue and lightness are within tolerance range
+            const hueDiff = Math.abs(currentHsl[0] - targetHsl[0]);
+            const lightnessDiff = Math.abs(currentHsl[2] - targetHsl[2]);
+
+            // Log current pixel information for debugging
+
+
+            if (hueDiff <= hueTolerance / 360 && lightnessDiff <= lightnessTolerance) {
+                const blendedRgb = hslToRgb(newHsl[0], currentHsl[1], currentHsl[2]);
+                data[i] = blendedRgb[0];
+                data[i + 1] = blendedRgb[1];
+                data[i + 2] = blendedRgb[2];
+            }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+      }
+      function updateLayersWithNewColorCount(){
+
+        const maxColors = parseInt(document.getElementById('color-count-slider').value, 10);
+
+        {% for layer in layers %}
+          //console.log("{{layer}}")
+          let img{{ forloop.counter }} = new Image();
+          img{{ forloop.counter }}.src = "{{ layer.path }}";
+          let canvas{{ forloop.counter }} = document.getElementById('layer_canvas_{{ forloop.counter }}');
+          let ctx{{ forloop.counter }} = canvas{{ forloop.counter }}.getContext('2d', { willReadFrequently: true });
+          let latestImageData{{ forloop.counter }} = null;
+
+          img{{ forloop.counter }}.onload = function() {
+            const colorPickerContainer = document.getElementById('color-pickers-{{ forloop.counter }}');
+            colorPickerContainer.innerHTML = '';
+
+            canvas{{ forloop.counter }}.width = img{{ forloop.counter }}.width;
+            canvas{{ forloop.counter }}.height = img{{ forloop.counter }}.height;
+            ctx{{ forloop.counter }}.drawImage(img{{ forloop.counter }}, 0, 0);
+            let targetColors{{ forloop.counter }} = [];
+            const imageData = ctx{{ forloop.counter }}.getImageData(0, 0, canvas{{ forloop.counter }}.width, canvas{{ forloop.counter }}.height);
+            const distinctColors = getDistinctColors(imageData,105,maxColors);
+            latestImageData{{ forloop.counter }} = ctx{{ forloop.counter }}.getImageData(0, 0, canvas{{ forloop.counter }}.width, canvas{{ forloop.counter }}.height);
+
+            distinctColors.forEach((color, index) => {
+             // if (color[0] !== 0 || color[1] !== 0 || color[2] !== 0) { // Ignore black
+                const button = document.createElement('button');
+                button.className = 'color-picker';
+                button.style.backgroundColor = `rgb(${color.join(',')})`;
+                document.getElementById('color-pickers-{{ forloop.counter }}').appendChild(button);
+
+                const pickr = Pickr.create({
+                    el: button,
+                    theme: 'nano',
+                    default: `rgb(${color.join(',')})`,
+                    components: {
+                        preview: true,
+                        opacity: true,
+                        hue: true,
+                        interaction: {
+                            rgba: true,
+                            input: true,
+                            save: true,
+                        }
+                    }
+                });
+
+                pickr.on('save', (newColor) => {
+                  const rgbaColor = newColor.toRGBA().map(v => Math.round(v));
+                  console.log("New Color:"+rgbaColor);
+                  // Ensure we reference the current color for subsequent changes
+                  const currentTargetColor = distinctColors[index]; // Get the latest color for this index
+                  console.log(currentTargetColor);
+                  // Reset the canvas to the last saved state
+                  ctx{{ forloop.counter }}.putImageData(latestImageData{{ forloop.counter }}, 0, 0);
+
+                  // Apply the new color transformation with the current color as the target
+                  changeHueWithHueAndLightnessTolerance(ctx{{ forloop.counter }}, currentTargetColor, rgbaColor, 35, 3.0);
+
+                  // Capture the new image state after transformation
+                  latestImageData{{ forloop.counter }} = ctx{{ forloop.counter }}.getImageData(0, 0, canvas{{ forloop.counter }}.width, canvas{{ forloop.counter }}.height);
+
+                  // Update the button and color array to reflect the latest change
+                  button.style.backgroundColor = `rgba(${rgbaColor.join(',')})`;
+                  distinctColors[index] = rgbaColor.slice(0, 3); // Update array for next use
+
+                  pickr.hide(); // Close the picker
+                });
+
+
+             // }
+            });
+
+          };
+        {% endfor %}
+      }
+
+      // Initialize layers with default color count on page load
+      document.addEventListener('DOMContentLoaded', updateLayersWithNewColorCount);
+    </script>
+  </body>
+</html>

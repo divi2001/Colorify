@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Combined TIFF Layers</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+      }
+      .controls {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .layer-toggle {
+        margin: 5px;
+        display: inline-block;
+      }
+      .canvas-container {
+        display: flex;
+        justify-content: center;
+      }
+      #combinedCanvas {
+        border: 1px solid #ddd;
+        width: 800px;
+        height: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Combined TIFF Layers</h1>
+    <div class="controls">
+      {% for layer in layers %}
+      <label class="layer-toggle">
+        <input
+          type="checkbox"
+          id="toggleLayer{{ forloop.counter }}"
+          checked
+          onchange="toggleLayer({{ forloop.counter }})"
+        />
+        {{ layer.name }}
+      </label>
+      {% endfor %}
+    </div>
+    <div class="canvas-container">
+      <canvas id="combinedCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <script>
+      // Load each layer image and draw onto a separate canvas in memory
+      const layers = [
+        {% for layer in layers %}
+          {
+            src: "{{ layer.path }}",
+            visible: true,
+            img: new Image(),
+          },
+        {% endfor %}
+      ];
+
+      const combinedCanvas = document.getElementById('combinedCanvas');
+      const ctx = combinedCanvas.getContext('2d');
+      const offscreenCanvases = [];
+
+      layers.forEach((layer, index) => {
+        // Load each layer image and store an offscreen canvas for each
+        const offscreenCanvas = document.createElement('canvas');
+        offscreenCanvas.width = combinedCanvas.width;
+        offscreenCanvas.height = combinedCanvas.height;
+        const offscreenCtx = offscreenCanvas.getContext('2d');
+        layer.img.src = layer.src;
+
+        layer.img.onload = () => {
+          // Draw the layer image onto its offscreen canvas
+          offscreenCtx.drawImage(layer.img, 0, 0, combinedCanvas.width, combinedCanvas.height);
+          // Add offscreen canvas to array
+          offscreenCanvases[index] = offscreenCanvas;
+          drawLayers(); // Initial drawing of all layers
+        };
+      });
+
+      function drawLayers() {
+        ctx.clearRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+        // Draw each visible layer
+        offscreenCanvases.forEach((canvas, index) => {
+          if (layers[index].visible) {
+            ctx.drawImage(canvas, 0, 0);
+          }
+        });
+      }
+
+      function toggleLayer(index) {
+        layers[index - 1].visible = !layers[index - 1].visible;
+        drawLayers();
+      }
+    </script>
+  </body>
+</html>

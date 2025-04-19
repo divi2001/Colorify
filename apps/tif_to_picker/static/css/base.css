@@ -1,0 +1,127 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body{
+  font-family: "Inter", serif;
+}
+.active_layer{
+  background: #F5F6FF;
+}
+
+.gray-background {
+  background-color: rgba(128, 128, 128, 0.8);
+  transition: background-color 0.3s ease;
+}
+
+.gray-background
+  :not(#profile-info-button):not(#profile-info-popover):not(
+    #profile-info-popover *
+  ) {
+  filter: grayscale(100%) blur(5px);
+  background-color: rgba(128, 128, 128, 0.8);
+
+  transition: filter 0.3s ease;
+}
+
+.nav-sidebar {
+  padding: 7px;
+  cursor: pointer;
+}
+.nav-sidebar.active {
+  border-radius: 7px;
+  background: linear-gradient(to right, #3c4cd1, #a5aeff);
+}
+.nav-sidebar.active > svg {
+  fill: #fff;
+}
+
+.inspiration_card {
+  height: 80px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 7px;
+}
+.inspiration_card img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.trending_card img{
+  height: 130px;
+  width: 100%;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; 
+}
+
+.custom-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 2px;
+  background: #ddd;
+  border-radius: 5px; 
+}
+
+.custom-range::-webkit-slider-thumb {
+  -webkit-appearance: none; 
+  appearance: none; 
+  width: 15px;
+  height: 15px;
+  border-radius: 50%; 
+  background: linear-gradient(
+    to bottom,
+    #a5aeff 5%,
+    #3c4cd1 100%
+  ); 
+  cursor: pointer;
+}
+.custom-range::-moz-range-thumb {
+  width: 20px; 
+  height: 20px; 
+  border-radius: 50%;
+  background: #4caf50;
+}
+.tab-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tabs {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.tab-button.active {
+  background-color: #3182ce;
+  color: white;
+}
+
+.tab-content {
+  display: none;
+  padding: 1rem;
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.active_header_tab{
+  background-color: rgb(61, 95, 247);
+  color: white!important;
+}

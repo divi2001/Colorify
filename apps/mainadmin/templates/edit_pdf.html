@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Edit PDF: {{ pdf.title }}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            {{ form.title|as_crispy_field }}
+                        </div>
+
+                        <div class="mb-3">
+                            {% if pdf.pdf_file %}
+                                <p>Current PDF: {{ pdf.pdf_file.name }}</p>
+                            {% endif %}
+                            {{ form.pdf_file|as_crispy_field }}
+                        </div>
+
+                        <div class="mb-3">
+                            {% if pdf.preview_image %}
+                                <img src="{{ pdf.preview_image.url }}" 
+                                     alt="Current preview" 
+                                     style="max-width: 200px; margin-bottom: 10px;">
+                            {% endif %}
+                            {{ form.preview_image|as_crispy_field }}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                            <a href="{% url 'mainadmin:dashboard' %}" class="btn btn-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

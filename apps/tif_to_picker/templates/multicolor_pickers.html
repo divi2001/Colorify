@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>TIFF Layers with Clustered Colors</title>
+    <style>
+        .layer-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .layer {
+            margin: 20px;
+            text-align: center;
+        }
+        .color-picker-container {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        .color-picker {
+            margin: 0 10px;
+            padding: 5px;
+            border: none;
+            cursor: pointer;
+            width: 50px; /* Fixed width for uniformity */
+            height: 50px; /* Fixed height for uniformity */
+        }
+        canvas {
+            background: transparent;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr"></script>
+</head>
+<body>
+    <h1>TIFF Layers with Clustered Colors</h1>
+    <div class="layer-container">
+        {% for layer in layers %}
+        <div class="layer">
+            <h2>{{ layer.name }}</h2>
+            <canvas id="layer_canvas_{{ forloop.counter }}" width="300" height="300"></canvas>
+            <div class="color-picker-container" id="color-pickers-{{ forloop.counter }}">
+                <!-- Color pickers will be generated here -->
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        // Helper function to get the color at a pixel
+        function getColorAtPixel(imageData, x, y, width) {
+            const index = (y * width + x) * 4;
+            return [
+                imageData.data[index],     // Red
+                imageData.data[index + 1], // Green
+                imageData.data[index + 2], // Blue
+                imageData.data[index + 3], // Alpha
+            ];
+        }
+
+        // Calculate the distance between two colors
+        function colorDistance(color1, color2) {
+            return Math.sqrt(
+                Math.pow(color1[0] - color2[0], 2) +
+                Math.pow(color1[1] - color2[1], 2) +
+                Math.pow(color1[2] - color2[2], 2)
+            );
+        }
+
+        // Helper function to get clustered colors from the image
+        function getClusteredColors(imageData, width, height, threshold = 200) {
+            const colorCounts = {};
+            const data = imageData.data;
+
+            // Count occurrences of each color
+            for (let i = 0; i < data.length; i += 4) {
+                const rgba = [data[i], data[i + 1], data[i + 2], data[i + 3]];
+                // Ignore fully transparent pixels
+                if (rgba[3] === 0) continue;
+
+                const colorKey = rgba.slice(0, 3).join(','); // Ignore alpha for counting
+                if (!colorCounts[colorKey]) {
+                    colorCounts[colorKey] = 0;
+                }
+                colorCounts[colorKey]++;
+            }
+
+            // Create clusters
+            const colors = Object.keys(colorCounts).map(color => ({
+                rgb: color.split(',').map(Number),
+                count: colorCounts[color]
+            }));
+
+            // Create color clusters
+            const clusters = [];
+
+            colors.forEach(({ rgb, count }) => {
+                let foundCluster = false;
+                for (let cluster of clusters) {
+                    if (colorDistance(rgb, cluster[0].rgb) < threshold) {
+                        cluster.push({ rgb, count });
+                        foundCluster = true;
+                        break;
+                    }
+                }
+                if (!foundCluster) {
+                    clusters.push([{ rgb, count }]);
+                }
+            });
+
+            // Compute the centroid and total count for each cluster
+            return clusters.map(cluster => {
+                const totalCount = cluster.reduce((sum, c) => sum + c.count, 0);
+                const r = cluster.reduce((sum, c) => sum + c.rgb[0] * c.count, 0) / totalCount;
+                const g = cluster.reduce((sum, c) => sum + c.rgb[1] * c.count, 0) / totalCount;
+                const b = cluster.reduce((sum, c) => sum + c.rgb[2] * c.count, 0) / totalCount;
+                return { color: [Math.round(r), Math.round(g), Math.round(b)], totalCount };
+            }).sort((a, b) => b.totalCount - a.totalCount); // Sort by count descending
+        }
+
+        // Change specific colors while preserving patterns
+        function changeColorPreservingPattern(ctx, targetColor, newColor, tolerance = 60) {
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+            const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const currentColor = [data[i], data[i + 1], data[i + 2]];
+
+                // Change color if it is similar to the target color within a tolerance
+                if (colorDistance(currentColor, targetColor) < tolerance) {
+                    const blendFactor = 0.5; // Blend factor to control color change
+                    data[i] = Math.round(currentColor[0] * (1 - blendFactor) + newColor[0] * blendFactor);    // Red
+                    data[i + 1] = Math.round(currentColor[1] * (1 - blendFactor) + newColor[1] * blendFactor); // Green
+                    data[i + 2] = Math.round(currentColor[2] * (1 - blendFactor) + newColor[2] * blendFactor); // Blue
+                    //data[i] = newColor[0];    // Change Red
+                    //data[i + 1] = newColor[1]; // Change Green
+                    //data[i + 2] = newColor[2]; // Change Blue
+                    //data[i] = Math.round((data[i] + newColor[0]) / 2);    // Blend Red
+                    //data[i + 1] = Math.round((data[i + 1] + newColor[1]) / 2); // Blend Green
+                    //data[i + 2] = Math.round((data[i + 2] + newColor[2]) / 2); // Blend Blue
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        {% for layer in layers %}
+        let img{{ forloop.counter }} = new Image();
+        img{{ forloop.counter }}.src = "{{ layer.path }}";
+        let canvas{{ forloop.counter }} = document.getElementById('layer_canvas_{{ forloop.counter }}');
+        let ctx{{ forloop.counter }} = canvas{{ forloop.counter }}.getContext('2d', { willReadFrequently: true });
+        let targetColors{{ forloop.counter }} = []; // Store target colors for each button
+
+        img{{ forloop.counter }}.onload = function() {
+            canvas{{ forloop.counter }}.width = img{{ forloop.counter }}.width;
+            canvas{{ forloop.counter }}.height = img{{ forloop.counter }}.height;
+            ctx{{ forloop.counter }}.drawImage(img{{ forloop.counter }}, 0, 0);
+
+            // Get clustered colors sorted by usage
+            const imageData = ctx{{ forloop.counter }}.getImageData(0, 0, canvas{{ forloop.counter }}.width, canvas{{ forloop.counter }}.height);
+            const clusteredColors = getClusteredColors(imageData, canvas{{ forloop.counter }}.width, canvas{{ forloop.counter }}.height);
+
+            // Create color pickers for each clustered color sorted by count
+            clusteredColors.forEach(({ color, totalCount }, index) => {
+                const button = document.createElement('button');
+                button.className = 'color-picker';
+                button.style.backgroundColor = `rgb(${color.join(',')})`;
+                button.innerText = `Color ${index + 1} (${totalCount})`;
+                document.getElementById('color-pickers-{{ forloop.counter }}').appendChild(button);
+
+                // Store the target color for later use
+                targetColors{{ forloop.counter }}.push(color);
+
+                // Setup color picker logic
+                const pickr = Pickr.create({
+                    el: button,
+                    theme: 'nano',
+                    default: `rgb(${color.join(',')})`,
+                    components: {
+                        preview: true,
+                        opacity: true,
+                        hue: true,
+                        interaction: {
+                            rgba: true,
+                            input: true,
+                            save: false
+                        }
+                    }
+                });
+
+                pickr.on('change', (newColor) => {
+                    const rgbaColor = newColor.toRGBA().map(v => Math.round(v));
+
+                    // Change the color in the canvas and update the button color
+                    changeColorPreservingPattern(ctx{{ forloop.counter }}, targetColors{{ forloop.counter }}[index], rgbaColor);
+                    button.style.backgroundColor = `rgb(${rgbaColor.slice(0, 3).join(',')})`; // Update button color
+                    targetColors{{ forloop.counter }}[index] = rgbaColor.slice(0, 3); // Update the target color
+                });
+            });
+        };
+        {% endfor %}
+    </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>TIFF Layers with Color Picker</title>
+    <style>
+      .layer-container {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .layer {
+        margin: 20px;
+        text-align: center;
+      }
+      .color-picker-container {
+        margin-top: 10px;
+      }
+      canvas {
+        background: transparent;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr"></script>
+  </head>
+  <body>
+    <h1>TIFF Layers with Real-Time Color Picker (Canvas)</h1>
+    <div class="layer-container">
+      {% for layer in layers %}
+      <div class="layer">
+        <h2>{{ layer.name }}</h2>
+        <canvas
+          id="layer_canvas_{{ forloop.counter }}"
+          width="300"
+          height="300"
+        ></canvas>
+        <div class="color-picker-container">
+          <button id="color-picker-{{ forloop.counter }}">Pick Color</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <script>
+      // Flood fill function to fill a connected area with a new color
+      function floodFill(ctx, x, y, newColor, tolerance = 40) {
+          const canvasWidth = ctx.canvas.width;
+          const canvasHeight = ctx.canvas.height;
+          const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+          const data = imageData.data;
+
+          const startPos = (y * canvasWidth + x) * 4;
+          const startColor = [data[startPos], data[startPos + 1], data[startPos + 2]];
+
+          const pixelStack = [[x, y]];
+
+          // Check if the start color matches the new color to avoid unnecessary processing
+          if (startColor[0] === newColor[0] && startColor[1] === newColor[1] && startColor[2] === newColor[2]) return;
+
+          while (pixelStack.length) {
+              const [px, py] = pixelStack.pop();
+              const pixelIndex = (py * canvasWidth + px) * 4;
+
+              // Make sure the pixel is within the bounds of the canvas
+              if (px >= 0 && px < canvasWidth && py >= 0 && py < canvasHeight) {
+                  // Check if this pixel is similar to the start color
+                  if (Math.abs(data[pixelIndex] - startColor[0]) <= tolerance &&
+                      Math.abs(data[pixelIndex + 1] - startColor[1]) <= tolerance &&
+                      Math.abs(data[pixelIndex + 2] - startColor[2]) <= tolerance) {
+
+                      // Change pixel color
+                      data[pixelIndex] = newColor[0]; // Red
+                      data[pixelIndex + 1] = newColor[1]; // Green
+                      data[pixelIndex + 2] = newColor[2]; // Blue
+
+                      // Add neighboring pixels to the stack
+                      pixelStack.push([px + 1, py]);
+                      pixelStack.push([px - 1, py]);
+                      pixelStack.push([px, py + 1]);
+                      pixelStack.push([px, py - 1]);
+                  }
+              }
+          }
+
+          ctx.putImageData(imageData, 0, 0);
+      }
+
+      {% for layer in layers %}
+        const pickr{{ forloop.counter }} = Pickr.create({
+            el: '#color-picker-{{ forloop.counter }}',
+            theme: 'nano',
+            default: '{{ layer.color }}',
+            components: {
+                preview: true,
+                opacity: true,
+                hue: true,
+                interaction: {
+                    hex: true,
+                    rgba: true,
+                    input: true,
+                    clear: false,
+                    save: false
+                }
+            }
+        });
+
+        let img{{ forloop.counter }} = new Image();
+        img{{ forloop.counter }}.src = "{{ layer.path }}";
+        let canvas{{ forloop.counter }} = document.getElementById('layer_canvas_{{ forloop.counter }}');
+        let ctx{{ forloop.counter }} = canvas{{ forloop.counter }}.getContext('2d');
+
+        img{{ forloop.counter }}.onload = function() {
+            canvas{{ forloop.counter }}.width = img{{ forloop.counter }}.width;
+            canvas{{ forloop.counter }}.height = img{{ forloop.counter }}.height;
+            ctx{{ forloop.counter }}.drawImage(img{{ forloop.counter }}, 0, 0);
+        };
+
+        // Handle color pick and canvas click event
+        pickr{{ forloop.counter }}.on('change', (color) => {
+            let rgbaColor = color.toRGBA().slice(0, 3); // Get the picked color (ignoring alpha)
+
+            // Add click event to canvas
+            canvas{{ forloop.counter }}.onclick = function(event) {
+                const rect = canvas{{ forloop.counter }}.getBoundingClientRect();
+                const x = Math.floor(event.clientX - rect.left);
+                const y = Math.floor(event.clientY - rect.top);
+
+                // Call flood fill to recolor clicked object
+                floodFill(ctx{{ forloop.counter }}, x, y, rgbaColor);
+            };
+        });
+      {% endfor %}
+    </script>
+  </body>
+</html>

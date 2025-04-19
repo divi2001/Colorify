@@ -1,0 +1,704 @@
+
+body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: row;
+}
+header {
+  background: #fff !important;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.content {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  transition: all 0.3s;
+  background: #fff;
+  border-radius: 1%;
+}
+
+.footer {
+  background-color: #343a40;
+  color: white;
+  text-align: center;
+  padding: 10px;
+}
+
+.sidebar {
+  background-color: #f8f9fa;
+  overflow-y: auto;
+  transition: all 0.3s;
+}
+
+.collapsed {
+  flex: 0 0 46px !important;
+}
+
+.sidebar ul {
+  padding: 0;
+  list-style-type: none;
+}
+
+.sidebar ul li a {
+  display: block;
+  padding: 10px;
+  text-decoration: none;
+  color: black;
+}
+.header-logo {
+  font-size: 1.5rem;
+}
+
+.header-profile-pic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+#leftMostColumn {
+  background: #fff;
+  margin-right: 10px;
+  border-radius: 20px;
+}
+#rightSidebar {
+  background: #fff;
+  margin-right: 10px;
+  margin-left: 10px;
+  border-radius: 20px;
+}
+#secondaryColumn {
+  background: #fff;
+  margin-right: 10px;
+  border-radius: 20px;
+  height: 100vh;
+}
+
+body {
+  font-family: "Arial", sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 20px;
+}
+h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 30px;
+}
+.scrollable-container {
+  width: calc(100% - 220px);
+  height: 84vh;
+  overflow: auto;
+  border: 1px solid #ddd;
+  position: relative;
+  margin-right: 220px;
+}
+.zoom-wrapper {
+  transform-origin: top left;
+  transition: transform 0.3s;
+}
+
+.layer {
+  position: absolute;
+  background: transparent;
+  pointer-events: none;
+}
+
+.toolbar h2 {
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.zoom-controls,
+/* .layer-toggles {
+  //margin-bottom: 20px;
+} */
+.zoom-slider {
+  width: 100%;
+}
+.layer-toggle-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.thumbnail {
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+.layer-name {
+  font-size: 14px;
+  flex-grow: 1;
+}
+.color-swatch {
+  width: 99px;
+  height: 30px;
+  /* //display: inline-block; */
+
+
+
+}
+
+/*  */
+/* Context Panel Styling */
+.cp_light {
+  position: absolute;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+  width: 200px;
+  z-index: 1500;
+  border-radius: 8px;
+  display: none; /* Initially hidden */
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.cp_light .option {
+  padding: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.cp_light .option:hover {
+  background-color: #f0f0f0;
+}
+.cp_light {
+  position: absolute;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+  width: 200px;
+  z-index: 1500;
+  border-radius: 8px;
+  display: none;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.scrollable {
+    max-height: 330px;
+    overflow-y: auto;
+}
+
+.enab, .disab {
+    padding: 8px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+}
+
+.disab {
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+.enab:hover {
+    background-color: #f0f0f0;
+}
+
+.context-panel hr {
+    margin: 8px 0;
+    border-color: #ddd;
+}
+/* Add a small arrow on the left side of the context menu */
+.cp_light::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 10px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 10px solid #ffffff; /* Match the context menu background color */
+}
+
+
+.pcr-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+}
+#colorPickerModal .modal-dialog {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px; /* Adjust as needed */
+  margin: 0;
+}
+
+#colorPickerModal .modal-content {
+    border-radius: 10px 10px 0 0; /* Rounded corners at the top */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+.modal-backdrop {
+  display: none !important;
+}
+
+#colorPickerModal {
+  pointer-events: auto;
+}
+
+.modal.fade.show {
+    background: transparent;
+    pointer-events: none; /* Allow clicks through the modal */
+}
+
+.modal-dialog {
+    pointer-events: auto; /* Only the modal dialog should capture clicks */
+}
+#colorPickerModal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: 50%;
+  pointer-events: auto;
+  z-index: 1050; /* Ensure it appears above other content */
+}
+
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+.visualizer_toolbar {
+  position: fixed;
+  bottom: 0;
+  background: white;
+  left: 0;
+  z-index: 101;
+  padding: 24px;
+  width: 100%;
+  box-shadow: rgba(0, 0, 0, 0.075) 0 -1px;
+  display: flex;
+  justify-content: space-between;
+}
+#visualizer_palette {
+  width: 350px;
+}
+.palette-selector {
+  height: 46px;
+  position: relative;
+}
+.palette-selector.has-btns .palette-selector_colors {
+  width: calc(100% - 35px);
+}
+.palette-selector_colors {
+  height: 46px;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  position: relative;
+}
+.palette-selector_colors div.is-visible {
+  display: block;
+}
+.palette-selector_colors div {
+  box-shadow: 1px 0;
+  cursor: pointer;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  float: left;
+  display: none;
+  flex-grow: 1;
+}
+.palette-selector.has-btns .palette-selector_buttons {
+  display: block;
+}
+.palette-selector_buttons {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 23px;
+  text-align: center;
+  display: none;
+}
+.palette-selector.has-btns .palette-selector_colors {
+  width: calc(100% - 35px);
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.palette-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scroll-container {
+    width: 80%; /* Adjust this width as needed */
+    overflow-x: auto;
+    white-space: nowrap;
+    position: relative;
+    /* {% comment %} border-radius:11px; {% endcomment %} */
+}
+
+.color-pickers {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+}
+
+.pickr {
+    flex: 0 0 auto; /* Prevents shrinking */
+}
+
+.scroll-btn {
+    border:1px solid;
+    color: #000;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 18px;
+}
+
+.scroll-btn:hover {
+    background-color: #0056b3;
+}
+
+.pickr .pcr-button{
+  height:2em!important;
+  margin: 0 .3em 0 .3em !important;
+
+}
+
+
+/* Left Sidebar */
+#leftSidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: #f5f5f5;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Main Content */
+.scrollable-container {
+  margin-left: 250px;
+  margin-right: 250px;
+  overflow: auto;
+  flex: 1;
+  position: relative;
+}
+/* Toggle Button */
+.toggle-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px;
+  cursor: pointer;
+}
+/* Collapsed State */
+.collapsed {
+  width: 40px;
+}
+
+
+.collapsed .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#leftSidebar {
+  left: 0;
+}
+
+/* Color Palette Styles */
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+
+#loader {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.color-palette {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Two columns */
+  /* //gap: 10px; Space between swatches */
+}
+
+.color-swatch {
+    width: 100px; /* Full width within the grid cell */
+    height: 20px; /* Fixed height for uniformity */
+    /* //border-radius: 5px; Rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional shadow */
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.color-swatch:hover {
+    transform: scale(1.05); /* Enlarge slightly on hover */
+}
+
+.image-adjustments {
+position: relative;
+}
+
+.adjustment-panel {
+position: fixed;  /* Changed to fixed positioning */
+left: 60px;      /* Offset from left to not overlap with the button */
+bottom: 20px;    /* Position from bottom */
+background: white;
+padding: 15px;
+border-radius: 8px;
+box-shadow: 0 0 10px rgba(0,0,0,0.1);
+min-width: 250px;
+max-height: 80vh; /* Limit height to 80% of viewport height */
+overflow-y: auto; /* Add scrolling if content is too long */
+z-index: 1000;
+}
+
+.layer-adjustments {
+margin-bottom: 20px;
+padding: 10px;
+border: 1px solid #ddd;
+border-radius: 5px;
+background-color: #f9f9f9;
+}
+
+.layer-adjustments h4 {
+margin-bottom: 10px;
+font-size: 14px;
+color: #333;
+}
+
+.slider-group {
+margin-bottom: 10px;
+}
+
+.slider-group label {
+display: block;
+margin-bottom: 5px;
+font-size: 12px;
+color: #666;
+}
+
+.slider-group input {
+width: 100%;
+}
+
+/* Add some hover effects */
+.layer-adjustments:hover {
+border-color: #999;
+transition: border-color 0.2s ease;
+}
+
+.color-button-wrapper {
+position: relative;
+display: inline-block;
+}
+
+.lock-overlay {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background-color: rgba(255, 255, 255, 0.8);
+border-radius: 50%;
+padding: 4px;
+cursor: pointer;
+opacity: 0;
+transition: opacity 0.2s;
+}
+
+
+.color-button-wrapper:hover .lock-overlay {
+opacity: 1;
+}
+
+.lock-overlay svg {
+display: block;
+}
+
+.mostLeftUl li a {
+position: relative;
+transition: all 0.3s ease;
+padding: 10px;
+display: block;
+text-decoration: none;
+color: #333;
+}
+
+.mostLeftUl li a.active {
+background-color: rgba(0, 123, 255, 0.1);
+color: #007bff;
+}
+
+.mostLeftUl li a:hover {
+background-color: rgba(0, 123, 255, 0.05);
+}
+
+.mostLeftUl li a.active::before {
+content: '';
+position: absolute;
+left: 0;
+top: 0;
+height: 100%;
+width: 3px;
+background-color: #007bff;
+}
+.inspiration-placeholder {
+padding: 20px;
+text-align: center;
+border: 2px dashed #dee2e6;
+border-radius: 8px;
+margin-top: 20px;
+}
+
+.inspiration-placeholder p {
+margin: 0;
+color: #6c757d;
+font-size: 14px;
+}
+
+.sidebar-content {
+display: none;
+}
+
+#inspirationContent {
+display: block;
+}
+.pdf-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);  /* Two columns */
+gap: 20px;
+padding: 20px;
+max-width: 1200px;  /* Maximum width for the container */
+margin: 0 auto;     /* Center the grid */
+}
+
+.pdf-item {
+border: 1px solid #ddd;
+border-radius: 8px;
+overflow: hidden;
+transition: transform 0.2s;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pdf-preview {
+position: relative;
+cursor: pointer;
+}
+
+.pdf-preview img {
+width: 100%;
+height: 150px;
+object-fit: cover;
+}
+
+.pdf-info {
+padding: 10px;
+background: rgba(0, 0, 0, 0.7);
+color: white;
+position: absolute;
+bottom: 0;
+left: 0;
+right: 0;
+}
+
+.pdf-actions {
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+.pdf-likes {
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 5px;
+}
+
+.download-btn {
+padding: 2px 8px;
+font-size: 12px;
+}
+
+/* Responsive behavior for smaller screens */
+@media (max-width: 768px) {
+.pdf-grid {
+grid-template-columns: 1fr;  /* Single column on mobile */
+}
+}
