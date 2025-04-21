@@ -49,13 +49,13 @@ coverage.xml
 # Large binary/media files (exclude common formats)
 *.tif
 *.tiff
-*.png
-*.jpg
-*.jpeg
+# *.png
+# *.jpg
+# *.jpeg
 *.gif
 *.bmp
 *.ico
-*.mp4
+# *.mp4
 *.mov
 *.avi
 *.mkv

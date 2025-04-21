@@ -101,7 +101,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'tif_editor_db',
         'USER': 'root',
-        'PASSWORD': 'Tatya313912',
+        'PASSWORD': '1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
