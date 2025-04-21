@@ -3,7 +3,54 @@ from django.conf import settings
 from django.db import models
 from django.core.validators import FileExtensionValidator,MinValueValidator,MaxValueValidator
 from django.utils import timezone
+import uuid
 
+
+class PaymentTransaction(models.Model):
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded')
+    ]
+    
+    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='payment_transactions')
+    subscription_plan = models.ForeignKey('SubscriptionPlan', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    payment_gateway_reference = models.CharField(max_length=255, blank=True, null=True)
+    payment_method = models.CharField(max_length=50, default='PayU')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.transaction_id} - {self.status}"
+    
+    class Meta:
+        ordering = ['-created_at']
+        
+    def mark_as_completed(self, payment_reference):
+        """Mark transaction as completed and create/update user subscription"""
+        self.status = 'completed'
+        self.payment_gateway_reference = payment_reference
+        self.save()
+        
+        # Create or update user subscription
+        start_date = timezone.now()
+        end_date = start_date + timezone.timedelta(days=self.subscription_plan.duration_in_days)
+        
+        user_subscription, created = UserSubscription.objects.update_or_create(
+            user=self.user,
+            defaults={
+                'plan': self.subscription_plan,
+                'start_date': start_date,
+                'end_date': end_date,
+                'active': True
+            }
+        )
+        
+        return user_subscription
 class SubscriptionPlan(models.Model):
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=6, decimal_places=2)

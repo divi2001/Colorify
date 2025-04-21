@@ -1,0 +1,40 @@
+<!-- templates/subscription_module/initiate_payment.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Complete Your Payment</h1>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Order Summary</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Plan:</strong> {{ plan.name }}</p>
+                    <p><strong>Duration:</strong> {{ plan.duration_in_days }} days</p>
+                    <p><strong>Amount:</strong> ${{ plan.price }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Payment</h3>
+                </div>
+                <div class="card-body">
+                    <p>Please complete your payment using PayU:</p>
+                    <form action="{{ payu_url }}" method="post" id="payuForm">
+                        {% for key, value in data.items %}
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary btn-lg">Proceed to Payment</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

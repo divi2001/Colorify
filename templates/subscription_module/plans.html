@@ -1,0 +1,38 @@
+<!-- templates/subscription_module/plans.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Subscription Plans</h1>
+    
+    {% if current_subscription and current_subscription.is_active %}
+    <div class="alert alert-info">
+        <h4>Your Current Subscription</h4>
+        <p>Plan: <strong>{{ current_subscription.plan.name }}</strong></p>
+        <p>Status: <strong>{% if current_subscription.is_active %}Active{% else %}Expired{% endif %}</strong></p>
+        <p>Expires on: <strong>{{ current_subscription.end_date|date:"d M Y" }}</strong></p>
+    </div>
+    {% endif %}
+    
+    <div class="row">
+        {% for plan in plans %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ plan.name }}</h3>
+                </div>
+                <div class="card-body">
+                    <h4>${{ plan.price }}</h4>
+                    <p>Duration: {{ plan.duration_in_days }} days</p>
+                    <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="btn btn-primary">Subscribe</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-warning">No subscription plans available.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
