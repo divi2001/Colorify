@@ -1,0 +1,24 @@
+<!-- templates/account/concurrent_login_error.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="card-title text-danger mb-4">Session Active Elsewhere</h3>
+                    <div class="alert alert-warning" role="alert">
+                        {{ error_message }}
+                    </div>
+                    <p class="mb-4">For security reasons, we only allow one active session at a time.</p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'account_login' %}" class="btn btn-primary">Return to Login</a>
+                        <a href="{% url 'account_logout' %}" class="btn btn-outline-secondary">Logout from All Devices</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

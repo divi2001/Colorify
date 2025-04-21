@@ -40,7 +40,7 @@
       .show {
         display: block;
       }
-      {% comment %} Activity overview
+      /* {% comment %} Activity overview
         .project-row {
         transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out;
         opacity: 1;
@@ -64,7 +64,7 @@
           max-height: 100px;
         }
       }
-     {% endcomment %}
+     {% endcomment %} */
     </style>
     <style>
       body {
@@ -118,11 +118,19 @@
                     aria-expanded="false"
                     aria-haspopup="true"
                   >
+                    {% if user.profile_photo %}
                     <img
                       class="h-8 w-8 rounded-full"
                       src="{{ user.profile_photo.url }}"
                       alt=""
                     />
+                    {% else %}
+                      <img
+                        class="h-8 w-8 rounded-full"
+                        src="{% static 'default-avatar.png' %}"
+                        alt="Default Avatar"
+                      />
+                    {% endif %}
                     <span class="ml-2 text-sm font-medium text-gray-700">
                       {{ user.first_name }} {{ user.last_name }}
                     </span>
@@ -1265,7 +1273,7 @@
 {% comment %} Project operations {% endcomment %}
 <script>
   // Add this near the top of your JavaScript
-  const CURRENT_USER_ID = {{ request.user.id }};
+  const CURRENT_USER_ID = "{{ request.user.id|escapejs }}";
 
   function toggleDropdown(dropdownId) {
     document.getElementById(dropdownId).classList.toggle("show");

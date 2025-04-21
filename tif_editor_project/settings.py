@@ -1,3 +1,4 @@
+# tif_editor_project\settings.py
 """
 Django settings for tif_editor_project project.
 
@@ -59,13 +60,14 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',  # Make sure this is here
+    'apps.core.middleware.PreventConcurrentLoginsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -152,8 +154,10 @@ EMAIL_HOST_USER = 'divyangdusman@gmail.com'
 EMAIL_HOST_PASSWORD = 'qezu txkh tert gccn'
 DEFAULT_FROM_EMAIL = 'divyangdusman@gmail.com'
 
+
 # Session settings
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Default backend using database
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Default backend using database
+SESSION_CACHE_ALIAS = 'default'
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_SECURE = False  # Set to True for production
@@ -161,6 +165,24 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 ACCOUNT_SESSION_REMEMBER = True
 
+# Cache settings
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache_table',
+    }
+}
+
+# settings.py for Redis (optional)
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': 'redis://127.0.0.1:6379/1',
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         }
+#     }
+# }
 
 # Social Accounts
 # SOCIALACCOUNT_PROVIDERS = {
