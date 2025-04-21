@@ -38,6 +38,7 @@ urlpatterns = [
     # The done view
     path('accounts/', include('allauth.urls')),
     path('', include('apps.api.urls')),
+    path('admin/analytics/', include('apps.mainadmin.urls')),
 ]
 
 if settings.DEBUG:

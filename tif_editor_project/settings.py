@@ -94,6 +94,16 @@ JAZZMIN_SETTINGS = {
     "copyright": "Colorify Ltd",
     # Field name on user model that contains avatar image
     "user_avatar": None,
+        "custom_links": {
+        "analytics": [{
+            "name": "Dashboard",
+            "url": "admin:analytics_dashboard",
+            "icon": "fas fa-chart-line",
+        }],
+    },
+    
+    # Organize menu items
+    "order_with_respect_to": ["auth", "analytics"],
 }
 
 PAYU_MERCHANT_KEY = 'ZocIjS'  # Replace with your actual PayU merchant key
