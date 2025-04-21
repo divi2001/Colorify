@@ -23,7 +23,16 @@ from django.shortcuts import get_object_or_404
 from .models import Palette, Color, PaletteFavorite
 from datetime import datetime
 from django.utils.timezone import now
-
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse
+from django.http import HttpResponse
+from django.conf import settings
+from django.utils import timezone
+from django.contrib import messages
+from .models import SubscriptionPlan, UserSubscription, PaymentTransaction
+from .payu_utils import PayUConfig
 logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
@@ -276,16 +285,132 @@ def access_premium_content(request):
     return redirect('subscribe')
 
 
-def paypal_view(request, plan_id):
-    plan = SubscriptionPlan.objects.get(id=plan_id)
-    paypal_dict = {
-        "business": settings.PAYPAL_RECEIVER_EMAIL,
-        "amount": str(plan.price),
-        "item_name": f'{plan.name} Subscription',
-        "invoice": "unique-invoice-id",
-        "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
-        "return_url": request.build_absolute_uri(reverse('subscription_success')),
-        "cancel_return": request.build_absolute_uri(reverse('payment_cancel')),
-    }
-    form = PayPalPaymentsForm(initial=paypal_dict)
-    return render(request, 'paypal.html', {"form": form})
+from .models import SubscriptionPlan, UserSubscription, PaymentTransaction
+from .payu_utils import PayUConfig
+
+class SubscriptionPlansView(LoginRequiredMixin, View):
+    """View to display available subscription plans"""
+    
+    def get(self, request):
+        plans = SubscriptionPlan.objects.all()
+        current_subscription = None
+        
+        try:
+            current_subscription = UserSubscription.objects.get(user=request.user)
+        except UserSubscription.DoesNotExist:
+            pass
+            
+        context = {
+            'plans': plans,
+            'current_subscription': current_subscription
+        }
+        
+        return render(request, 'subscription_module/plans.html', context)
+
+class InitiatePaymentView(LoginRequiredMixin, View):
+    """Initiate payment process for subscription"""
+    
+    def get(self, request, plan_id):
+        plan = get_object_or_404(SubscriptionPlan, id=plan_id)
+        
+        # Create a pending transaction
+        transaction = PaymentTransaction.objects.create(
+            user=request.user,
+            subscription_plan=plan,
+            amount=plan.price,
+            status='pending'
+        )
+        
+        # Prepare PayU payment data
+        payu = PayUConfig()
+        txnid = str(transaction.transaction_id)
+        
+        # Basic user information
+        firstname = request.user.first_name if request.user.first_name else request.user.username
+        email = request.user.email
+        phone = request.user.phone_number if hasattr(request.user, 'phone_number') else ''
+        
+        # Product information
+        productinfo = f"Subscription: {plan.name}"
+        
+        # URLs
+        success_url = request.build_absolute_uri(reverse('subscription_module:subscription_payment_success'))
+        failure_url = request.build_absolute_uri(reverse('subscription_module:subscription_payment_failure'))
+
+        # Prepare data dictionary for hash calculation
+        data = {
+            'key': payu.merchant_key,
+            'txnid': txnid,
+            'amount': str(plan.price),
+            'productinfo': productinfo,
+            'firstname': firstname,
+            'email': email,
+            'phone': phone,
+            'surl': success_url,
+            'furl': failure_url,
+            'service_provider': 'payu_paisa',
+            'udf1': str(transaction.id),  # Store transaction ID for reference
+        }
+        
+        # Calculate hash
+        data['hash'] = payu.calculate_hash(data)
+        
+        context = {
+            'data': data,
+            'plan': plan,
+            'payu_url': payu.base_url,
+            'transaction': transaction,
+        }
+        
+        return render(request, 'subscription_module/initiate_payment.html', context)
+
+class PaymentSuccessView(LoginRequiredMixin, View):
+    """Handle successful payment callback from PayU"""
+    
+    def post(self, request):
+        payu = PayUConfig()
+        
+        # Verify the hash to ensure the callback is authentic
+        if not payu.verify_hash(request.POST):
+            messages.error(request, "Invalid payment verification. Please contact support.")
+            return redirect('subscription_plans')
+        
+        # Get transaction ID from the response
+        transaction_id = request.POST.get('udf1')
+        payu_reference = request.POST.get('mihpayid')
+        status = request.POST.get('status')
+        
+        if status != 'success':
+            messages.error(request, f"Payment failed with status: {status}")
+            return redirect('subscription_plans')
+        
+        try:
+            # Get and update transaction
+            transaction = PaymentTransaction.objects.get(id=transaction_id)
+            user_subscription = transaction.mark_as_completed(payu_reference)
+            
+            messages.success(request, f"Payment successful! Your subscription is active until {user_subscription.end_date.strftime('%d %b %Y')}.")
+            return redirect('subscription_plans')
+            
+        except PaymentTransaction.DoesNotExist:
+            messages.error(request, "Transaction not found. Please contact support.")
+            return redirect('subscription_plans')
+
+class PaymentFailureView(LoginRequiredMixin, View):
+    """Handle failed payment callback from PayU"""
+    
+    def post(self, request):
+        # Get error message from PayU
+        error = request.POST.get('error', 'Payment failed')
+        transaction_id = request.POST.get('udf1')
+        
+        try:
+            # Update transaction status
+            transaction = PaymentTransaction.objects.get(id=transaction_id)
+            transaction.status = 'failed'
+            transaction.save()
+        except PaymentTransaction.DoesNotExist:
+            pass
+            
+        messages.error(request, f"Payment failed: {error}")
+        return redirect('subscription_plans')

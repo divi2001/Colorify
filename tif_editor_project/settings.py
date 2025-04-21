@@ -35,6 +35,7 @@ SITE_ID = 1
 
 INSTALLED_APPS = [    
     # Django Default Apps
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.subscription_module.apps.SubscriptionModuleConfig',
     'apps.mainadmin.apps.MainadminConfig',
+
     'apps.tif_to_picker.apps.TifToPickerConfig',
 ]
 
@@ -68,6 +70,36 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+JAZZMIN_SETTINGS = {
+    # title of the window (Will default to current_admin_site.site_title if absent or None)
+    "site_title": "Colorify Admin",
+    # Title on the login screen (19 chars max) (defaults to current_admin_site.site_header if absent or None)
+    "site_header": "Colorify",
+    # # Logo to use for your site, must be present in static files
+    # "site_logo": "images/colorifylogo.jpg",
+    # # CSS classes that are applied to the logo above
+    # "site_logo_classes": "img-circle",
+    # # Logo to use for login form in dark themes
+    # "login_logo": None,
+    # # URL to a logo in the login form
+    # "login_logo_dark": None,
+    # # CSS classes that are applied to the login logo
+    # "login_logo_classes": "img-circle",
+    # # Relative path to a favicon for your site (will default to site_logo if absent)
+    # "site_icon": None,
+    # Welcome text on the login screen
+    "welcome_sign": "Welcome to Colorify",
+    # Copyright on the footer
+    "copyright": "Colorify Ltd",
+    # Field name on user model that contains avatar image
+    "user_avatar": None,
+}
+
+PAYU_MERCHANT_KEY = 'ZocIjS'  # Replace with your actual PayU merchant key
+PAYU_MERCHANT_SALT = 'ZocIjS'  # Replace with your actual PayU salt
+PAYU_BASE_URL = 'https://secure.payu.in/_payment'  # Production URL
+PAYU_TEST_URL = 'https://sandboxsecure.payu.in/_payment'  # Test URL
 
 ROOT_URLCONF = 'tif_editor_project.urls'
 
@@ -99,9 +131,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'tif_editor_db',
+        'NAME': 'colorify',
         'USER': 'root',
-        'PASSWORD': '1221',
+        'PASSWORD': 'tanuj1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
