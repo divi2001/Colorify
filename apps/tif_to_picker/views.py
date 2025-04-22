@@ -337,6 +337,8 @@ def upload_tiff(request):
         form = TiffUploadForm()
     return render(request, 'upload.html', {'form': form})
 
+
+import traceback
 @csrf_exempt
 def export_tiff(request):
     if request.method == 'POST':
@@ -366,8 +368,32 @@ def export_tiff(request):
                     
                     left_pos = int(layer_data['position_left'])
                     top_pos = int(layer_data['position_top'])
-                    width = img.width  # Use original width
-                    height = img.height  # Use original height
+                    
+                    # Check if original dimensions are available
+                    original_width = int(layer_data.get('original_width', 0))
+                    original_height = int(layer_data.get('original_height', 0))
+                    
+                    # If original dimensions are specified and valid, use them
+                    if original_width > 0 and original_height > 0:
+                        print(f"Upscaling layer {layer_data['name']} to original dimensions: {original_width}x{original_height}")
+                        
+                        # Calculate scale factors
+                        scale_x = original_width / img.width
+                        scale_y = original_height / img.height
+                        
+                        # Scale position proportionally
+                        left_pos = int(left_pos * scale_x)
+                        top_pos = int(top_pos * scale_y)
+                        
+                        # Resize the image to original dimensions
+                        img = img.resize((original_width, original_height), Image.LANCZOS)
+                        width = original_width
+                        height = original_height
+                    else:
+                        # Use current dimensions
+                        width = img.width
+                        height = img.height
+                        print(f"Using current dimensions for {layer_data['name']}: {width}x{height}")
                     
                     # Update maximum dimensions
                     max_width = max(max_width, left_pos + width)
@@ -380,8 +406,8 @@ def export_tiff(request):
                         'Width': width,
                         'Height': height,
                         'DPI': dpi,
-                        'OriginalWidth': width,
-                        'OriginalHeight': height
+                        'OriginalWidth': original_width if original_width > 0 else width,
+                        'OriginalHeight': original_height if original_height > 0 else height
                     }
                     
                     # Store both PIL Image and numpy array
@@ -392,7 +418,7 @@ def export_tiff(request):
                     })
                     
                 except Exception as e:
-                    print(f"Error processing layer {layer_data['name']}: {str(e)}")
+                    print(f"Error processing layer {layer_data.get('name', 'unknown')}: {str(e)}")
                     continue
 
             # Create a blank transparent image with the maximum dimensions
@@ -426,7 +452,7 @@ def export_tiff(request):
                 'DPI': max_dpi
             }
             
-            # Write multi-page TIFF
+            # Write multi-page TIFF with high quality settings
             with tifffile.TiffWriter(output_path) as tif:
                 # Write composite as first page
                 tif.write(
@@ -434,9 +460,10 @@ def export_tiff(request):
                     photometric='rgb',
                     planarconfig='contig',
                     metadata=composite_metadata,
-                    compression='adobe_deflate',
+                    compression='adobe_deflate',  # Better compression
+                    compressionargs={'level': 9},  # Maximum compression level
                     resolutionunit='INCH',
-                    resolution=max_dpi,  # Use maximum DPI for composite
+                    resolution=max_dpi,
                     description='Composite View'
                 )
                 
@@ -456,12 +483,14 @@ def export_tiff(request):
                         photometric='rgb',
                         planarconfig='contig',
                         metadata=layer['metadata'],
-                        compression='adobe_deflate',
+                        compression='adobe_deflate',  # Better compression
+                        compressionargs={'level': 9},  # Maximum compression level
                         resolutionunit='INCH',
-                        resolution=layer_dpi,  # Use original DPI for each layer
+                        resolution=layer_dpi,
                         description=layer['metadata']['Name']
                     )
 
+            # Read the file and send it as a response
             with open(output_path, 'rb') as f:
                 response = HttpResponse(f.read(), content_type='image/tiff')
                 response['Content-Disposition'] = f'attachment; filename="exported_{datetime.now().strftime("%Y%m%d_%H%M%S")}.tif"'
@@ -469,6 +498,7 @@ def export_tiff(request):
 
         except Exception as e:
             error_msg = f"Export error: {str(e)}"
+            traceback.print_exc()  # Print full traceback for debugging
             print(error_msg)
             return JsonResponse({'error': error_msg}, status=500)
             
@@ -604,7 +634,7 @@ def is_color_fill_layer(layer):
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
 
-def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_dimension=4000, optimize=True):
+def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_dimension=2000, optimize=True):
     """
     Extract and compress layers from image files.
     
@@ -623,6 +653,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_d
     from matplotlib import pyplot
     import piexif
     from PIL.Image import Resampling
+    import json
     
     # Increase PIL's maximum image size limit
     Image.MAX_IMAGE_PIXELS = None  # Disable the decompression bomb warning
@@ -650,9 +681,12 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_d
             else:
                 img = image_array
 
-            # Get original dimensions
+            # Get original dimensions - store these before any resize happens
             orig_width, orig_height = img.size
             print(f"Original dimensions: {orig_width}x{orig_height}")
+            
+            # Store original dimensions to return
+            original_dimensions = (orig_width, orig_height)
 
             # Resize if max_dimension is specified and image exceeds it
             if max_dimension and (orig_width > max_dimension or orig_height > max_dimension):
@@ -709,17 +743,27 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_d
                     reduction = ((original_size - new_size) / original_size) * 100
                     print(f"Size reduced by {reduction:.1f}% ({original_size/1024/1024:.1f}MB -> {new_size/1024/1024:.1f}MB)")
 
-                return img.size
+                # Save metadata about original dimensions to a companion file
+                metadata_path = os.path.splitext(output_path)[0] + '.metadata.json'
+                with open(metadata_path, 'w') as metadata_file:
+                    json.dump({
+                        'original_width': orig_width,
+                        'original_height': orig_height,
+                        'display_width': img.width,
+                        'display_height': img.height
+                    }, metadata_file)
+
+                return img.size, original_dimensions
 
             except Exception as save_error:
                 print(f"Error saving image: {str(save_error)}")
                 if os.path.exists(output_path):
                     os.remove(output_path)  # Clean up partial file
-                return None
+                return None, None
 
         except Exception as e:
             print(f"Error processing image: {str(e)}")
-            return None
+            return None, None
 
     # Check file extension
     file_extension = os.path.splitext(file_path)[1].lower()
@@ -737,18 +781,21 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_d
             base_filename = os.path.splitext(os.path.basename(file_path))[0]
             layer_output_path = os.path.join(output_dir, f"{base_filename}.{output_format.lower()}")
             
-            size = compress_and_save_image(full_image, layer_output_path, original_size)
+            size, orig_size = compress_and_save_image(full_image, layer_output_path, original_size)
             if size is None:
                 return []
             
             width, height = size
+            orig_width, orig_height = orig_size
             return [{
                 'name': base_filename,
                 'path': layer_output_path,
                 'layer_position_from_top': 0,
                 'layer_position_from_left': 0,
                 'width': width,
-                'height': height
+                'height': height,
+                'original_width': orig_width,
+                'original_height': orig_height
             }]
             
         except Exception as e:
@@ -785,11 +832,12 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_d
                         print(f"Processing layer {i}/{n_pages}: {layer_name}")
                         
                         # Compress and save the image
-                        size = compress_and_save_image(image, layer_output_path, original_size)
+                        size, orig_size = compress_and_save_image(image, layer_output_path, original_size)
                         if size is None:
                             continue
                         
                         width, height = size
+                        orig_width, orig_height = orig_size
                         
                         # Add layer info
                         layers_info.append({
@@ -798,7 +846,9 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_d
                             'layer_position_from_top': 0,
                             'layer_position_from_left': 0,
                             'width': width,
-                            'height': height
+                            'height': height,
+                            'original_width': orig_width,
+                            'original_height': orig_height
                         })
                         
                     except Exception as e:
@@ -813,6 +863,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=85, max_d
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
     
+
+
 def extractColors():
     print("testing")
 
