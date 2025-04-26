@@ -322,19 +322,26 @@ def upload_tiff(request, user_id=None, project_id=None):
         form = TiffUploadForm(request.POST, request.FILES)
         if form.is_valid():
             tiff_file = request.FILES['tiff_file']
-            file_path = os.path.join('media', tiff_file.name)
+            # Create a better file path that includes project_id if available
+            filename = f"project_{project_id}_{tiff_file.name}" if project else tiff_file.name
+            file_path = os.path.join('media', 'uploads', filename)
+
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             with open(file_path, 'wb+') as destination:
                 for chunk in tiff_file.chunks():
                     destination.write(chunk)
             
-            # Process the TIFF file
-            output_dir = f'media/output/{project_id if project else "demo"}/'
+            # Process the file
+            output_dir = os.path.join('media', 'output', str(project_id) if project else 'demo')
             layers = extract_layers(file_path, output_dir)
             
-            # Convert backslashes to forward slashes in layer paths
+            # Convert paths to use MEDIA_URL
             for layer in layers:
-                layer['path'] = layer['path'].replace('\\', '/')
+                # Make path relative to media directory
+                rel_path = layer['path'].replace('\\', '/').split('media/')[-1]
+                layer['path'] = os.path.join(settings.MEDIA_URL, rel_path)
 
             with Image.open(file_path) as img:
                 width, height = img.size
@@ -343,16 +350,14 @@ def upload_tiff(request, user_id=None, project_id=None):
                 'layer_count': len(layers),
                 'layers': layers,
                 'width': width,
-                'height': height
+                'height': height,
+                'MEDIA_URL': settings.MEDIA_URL  # Pass this to template
             }
             
-            # Add project context if editing
             if project:
                 context.update({
                     'user': request.user,
                     'project': project,
-                    'original_file_url': project.original_file.url if project.original_file else None,
-                    'exported_image_url': project.exported_image.url if project.exported_image else None,
                     'is_edit_mode': True
                 })
             
@@ -360,7 +365,6 @@ def upload_tiff(request, user_id=None, project_id=None):
     else:
         form = TiffUploadForm()
     
-    # For GET requests, show upload form with project context if editing
     context = {'form': form}
     if project:
         context.update({
