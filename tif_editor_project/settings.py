@@ -133,9 +133,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'colorify',
+        'NAME': 'tif_editor_db',
         'USER': 'root',
-        'PASSWORD': 'tanuj1221',
+        'PASSWORD': '1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {

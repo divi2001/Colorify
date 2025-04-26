@@ -56,6 +56,8 @@ import base64
 import io
 from datetime import datetime
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from apps.core.models import Project
 
 @api_view(['GET'])
 def get_palettes(request):
@@ -310,7 +312,12 @@ def process_svg_upload(request):
     })
 
 
-def upload_tiff(request):
+def upload_tiff(request, user_id=None, project_id=None):
+    # Handle project editing case
+    project = None
+    if user_id and project_id:
+        project = get_object_or_404(Project, id=project_id, user_id=user_id)
+    
     if request.method == 'POST':
         form = TiffUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -320,22 +327,48 @@ def upload_tiff(request):
             with open(file_path, 'wb+') as destination:
                 for chunk in tiff_file.chunks():
                     destination.write(chunk)
+            
             # Process the TIFF file
-
-            layers = extract_layers(file_path, 'media/output/'+tiff_file.name)
+            output_dir = f'media/output/{project_id if project else "demo"}/'
+            layers = extract_layers(file_path, output_dir)
+            
             # Convert backslashes to forward slashes in layer paths
             for layer in layers:
                 layer['path'] = layer['path'].replace('\\', '/')
-            print(layers)
 
             with Image.open(file_path) as img:
                 width, height = img.size
-            # return render(request, 'single_layers.html', {'layers': layers})
-            return render(request, 'layers.html', {'layer_count':len(layers),'layers': layers,'width':width,
-                            'height':height})
+            
+            context = {
+                'layer_count': len(layers),
+                'layers': layers,
+                'width': width,
+                'height': height
+            }
+            
+            # Add project context if editing
+            if project:
+                context.update({
+                    'user': request.user,
+                    'project': project,
+                    'original_file_url': project.original_file.url if project.original_file else None,
+                    'exported_image_url': project.exported_image.url if project.exported_image else None,
+                    'is_edit_mode': True
+                })
+            
+            return render(request, 'layers.html', context)
     else:
         form = TiffUploadForm()
-    return render(request, 'upload.html', {'form': form})
+    
+    # For GET requests, show upload form with project context if editing
+    context = {'form': form}
+    if project:
+        context.update({
+            'is_edit_mode': True,
+            'project': project
+        })
+    
+    return render(request, 'upload.html', context)
 
 @csrf_exempt
 def export_tiff(request):

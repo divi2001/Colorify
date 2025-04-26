@@ -1450,10 +1450,11 @@
       });
   
       editButton.addEventListener('click', function() {
-          const projectId = this.dataset.projectId;
-          console.log('Navigating to edit page for project:', projectId);
-          window.location.href = `/api/projects/${CURRENT_USER_ID}/${projectId}/edit/`;
-      });
+        const projectId = this.dataset.projectId;
+        console.log('Navigating to edit page for project:', projectId);
+        // Use the upload_tiff URL pattern but with edit context
+        window.location.href = `/tif-editor/projects/${CURRENT_USER_ID}/${projectId}/edit/`;
+    });
   }
   
     function renameProject(projectId, newName, element) {
