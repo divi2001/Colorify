@@ -6986,12 +6986,13 @@ function hslToRgbforsingle(h, s, l) {
         updateLayersWithNewColorCount(layerIndex);
       }
 
-      async function processLayerAsync(ctx, targetColor, newColor, minAreaThreshold = 1, maxSkipCount = 5) {
+async function processLayerAsync(ctx, targetColor, newColor, minAreaThreshold = 1, maxSkipCount = 5) {
     return new Promise(async (resolve) => {
         const colorProcessor = new ColorProcessor();
         const canvasId = ctx.canvas.id;
         const layerIndex = parseInt(canvasId.replace('layer_canvas_', ''));
         const imageDataUrl = ctx.canvas.toDataURL();
+        console.log('Processing layer:', layerIndex, 'with target color:', targetColor, 'and new color:', newColor);
 
         try {
             const colorMapping = await colorProcessor.getColorMapping(imageDataUrl);
@@ -7097,42 +7098,46 @@ function updateLayersWithNewColorCount(layerIndex) {
           });
 
           let isProcessing = false;
-          pickr.on('save', async (newColor) => {
-              if (isProcessing) return;
-              isProcessing = true;
 
-              try {
-                  const rgbaColor = newColor.toRGBA().map(v => Math.round(v));
-                  const currentTargetColor = distinctColors[index];
 
-                  // Save state before processing
-                  layerStates.saveEditedState(layerIndex);
+        pickr.on('save', async (newColor) => {
+          if (isProcessing) return;
+          isProcessing = true;
 
-                  await processLayerAsync(ctx, currentTargetColor, rgbaColor);
-                  
-                  // Update UI elements
-                  updateFooterColorButton(layerIndex, rgbaColor);
-                  button.style.backgroundColor = `rgba(${rgbaColor.join(',')})`;
-                  
-                  // Update stored colors
-                  distinctColors[index] = rgbaColor.slice(0, 3);
-                  
-                  // Update latest image data
-                  latestImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                  ctx.putImageData(latestImageData, 0, 0);
+          try {
+              const rgbaColor = newColor.toRGBA().map(v => Math.round(v));
+              // Store the original target color when the picker is created
+              // This way, even if distinctColors changes, we keep the original reference
+              const currentTargetColor = [...color]; // Use a copy of the original color
+              
+              // Save state before processing
+              layerStates.saveEditedState(layerIndex);
+              const rgbColor = rgbaColor.slice(0, 3);
+              await processLayerAsync(ctx, currentTargetColor, rgbColor);
+              
+              // Update UI elements
+              updateFooterColorButton(layerIndex, rgbaColor);
+              button.style.backgroundColor = `rgba(${rgbaColor.join(',')})`;
+              
+              // Update the specific color in distinctColors
+              distinctColors[index] = rgbaColor.slice(0, 3);
+              
+              // Update latest image data
+              latestImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              ctx.putImageData(latestImageData, 0, 0);
 
-                  // Save the new state after processing
-                  canvas.setAttribute('data-current-state', canvas.toDataURL());
-                  
-                  pickr.hide();
-              } catch (error) {
-                  console.error('Error processing color change:', error);
-              } finally {
-                  setTimeout(() => {
-                      isProcessing = false;
-                  }, 100);
-              }
-          });
+              // Save the new state after processing
+              canvas.setAttribute('data-current-state', canvas.toDataURL());
+              
+              pickr.hide();
+          } catch (error) {
+              console.error('Error processing color change:', error);
+          } finally {
+              setTimeout(() => {
+                  isProcessing = false;
+              }, 100);
+          }
+        });
 
           // Add change event to update preview in real-time
           pickr.on('change', (color) => {
@@ -9268,7 +9273,7 @@ async applyDirectColorMapping(imageData, colorMappings) {
     });
   }
 
-  async applyMultipleColorMappings(imageData, colorMappings) {
+async applyMultipleColorMappings(imageData, colorMappings) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -9589,42 +9594,45 @@ async applyDirectColorMapping(imageData, colorMappings) {
             }
             
             // IMPROVED: More flexible mapping of families to color mappings
-// IMPROVED: More strict mapping of families to color mappings
-function mapFamiliesToMappings(colorFamilies, processedMappings) {
-    // For each color family, find the exact matching source color
-    colorFamilies.forEach(family => {
-        let bestMappingIndex = -1;
-        let bestDistance = Infinity;
-        
-        for (let i = 0; i < processedMappings.length; i++) {
-            const mapping = processedMappings[i];
+    // IMPROVED: More strict mapping of families to color mappings
+
+
+
+    function mapFamiliesToMappings(colorFamilies, processedMappings) {
+        // For each color family, find the exact matching source color
+        colorFamilies.forEach(family => {
+            let bestMappingIndex = -1;
+            let bestDistance = Infinity;
             
-            // Calculate RGB distance - looking for exact matches
-            const rgbDistance = Math.sqrt(
-                Math.pow(family.avgColor[0] - mapping.originalColor[0], 2) +
-                Math.pow(family.avgColor[1] - mapping.originalColor[1], 2) +
-                Math.pow(family.avgColor[2] - mapping.originalColor[2], 2)
-            );
-            
-            // We want an exact match (or very close) to ensure 1:1 mapping
-            const exactMatchThreshold = 20; // Tighter threshold
-            
-            if (rgbDistance < exactMatchThreshold && rgbDistance < bestDistance) {
-                bestDistance = rgbDistance;
-                bestMappingIndex = i;
+            for (let i = 0; i < processedMappings.length; i++) {
+                const mapping = processedMappings[i];
+                
+                // Calculate RGB distance - looking for exact matches
+                const rgbDistance = Math.sqrt(
+                    Math.pow(family.avgColor[0] - mapping.originalColor[0], 2) +
+                    Math.pow(family.avgColor[1] - mapping.originalColor[1], 2) +
+                    Math.pow(family.avgColor[2] - mapping.originalColor[2], 2)
+                );
+                
+                // We want an exact match (or very close) to ensure 1:1 mapping
+                const exactMatchThreshold = 20; // Tighter threshold
+                
+                if (rgbDistance < exactMatchThreshold && rgbDistance < bestDistance) {
+                    bestDistance = rgbDistance;
+                    bestMappingIndex = i;
+                }
             }
-        }
-        
-        // Only assign if we found a good match
-        if (bestMappingIndex !== -1) {
-            family.mappingIndex = bestMappingIndex;
-        } else {
-            // For families without an exact match, keep them unmapped
-            // This ensures we don't incorrectly map colors
-            family.mappingIndex = -1;
-        }
-    });
-}
+            
+            // Only assign if we found a good match
+            if (bestMappingIndex !== -1) {
+                family.mappingIndex = bestMappingIndex;
+            } else {
+                // For families without an exact match, keep them unmapped
+                // This ensures we don't incorrectly map colors
+                family.mappingIndex = -1;
+            }
+        });
+    }
             
             // IMPROVED: Better color transformation logic
             function transformColor(r, g, b, mappingIndex, isGradient = false, gradientStrength = 0) {
@@ -9942,7 +9950,12 @@ colorFamilies.forEach(family => {
   }
 
 
-  async applyColorMapping(imageData, colorMapping, targetColor, dominantColor, totalLayers) {
+  async applyColorMapping(imageData, colorMapping, targetColor, newColor, totalLayers) {
+    console.log("Color replacement:", { 
+        original: targetColor, 
+        replacement: newColor 
+    });
+    
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -9954,6 +9967,11 @@ colorFamilies.forEach(family => {
             ctx.drawImage(img, 0, 0);
             const imageDataObj = ctx.getImageData(0, 0, img.width, img.height);
             const data = imageDataObj.data;
+
+            // Original color (to be replaced)
+            const originalColor = targetColor;
+            // New color (to replace with)
+            const replacementColor = newColor;
 
             // Color conversion utilities
             function rgbToLab(r, g, b) {
@@ -10000,109 +10018,6 @@ colorFamilies.forEach(family => {
                 return [h * 360, s * 100, v * 100];
             }
 
-            // Get color properties
-            const dominantHsv = rgbToHsv(...dominantColor);
-            const targetHsv = rgbToHsv(...targetColor);
-            const dominantLab = rgbToLab(...dominantColor);
-            const targetLab = rgbToLab(...targetColor);
-
-            // Create color clusters
-            const colorClusters = new Map();
-            for (let i = 0; i < data.length; i += 4) {
-                if (data[i + 3] < 128) continue;
-
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                
-                const pixelHsv = rgbToHsv(r, g, b);
-                const pixelLab = rgbToLab(r, g, b);
-
-                // Calculate multiple similarity metrics
-                const labDistance = Math.sqrt(
-                    Math.pow(pixelLab[0] - dominantLab[0], 2) +
-                    Math.pow(pixelLab[1] - dominantLab[1], 2) +
-                    Math.pow(pixelLab[2] - dominantLab[2], 2)
-                );
-
-                const hueDistance = Math.abs(pixelHsv[0] - dominantHsv[0]);
-                const normalizedHueDistance = hueDistance > 180 ? 360 - hueDistance : hueDistance;
-                
-                // Create cluster key based on quantized values
-                const clusterKey = [
-                    Math.round(pixelHsv[0] / 10) * 10,
-                    Math.round(pixelHsv[1] / 10) * 10,
-                    Math.round(pixelHsv[2] / 10) * 10
-                ].join(',');
-
-                if (!colorClusters.has(clusterKey)) {
-                    colorClusters.set(clusterKey, {
-                        count: 0,
-                        sumRGB: [0, 0, 0],
-                        labDistance,
-                        hueDistance: normalizedHueDistance
-                    });
-                }
-
-                const cluster = colorClusters.get(clusterKey);
-                cluster.count++;
-                cluster.sumRGB[0] += r;
-                cluster.sumRGB[1] += g;
-                cluster.sumRGB[2] += b;
-            }
-
-            // Process each pixel using cluster information
-            for (let i = 0; i < data.length; i += 4) {
-                if (data[i + 3] < 128) continue;
-
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                
-                const pixelHsv = rgbToHsv(r, g, b);
-                const clusterKey = [
-                    Math.round(pixelHsv[0] / 10) * 10,
-                    Math.round(pixelHsv[1] / 10) * 10,
-                    Math.round(pixelHsv[2] / 10) * 10
-                ].join(',');
-
-                const cluster = colorClusters.get(clusterKey);
-                if (!cluster) continue;
-
-                // Determine if color should be transformed
-                const shouldTransform = (
-                    cluster.labDistance < 45 || // Similar in Lab space
-                    cluster.hueDistance < 30 || // Similar hue
-                    (pixelHsv[1] < 20 && Math.abs(pixelHsv[2] - dominantHsv[2]) < 30) // Handle grays
-                );
-
-                if (shouldTransform) {
-                    // Calculate transformation ratios
-                    const hueDiff = targetHsv[0] - dominantHsv[0];
-                    const satDiff = targetHsv[1] - dominantHsv[1];
-                    const valDiff = targetHsv[2] - dominantHsv[2];
-
-                    // Apply transformation while preserving relative relationships
-                    let newHue = (pixelHsv[0] + hueDiff) % 360;
-                    if (newHue < 0) newHue += 360;
-
-                    let newSat = Math.max(0, Math.min(100,
-                        pixelHsv[1] * (targetHsv[1] / Math.max(1, dominantHsv[1]))
-                    ));
-
-                    let newVal = Math.max(0, Math.min(100,
-                        pixelHsv[2] * (targetHsv[2] / Math.max(1, dominantHsv[2]))
-                    ));
-
-                    // Convert back to RGB
-                    const newRGB = hsvToRgb(newHue / 360, newSat / 100, newVal / 100);
-                    
-                    data[i] = newRGB[0];
-                    data[i + 1] = newRGB[1];
-                    data[i + 2] = newRGB[2];
-                }
-            }
-
             function hsvToRgb(h, s, v) {
                 let r, g, b;
                 const i = Math.floor(h * 6);
@@ -10125,6 +10040,127 @@ colorFamilies.forEach(family => {
                     Math.round(g * 255),
                     Math.round(b * 255)
                 ];
+            }
+
+            // Calculate direct RGB distance
+            function rgbDistance(r1, g1, b1, r2, g2, b2) {
+                return Math.sqrt(
+                    Math.pow(r1 - r2, 2) +
+                    Math.pow(g1 - g2, 2) +
+                    Math.pow(b1 - b2, 2)
+                );
+            }
+
+            // Get color properties of the colors we care about
+            const originalHsv = rgbToHsv(...originalColor);
+            const replacementHsv = rgbToHsv(...replacementColor);
+            const originalLab = rgbToLab(...originalColor);
+
+            // Define stricter tolerance for color matching
+            // These can be adjusted based on the specific colors in your images
+            const RGB_TOLERANCE = 60;       // Direct RGB distance (0-441)
+            const HUE_TOLERANCE = 15;       // Hue degrees (0-180)
+            const SAT_TOLERANCE = 15;       // Saturation % (0-100)
+            const VAL_TOLERANCE = 20;       // Value % (0-100)
+            const LAB_TOLERANCE = 25;       // Lab distance
+
+            // If original color is very dark or very light, we need different handling
+            const isOriginalDark = originalHsv[2] < 20;
+            const isOriginalLight = originalHsv[2] > 90 && originalHsv[1] < 15;
+            const isOriginalGray = originalHsv[1] < 15;
+            
+            // Process each pixel
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] < 128) continue; // Skip transparent pixels
+
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                
+                // Direct RGB distance - fastest check
+                const rgbDist = rgbDistance(r, g, b, originalColor[0], originalColor[1], originalColor[2]);
+                
+                // Only compute other color spaces if the RGB distance is within a reasonable range
+                if (rgbDist > RGB_TOLERANCE * 1.5) continue;
+                
+                // Calculate color spaces
+                const pixelHsv = rgbToHsv(r, g, b);
+                
+                // Calculate hue distance (accounting for circularity)
+                let hueDist = Math.abs(pixelHsv[0] - originalHsv[0]);
+                if (hueDist > 180) hueDist = 360 - hueDist;
+                
+                // Determine if color is similar based on HSV
+                let isColorMatch = false;
+                
+                // Special case for grays, blacks, whites
+                if (isOriginalGray) {
+                    // For gray colors, focus on brightness and saturation
+                    isColorMatch = 
+                        pixelHsv[1] < 20 && // Low saturation
+                        Math.abs(pixelHsv[2] - originalHsv[2]) < VAL_TOLERANCE; // Similar brightness
+                } 
+                else if (isOriginalDark) {
+                    // For dark colors, focus more on hue
+                    isColorMatch = 
+                        pixelHsv[2] < 25 && // Dark
+                        (pixelHsv[1] < 20 || hueDist < HUE_TOLERANCE * 1.5); // Either unsaturated or similar hue
+                }
+                else if (isOriginalLight) {
+                    // For light colors, focus more on hue
+                    isColorMatch = 
+                        pixelHsv[2] > 85 && // Light
+                        pixelHsv[1] < 20;  // Low saturation
+                }
+                else {
+                    // For normal colors, use stricter HSV matching
+                    isColorMatch = 
+                        hueDist < HUE_TOLERANCE && 
+                        Math.abs(pixelHsv[1] - originalHsv[1]) < SAT_TOLERANCE &&
+                        Math.abs(pixelHsv[2] - originalHsv[2]) < VAL_TOLERANCE;
+                }
+                
+                // If HSV check passes, do a more expensive Lab check for confirmation
+                if (isColorMatch || rgbDist < RGB_TOLERANCE/2) {
+                    const pixelLab = rgbToLab(r, g, b);
+                    
+                    const labDistance = Math.sqrt(
+                        Math.pow(pixelLab[0] - originalLab[0], 2) +
+                        Math.pow(pixelLab[1] - originalLab[1], 2) +
+                        Math.pow(pixelLab[2] - originalLab[2], 2)
+                    );
+                    
+                    // Final decision based on Lab distance or very close RGB match
+                    if (labDistance < LAB_TOLERANCE || rgbDist < RGB_TOLERANCE/3) {
+                        // Apply color transformation
+                        if (labDistance < LAB_TOLERANCE/2 || rgbDist < RGB_TOLERANCE/4) {
+                            // Direct replacement for very close matches
+                            data[i] = replacementColor[0];
+                            data[i + 1] = replacementColor[1];
+                            data[i + 2] = replacementColor[2];
+                        } else {
+                            // For less exact matches, transform while preserving some variation
+                            // Calculate relative shifts
+                            const hueDiff = replacementHsv[0] - originalHsv[0];
+                            const satRatio = originalHsv[1] > 5 ? replacementHsv[1] / originalHsv[1] : 1;
+                            const valRatio = originalHsv[2] > 5 ? replacementHsv[2] / originalHsv[2] : 1;
+                            
+                            // Apply transformations
+                            let newHue = (pixelHsv[0] + hueDiff) % 360;
+                            if (newHue < 0) newHue += 360;
+                            
+                            let newSat = Math.max(0, Math.min(100, pixelHsv[1] * satRatio));
+                            let newVal = Math.max(0, Math.min(100, pixelHsv[2] * valRatio));
+                            
+                            // Convert back to RGB
+                            const newRGB = hsvToRgb(newHue / 360, newSat / 100, newVal / 100);
+                            
+                            data[i] = newRGB[0];
+                            data[i + 1] = newRGB[1];
+                            data[i + 2] = newRGB[2];
+                        }
+                    }
+                }
             }
 
             ctx.putImageData(imageDataObj, 0, 0);
