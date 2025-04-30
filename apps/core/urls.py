@@ -1,4 +1,4 @@
-# urls.py
+# apps\core\urls.py
 from django.urls import path
 from .views.project_views import (
     contact_form_submission,

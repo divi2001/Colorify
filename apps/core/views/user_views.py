@@ -1,4 +1,4 @@
-# user_views.py
+# apps\core\views\user_views.py
 from django.contrib.auth.hashers import make_password
 from django.http import JsonResponse
 from rest_framework import status
@@ -489,6 +489,8 @@ def update_profile_photo(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
