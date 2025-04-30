@@ -20,7 +20,7 @@ from django.urls import path, include, re_path
 from allauth.account.views import PasswordResetFromKeyView
 from django.conf import settings
 from django.conf.urls.static import static
-
+from apps.mainadmin.views import admin_dashboard
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('apps.api.urls')),
@@ -38,7 +38,7 @@ urlpatterns = [
     # The done view
     path('accounts/', include('allauth.urls')),
     path('', include('apps.api.urls')),
-    path('admin/analytics/', include('apps.mainadmin.urls')),
+  
 ]
 
 if settings.DEBUG:
