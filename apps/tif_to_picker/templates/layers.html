@@ -5295,609 +5295,785 @@ function generateCorrelatedPalettes(distinctColors, collection = 'trending') {
 
 
 async function displayColorPalette(layerIndex, colors, collection = 'trending', maxVisibleColors = 6, totalLayers = 1) {
-  const prefix = collection + '_';
-  const MAX_DISPLAY_COUNT = 8; // Maximum number of colors to display
-  const MIN_DISPLAY_COUNT = 4; // Minimum number of colors to display
-  
-  // Add the provided hex palette - KEEP THIS as our first palette
-  const additionalHexPalette = ["#00202e", "#003f5c", "#2c4875", "#8a508f", "#bc5090", "#ff6361", "#ff8531", "#ffa600", "#ffd380"];
-  
-  // Function to convert HEX to RGB
-  function hexToRgb(hex) {
-      // Remove the # if it exists
-      hex = hex.replace(/^#/, '');
-      
-      // Parse the hex values
-      const r = parseInt(hex.substring(0, 2), 16);
-      const g = parseInt(hex.substring(2, 4), 16);
-      const b = parseInt(hex.substring(4, 6), 16);
-      
-      return [r, g, b];
-  }
-  
-  // Convert the hex palette to RGB - PRESERVE THIS for the first palette
-  const additionalRgbPalette = additionalHexPalette.map(hex => hexToRgb(hex));
-  
-  // Function to keep trying to get valid colors until successful
-  async function getPersistentColors(inputColors, maxAttempts = 100) {
-    let validColors = [];
-    let attempts = 0;
+    const prefix = collection + '_';
+    const MAX_DISPLAY_COUNT = 8; // Maximum number of colors to display
+    const MIN_DISPLAY_COUNT = 4; // Minimum number of colors to display
     
-    // Keep trying until we get valid colors
-    while (validColors.length === 0 && attempts < maxAttempts) {
-      attempts++;
-      
-      // First try the input colors
-      if (attempts === 1 && Array.isArray(inputColors)) {
-        validColors = inputColors.filter(color => 
-          Array.isArray(color) && 
-          color.length === 3 && 
-          color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-        );
-      }
-      
-      // If we have valid colors, use them
-      if (validColors.length > 0) {
-        break;
-      }
-      
-      // Try to get colors from distinctColorsArrayColorPallet
-      try {
-        if (typeof window.distinctColorsArrayColorPallet === 'function') {
-          // Try to get as function
-          const newColors = await window.distinctColorsArrayColorPallet();
-          if (Array.isArray(newColors)) {
-            validColors = newColors.filter(color => 
-              Array.isArray(color) && 
-              color.length === 3 && 
-              color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-            );
-          }
-        } else if (window.distinctColorsArrayColorPallet) {
-          // Try to get as variable
-          const newColors = window.distinctColorsArrayColorPallet;
-          if (Array.isArray(newColors)) {
-            validColors = newColors.filter(color => 
-              Array.isArray(color) && 
-              color.length === 3 && 
-              color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-            );
-          }
-        }
-      } catch (e) {
-        // Ignore errors and keep trying
-      }
-      
-      // If still no valid colors, wait a bit and try again
-      if (validColors.length === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
+    // Add the provided hex palette - KEEP THIS as our first palette
+    const additionalHexPalette = ["#00202e", "#003f5c", "#2c4875", "#8a508f", "#bc5090", "#ff6361", "#ff8531", "#ffa600", "#ffd380"];
     
-    // If we STILL don't have valid colors after all attempts,
-    // generate completely random ones (NOT from any predefined palette except the first one)
-    if (validColors.length === 0) {
-      // Generate completely random, unique colors
-      const hues = [];
-      for (let i = 0; i < 9; i++) {
-        // Space hues evenly around the color wheel
-        hues.push(Math.floor(i * (360 / 9)));
-      }
-      
-      validColors = hues.map(hue => {
-        // Convert HSL to RGB for each hue with good saturation and lightness
-        return hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25);
-      });
-    }
-    
-    return validColors;
-  }
-  
-  // Function to convert RGB to HEX
-  function rgbToHex(r, g, b) {
-    return '#' + [r, g, b].map(x => {
-      const hex = x.toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    }).join('');
-  }
-  
-  // Helper functions for color manipulation
-  function rgbToHsl(r, g, b) {
-    try {
-      r /= 255;
-      g /= 255;
-      b /= 255;
-      
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
-      
-      if (max === min) {
-        h = s = 0;
-      } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    // Function to convert HEX to RGB
+    function hexToRgb(hex) {
+        // Remove the # if it exists
+        hex = hex.replace(/^#/, '');
         
-        switch (max) {
-          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-      }
-      
-      return [h * 360, s * 100, l * 100];
-    } catch (e) {
-      // In case of error, return a random HSL value - NOT a fallback!
-      return [
-        Math.random() * 360,
-        70 + Math.random() * 30,
-        45 + Math.random() * 25
-      ];
-    }
-  }
-  
-  // Calculate color difference using CIEDE2000 simplified version
-  function colorDifference(rgb1, rgb2) {
-    // Convert to HSL for a perceptually better difference calculation
-    const hsl1 = rgbToHsl(...rgb1);
-    const hsl2 = rgbToHsl(...rgb2);
-    
-    // Calculate differences in hue, saturation, and lightness
-    let hueDiff = Math.abs(hsl1[0] - hsl2[0]);
-    // Handle the color wheel wraparound
-    hueDiff = Math.min(hueDiff, 360 - hueDiff);
-    
-    const satDiff = Math.abs(hsl1[1] - hsl2[1]);
-    const lightDiff = Math.abs(hsl1[2] - hsl2[2]);
-    
-    // Weight the differences (hue is more important for visual distinctness)
-    return hueDiff * 1.5 + satDiff + lightDiff * 1.2;
-  }
-  
-  function hslToRgb(h, s, l) {
-    try {
-      h /= 360;
-      s /= 100;
-      l /= 100;
-      
-      let r, g, b;
-      
-      if (s === 0) {
-        r = g = b = l;
-      } else {
-        const hue2rgb = (p, q, t) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
-        };
+        // Parse the hex values
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
         
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
-      }
-      
-      return [
-        Math.round(r * 255),
-        Math.round(g * 255),
-        Math.round(b * 255)
-      ];
-    } catch (e) {
-      // In case of error, generate a completely random RGB value - NOT a fallback!
-      return [
-        Math.floor(Math.random() * 256),
-        Math.floor(Math.random() * 256),
-        Math.floor(Math.random() * 256)
-      ];
+        return [r, g, b];
     }
-  }
-  
-  // Generate a random number in range
-  function randomInRange(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-  
-  // Ensure we have valid colors to work with - keep trying until successful
-  const validatedColors = await getPersistentColors(colors);
-  
-  // Create 10 UNIQUE random palettes - BUT MAKE SURE FIRST ONE IS OUR PREDEFINED PALETTE
-  async function generateRandomPalettes(baseColors) {
-    const palettes = [];
     
-    // IMPORTANT: Add our additionalRgbPalette as the first palette
-    palettes.push([...additionalRgbPalette]);
+    // Convert the hex palette to RGB - PRESERVE THIS for the first palette
+    const additionalRgbPalette = additionalHexPalette.map(hex => hexToRgb(hex));
     
-    // Generate 9 more unique palettes (not 10, since we already added one)
-    for (let i = 0; i < 9; i++) {
-      let currentPalette = [];
-      let success = false;
+    // Function to keep trying to get valid colors until successful
+    async function getPersistentColors(inputColors, maxAttempts = 100) {
+      let validColors = [];
       let attempts = 0;
       
-      // Keep trying to create a valid palette
-      while (!success && attempts < 40) {
+      // Keep trying until we get valid colors
+      while (validColors.length === 0 && attempts < maxAttempts) {
         attempts++;
-        try {
-          // Use different random transformations
-          const hueShift = randomInRange(0, 359);
-          const satFactor = 0.7 + (Math.random() * 0.6); // 0.7 to 1.3
-          const lightFactor = 0.8 + (Math.random() * 0.4); // 0.8 to 1.2
-          
-          // Apply transformation to all colors
-          currentPalette = baseColors.map((color) => {
-            try {
-              const [h, s, l] = rgbToHsl(...color);
-              
-              // Apply transformations
-              const newHue = (h + hueShift) % 360;
-              const newSat = Math.min(100, s * satFactor);
-              const newLight = Math.min(95, Math.max(5, l * lightFactor));
-              
-              return hslToRgb(newHue, newSat, newLight);
-            } catch (e) {
-              // If transformation fails, create a new random color - NOT a fallback!
-              return [
-                Math.floor(Math.random() * 256),
-                Math.floor(Math.random() * 256),
-                Math.floor(Math.random() * 256)
-              ];
-            }
-          });
-          
-          // Validate the palette
-          const allValid = currentPalette.every(color => 
+        
+        // First try the input colors
+        if (attempts === 1 && Array.isArray(inputColors)) {
+          validColors = inputColors.filter(color => 
             Array.isArray(color) && 
             color.length === 3 && 
-            color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+            color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
           );
-          
-          if (allValid && currentPalette.length > 0) {
-            success = true;
+        }
+        
+        // If we have valid colors, use them
+        if (validColors.length > 0) {
+          break;
+        }
+        
+        // Try to get colors from distinctColorsArrayColorPallet
+        try {
+          if (typeof window.distinctColorsArrayColorPallet === 'function') {
+            // Try to get as function
+            const newColors = await window.distinctColorsArrayColorPallet();
+            if (Array.isArray(newColors)) {
+              validColors = newColors.filter(color => 
+                Array.isArray(color) && 
+                color.length === 3 && 
+                color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+              );
+            }
+          } else if (window.distinctColorsArrayColorPallet) {
+            // Try to get as variable
+            const newColors = window.distinctColorsArrayColorPallet;
+            if (Array.isArray(newColors)) {
+              validColors = newColors.filter(color => 
+                Array.isArray(color) && 
+                color.length === 3 && 
+                color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+              );
+            }
           }
         } catch (e) {
-          // If error, try again
+          // Ignore errors and keep trying
+        }
+        
+        // If still no valid colors, wait a bit and try again
+        if (validColors.length === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
       
-      // If we still don't have a valid palette, create completely random colors
-      if (!success || currentPalette.length === 0) {
-        currentPalette = [];
-        for (let j = 0; j < Math.max(9, baseColors.length); j++) {
-          currentPalette.push([
-            Math.floor(Math.random() * 256),
-            Math.floor(Math.random() * 256),
-            Math.floor(Math.random() * 256)
-          ]);
+      // If we STILL don't have valid colors after all attempts,
+      // generate completely random ones (NOT from any predefined palette except the first one)
+      if (validColors.length === 0) {
+        // Generate completely random, unique colors
+        const hues = [];
+        for (let i = 0; i < 9; i++) {
+          // Space hues evenly around the color wheel
+          hues.push(Math.floor(i * (360 / 9)));
         }
+        
+        validColors = hues.map(hue => {
+          // Convert HSL to RGB for each hue with good saturation and lightness
+          return hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25);
+        });
       }
       
-      palettes.push(currentPalette);
-    }
-    
-    return palettes;
-  }
-  
-  // Get color name to categorize colors
-  function getColorName(rgb) {
-    try {
-      const [r, g, b] = rgb;
-      
-      // Convert RGB to HSV for better color categorization
-      const rNorm = r / 255;
-      const gNorm = g / 255;
-      const bNorm = b / 255;
-      const max = Math.max(rNorm, gNorm, bNorm);
-      const min = Math.min(rNorm, gNorm, bNorm);
-      const diff = max - min;
-      
-      // Calculate Hue
-      let h = 0;
-      if (max !== min) {
-        if (max === rNorm) {
-          h = (60 * ((gNorm - bNorm) / diff) + 360) % 360;
-        } else if (max === gNorm) {
-          h = (60 * ((bNorm - rNorm) / diff) + 120) % 360;
-        } else {
-          h = (60 * ((rNorm - gNorm) / diff) + 240) % 360;
-        }
-      }
-      
-      // Calculate Value (brightness)
-      const v = max;
-      
-      // Determine hue category
-      let hueName;
-      if (h < 15 || h >= 345) hueName = "Red";
-      else if (h >= 15 && h < 45) hueName = "Orange";
-      else if (h >= 45 && h < 75) hueName = "Yellow";
-      else if (h >= 75 && h < 165) hueName = "Green";
-      else if (h >= 165 && h < 195) hueName = "Cyan";
-      else if (h >= 195 && h < 255) hueName = "Blue";
-      else if (h >= 255 && h < 285) hueName = "Purple";
-      else if (h >= 285 && h < 345) hueName = "Pink";
-      
-      // Simplified shade prefix
-      let shadePrefix = "";
-      if (v < 0.4) shadePrefix = "Dark";
-      else if (v > 0.7) shadePrefix = "Light";
-      
-      return shadePrefix ? `${shadePrefix} ${hueName}` : hueName;
-    } catch (e) {
-      return "Color";
-    }
-  }
-  
-  // IMPROVED: Function to prepare display colors to ensure maximum visual diversity
-  // Now with adaptive display count based on color similarity
-  function prepareDisplayColors(colors) {
-    // Make sure we have valid colors
-    let validColors = colors.filter(color => 
-      Array.isArray(color) && 
-      color.length === 3 && 
-      color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
-    );
-    
-    // If no valid colors, generate new ones with good distribution
-    if (validColors.length === 0) {
-      validColors = [];
-      for (let i = 0; i < MIN_DISPLAY_COUNT; i++) {
-        // Generate colors with evenly distributed hues
-        const hue = i * (360 / MIN_DISPLAY_COUNT);
-        validColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
-      }
       return validColors;
     }
     
-    // Always include the first color (may be background or most important)
-    let displayColors = [validColors[0]];
+    // Function to convert RGB to HEX
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      }).join('');
+    }
     
-    // Calculate color similarities and group by perceptual difference
-    const similarityGroups = [];
-    const MIN_DIFFERENCE_THRESHOLD = 30; // Adjust threshold for considering colors similar
-    
-    // Group similar colors
-    for (let i = 1; i < validColors.length; i++) {
-      // Try to find an existing group for this color
-      let foundGroup = false;
-      
-      for (let g = 0; g < similarityGroups.length; g++) {
-        // Check if this color is similar to any color in the group
-        const group = similarityGroups[g];
-        let similarToGroup = false;
+    // Helper functions for color manipulation
+    function rgbToHsl(r, g, b) {
+      try {
+        r /= 255;
+        g /= 255;
+        b /= 255;
         
-        for (let j = 0; j < group.length; j++) {
-          const groupColorIndex = group[j];
-          const difference = colorDifference(validColors[i], validColors[groupColorIndex]);
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+        
+        if (max === min) {
+          h = s = 0;
+        } else {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
           
-          if (difference < MIN_DIFFERENCE_THRESHOLD) {
-            similarToGroup = true;
+          switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+          }
+          h /= 6;
+        }
+        
+        return [h * 360, s * 100, l * 100];
+      } catch (e) {
+        // In case of error, return a random HSL value - NOT a fallback!
+        return [
+          Math.random() * 360,
+          70 + Math.random() * 30,
+          45 + Math.random() * 25
+        ];
+      }
+    }
+    
+    // Calculate color difference using CIEDE2000 simplified version
+    function colorDifference(rgb1, rgb2) {
+      // Convert to HSL for a perceptually better difference calculation
+      const hsl1 = rgbToHsl(...rgb1);
+      const hsl2 = rgbToHsl(...rgb2);
+      
+      // Calculate differences in hue, saturation, and lightness
+      let hueDiff = Math.abs(hsl1[0] - hsl2[0]);
+      // Handle the color wheel wraparound
+      hueDiff = Math.min(hueDiff, 360 - hueDiff);
+      
+      const satDiff = Math.abs(hsl1[1] - hsl2[1]);
+      const lightDiff = Math.abs(hsl1[2] - hsl2[2]);
+      
+      // Weight the differences (hue is more important for visual distinctness)
+      return hueDiff * 1.5 + satDiff + lightDiff * 1.2;
+    }
+    
+    function hslToRgb(h, s, l) {
+      try {
+        h /= 360;
+        s /= 100;
+        l /= 100;
+        
+        let r, g, b;
+        
+        if (s === 0) {
+          r = g = b = l;
+        } else {
+          const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+          };
+          
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          
+          r = hue2rgb(p, q, h + 1/3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1/3);
+        }
+        
+        return [
+          Math.round(r * 255),
+          Math.round(g * 255),
+          Math.round(b * 255)
+        ];
+      } catch (e) {
+        // In case of error, generate a completely random RGB value - NOT a fallback!
+        return [
+          Math.floor(Math.random() * 256),
+          Math.floor(Math.random() * 256),
+          Math.floor(Math.random() * 256)
+        ];
+      }
+    }
+    
+    // Generate a random number in range
+    function randomInRange(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    
+    // Ensure we have valid colors to work with - keep trying until successful
+    const validatedColors = await getPersistentColors(colors);
+    
+    // Create 10 UNIQUE random palettes - BUT MAKE SURE FIRST ONE IS OUR PREDEFINED PALETTE
+    async function generateRandomPalettes(baseColors) {
+      const palettes = [];
+      
+      // IMPORTANT: Add our additionalRgbPalette as the first palette
+      palettes.push([...additionalRgbPalette]);
+      
+      // Generate 9 more unique palettes (not 10, since we already added one)
+      for (let i = 0; i < 9; i++) {
+        let currentPalette = [];
+        let success = false;
+        let attempts = 0;
+        
+        // Keep trying to create a valid palette
+        while (!success && attempts < 40) {
+          attempts++;
+          try {
+            // Use different random transformations
+            const hueShift = randomInRange(0, 359);
+            const satFactor = 0.7 + (Math.random() * 0.6); // 0.7 to 1.3
+            const lightFactor = 0.8 + (Math.random() * 0.4); // 0.8 to 1.2
+            
+            // Apply transformation to all colors
+            currentPalette = baseColors.map((color) => {
+              try {
+                const [h, s, l] = rgbToHsl(...color);
+                
+                // Apply transformations
+                const newHue = (h + hueShift) % 360;
+                const newSat = Math.min(100, s * satFactor);
+                const newLight = Math.min(95, Math.max(5, l * lightFactor));
+                
+                return hslToRgb(newHue, newSat, newLight);
+              } catch (e) {
+                // If transformation fails, create a new random color - NOT a fallback!
+                return [
+                  Math.floor(Math.random() * 256),
+                  Math.floor(Math.random() * 256),
+                  Math.floor(Math.random() * 256)
+                ];
+              }
+            });
+            
+            // Validate the palette
+            const allValid = currentPalette.every(color => 
+              Array.isArray(color) && 
+              color.length === 3 && 
+              color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+            );
+            
+            if (allValid && currentPalette.length > 0) {
+              success = true;
+            }
+          } catch (e) {
+            // If error, try again
+          }
+        }
+        
+        // If we still don't have a valid palette, create completely random colors
+        if (!success || currentPalette.length === 0) {
+          currentPalette = [];
+          for (let j = 0; j < Math.max(9, baseColors.length); j++) {
+            currentPalette.push([
+              Math.floor(Math.random() * 256),
+              Math.floor(Math.random() * 256),
+              Math.floor(Math.random() * 256)
+            ]);
+          }
+        }
+        
+        palettes.push(currentPalette);
+      }
+      
+      return palettes;
+    }
+    
+    // Get color name to categorize colors
+    function getColorName(rgb) {
+      try {
+        const [r, g, b] = rgb;
+        
+        // Convert RGB to HSV for better color categorization
+        const rNorm = r / 255;
+        const gNorm = g / 255;
+        const bNorm = b / 255;
+        const max = Math.max(rNorm, gNorm, bNorm);
+        const min = Math.min(rNorm, gNorm, bNorm);
+        const diff = max - min;
+        
+        // Calculate Hue
+        let h = 0;
+        if (max !== min) {
+          if (max === rNorm) {
+            h = (60 * ((gNorm - bNorm) / diff) + 360) % 360;
+          } else if (max === gNorm) {
+            h = (60 * ((bNorm - rNorm) / diff) + 120) % 360;
+          } else {
+            h = (60 * ((rNorm - gNorm) / diff) + 240) % 360;
+          }
+        }
+        
+        // Calculate Value (brightness)
+        const v = max;
+        
+        // Determine hue category
+        let hueName;
+        if (h < 15 || h >= 345) hueName = "Red";
+        else if (h >= 15 && h < 45) hueName = "Orange";
+        else if (h >= 45 && h < 75) hueName = "Yellow";
+        else if (h >= 75 && h < 165) hueName = "Green";
+        else if (h >= 165 && h < 195) hueName = "Cyan";
+        else if (h >= 195 && h < 255) hueName = "Blue";
+        else if (h >= 255 && h < 285) hueName = "Purple";
+        else if (h >= 285 && h < 345) hueName = "Pink";
+        
+        // Simplified shade prefix
+        let shadePrefix = "";
+        if (v < 0.4) shadePrefix = "Dark";
+        else if (v > 0.7) shadePrefix = "Light";
+        
+        return shadePrefix ? `${shadePrefix} ${hueName}` : hueName;
+      } catch (e) {
+        return "Color";
+      }
+    }
+    
+    // Modified: Function to prepare display colors with one from each color family
+    function prepareDisplayColors(colors) {
+      // Make sure we have valid colors
+      let validColors = colors.filter(color => 
+        Array.isArray(color) && 
+        color.length === 3 && 
+        color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
+      );
+      
+      // If no valid colors, generate new ones with good distribution
+      if (validColors.length === 0) {
+        validColors = [];
+        for (let i = 0; i < MIN_DISPLAY_COUNT; i++) {
+          // Generate colors with evenly distributed hues
+          const hue = i * (360 / MIN_DISPLAY_COUNT);
+          validColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
+        }
+        return validColors;
+      }
+      
+      // Define the color families (hue ranges)
+      const colorFamilies = [
+        { name: "Red", range: [345, 15] },        // Red wraps around 0
+        { name: "Orange", range: [15, 45] },      // Orange
+        { name: "Yellow", range: [45, 75] },      // Yellow
+        { name: "Green", range: [75, 165] },      // Green
+        { name: "Cyan", range: [165, 195] },      // Cyan
+        { name: "Blue", range: [195, 255] },      // Blue
+        { name: "Purple", range: [255, 285] },    // Purple
+        { name: "Pink", range: [285, 345] }       // Pink
+      ];
+      
+      // Categorize all colors by family
+      const colorsByFamily = {};
+      colorFamilies.forEach(family => {
+        colorsByFamily[family.name] = [];
+      });
+      
+      // Group colors by family
+      validColors.forEach(color => {
+        const [h, s, l] = rgbToHsl(...color);
+        
+        let foundFamily = false;
+        for (const family of colorFamilies) {
+          // Special case for red which wraps around 0/360
+          if (family.name === "Red") {
+            if (h >= family.range[0] || h < family.range[1]) {
+              colorsByFamily[family.name].push(color);
+              foundFamily = true;
+              break;
+            }
+          } else if (h >= family.range[0] && h < family.range[1]) {
+            colorsByFamily[family.name].push(color);
+            foundFamily = true;
             break;
           }
         }
         
-        if (similarToGroup) {
-          // Add this color index to the existing group
-          group.push(i);
-          foundGroup = true;
+        // If no family found (edge case), add to closest family
+        if (!foundFamily) {
+          let closestFamily = colorFamilies[0];
+          let minDistance = 360;
+          
+          for (const family of colorFamilies) {
+            // Find the midpoint of the family range
+            let midpoint;
+            if (family.name === "Red") {
+              // Red wraps around
+              midpoint = (family.range[0] + family.range[1] + 360) / 2 % 360;
+            } else {
+              midpoint = (family.range[0] + family.range[1]) / 2;
+            }
+            
+            // Calculate distance to midpoint, accounting for wrap-around
+            let distance = Math.abs(h - midpoint);
+            distance = Math.min(distance, 360 - distance);
+            
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestFamily = family;
+            }
+          }
+          
+          colorsByFamily[closestFamily.name].push(color);
+        }
+      });
+      
+      // Always include the first color (may be background or most important)
+      let displayColors = [validColors[0]];
+      
+      // Select one representative color from each family (with colors available)
+      // Sort families by number of colors (descending) to prioritize families with more colors
+      const sortedFamilies = Object.entries(colorsByFamily)
+        .sort((a, b) => b[1].length - a[1].length)
+        .filter(([_, colors]) => colors.length > 0);
+      
+      // Determine optimal number of colors to display
+      let optimalDisplayCount = Math.min(
+        MAX_DISPLAY_COUNT,
+        Math.max(MIN_DISPLAY_COUNT, sortedFamilies.length + 1) // +1 for the first color
+      );
+      
+      // Check if the first color already belongs to a family
+      const [firstColorH, firstColorS, firstColorL] = rgbToHsl(...validColors[0]);
+      let firstColorFamily = null;
+      
+      for (const family of colorFamilies) {
+        if (family.name === "Red") {
+          if (firstColorH >= family.range[0] || firstColorH < family.range[1]) {
+            firstColorFamily = family.name;
+            break;
+          }
+        } else if (firstColorH >= family.range[0] && firstColorH < family.range[1]) {
+          firstColorFamily = family.name;
           break;
         }
       }
       
-      if (!foundGroup) {
-        // Create a new group with this color
-        similarityGroups.push([i]);
-      }
-    }
-    
-    // Now select representative colors from each group
-    for (let g = 0; g < similarityGroups.length; g++) {
-      const group = similarityGroups[g];
-      
-      // For each group, select the color with highest saturation for better visibility
-      let bestIndex = group[0];
-      let highestSat = 0;
-      
-      for (let i = 0; i < group.length; i++) {
-        const colorIndex = group[i];
-        const [h, s, l] = rgbToHsl(...validColors[colorIndex]);
+      // Select one representative from each family (excluding first color's family)
+      for (const [familyName, familyColors] of sortedFamilies) {
+        // Skip this family if it's the same as the first color's family
+        if (familyName === firstColorFamily) continue;
         
-        if (s > highestSat) {
-          highestSat = s;
-          bestIndex = colorIndex;
-        }
-      }
-      
-      // Add the representative color from this group
-      if (!displayColors.some(c => 
-        c[0] === validColors[bestIndex][0] && 
-        c[1] === validColors[bestIndex][1] && 
-        c[2] === validColors[bestIndex][2]
-      )) {
-        displayColors.push(validColors[bestIndex]);
-      }
-    }
-    
-    // Determine the optimal display count based on the number of actual distinct colors
-    let optimalDisplayCount = Math.max(
-      MIN_DISPLAY_COUNT, 
-      Math.min(MAX_DISPLAY_COUNT, similarityGroups.length + 1) // +1 for the first color
-    );
-    
-    // If we have fewer actual colors than our minimum, generate some extras for visual appeal
-    if (displayColors.length < MIN_DISPLAY_COUNT) {
-      // Generate additional colors that are distinct from existing ones
-      while (displayColors.length < MIN_DISPLAY_COUNT) {
-        // Find a hue that's maximally distant from existing hues
-        const existingHues = displayColors.map(c => rgbToHsl(...c)[0]);
+        // If we've reached our optimal display count, break
+        if (displayColors.length >= optimalDisplayCount) break;
         
-        let bestHue = 0;
-        let maxMinDistance = 0;
+        // Select the most saturated color from this family for better visibility
+        let bestColor = familyColors[0];
+        let highestSat = 0;
         
-        for (let h = 0; h < 360; h += 10) {
-          const minDistance = Math.min(...existingHues.map(existingH => {
-            let dist = Math.abs(existingH - h);
-            return Math.min(dist, 360 - dist); // Account for color wheel wraparound
-          }));
-          
-          if (minDistance > maxMinDistance) {
-            maxMinDistance = minDistance;
-            bestHue = h;
+        for (const color of familyColors) {
+          const [_, s, __] = rgbToHsl(...color);
+          if (s > highestSat) {
+            highestSat = s;
+            bestColor = color;
           }
         }
         
-        // Add a new color with this optimal hue
-        displayColors.push(hslToRgb(bestHue, 70 + Math.random() * 30, 45 + Math.random() * 25));
+        // Add the representative color from this family
+        displayColors.push(bestColor);
       }
-    }
-    
-    // If we have more colors than our maximum, trim to keep the most representative
-    if (displayColors.length > MAX_DISPLAY_COUNT) {
-      // Keep the first color and then select the most diverse subset
-      const firstColor = displayColors[0];
-      const remainingColors = displayColors.slice(1);
       
-      // Sort remaining colors by perceptual importance 
-      // (average difference from other colors - higher means more unique)
-      const colorScores = remainingColors.map((color, idx) => {
-        const avgDifference = remainingColors.reduce((sum, otherColor, otherIdx) => {
-          if (idx === otherIdx) return sum;
-          return sum + colorDifference(color, otherColor);
-        }, 0) / (remainingColors.length - 1);
+      // If we still don't have enough colors, add from the remaining colors
+      // sorted by their perceptual distance from already selected colors
+      if (displayColors.length < MIN_DISPLAY_COUNT) {
+        // Flatten all colors from all families
+        const allRemainingColors = validColors.filter(color => 
+          !displayColors.some(c => 
+            c[0] === color[0] && c[1] === color[1] && c[2] === color[2]
+          )
+        );
         
-        return { color, score: avgDifference };
-      });
+        // For each remaining color, calculate minimum distance to any selected color
+        const colorDistances = allRemainingColors.map(color => {
+          const minDistance = Math.min(...displayColors.map(selectedColor => 
+            colorDifference(color, selectedColor)
+          ));
+          return { color, distance: minDistance };
+        });
+        
+        // Sort by distance (descending) - most distinct colors first
+        colorDistances.sort((a, b) => b.distance - a.distance);
+        
+        // Add colors until we reach the minimum
+        for (const { color } of colorDistances) {
+          displayColors.push(color);
+          if (displayColors.length >= MIN_DISPLAY_COUNT) break;
+        }
+      }
       
-      // Sort by score (descending)
-      colorScores.sort((a, b) => b.score - a.score);
+      // If we still need more colors, generate completely new ones in empty hue regions
+      if (displayColors.length < MIN_DISPLAY_COUNT) {
+        // Find which hue regions are not represented
+        const displayedHues = displayColors.map(color => rgbToHsl(...color)[0]);
+        
+        // Create hue "buckets" of 45 degrees each
+        const hueBuckets = Array(8).fill(0);
+        
+        displayedHues.forEach(hue => {
+          const bucketIndex = Math.floor(hue / 45) % 8;
+          hueBuckets[bucketIndex]++;
+        });
+        
+        // Generate new colors in empty buckets
+        for (let i = 0; i < 8; i++) {
+          if (hueBuckets[i] === 0 && displayColors.length < MIN_DISPLAY_COUNT) {
+            // Generate a color in this empty hue region
+            const baseHue = i * 45 + 22.5; // Middle of the bucket
+            const newColor = hslToRgb(
+              baseHue,
+              70 + Math.random() * 30,
+              45 + Math.random() * 25
+            );
+            displayColors.push(newColor);
+          }
+        }
+      }
       
-      // Select top colors
-      displayColors = [firstColor, ...colorScores.slice(0, MAX_DISPLAY_COUNT - 1).map(item => item.color)];
+      return displayColors;
     }
     
-    return displayColors;
-  }
-  
-  // Function to display a modal with all colors in the palette
-  function showFullPaletteModal(palette, collection, paletteIndex) {
-    // Create and append modal elements if they don't exist
-    let modal = document.getElementById('full-palette-modal');
-    
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'full-palette-modal';
-      modal.classList.add('full-palette-modal');
+    // Function to display a modal with all colors in the palette
+    function showFullPaletteModal(palette, collection, paletteIndex) {
+      // Create and append modal elements if they don't exist
+      let modal = document.getElementById('full-palette-modal');
       
-      const modalContent = document.createElement('div');
-      modalContent.classList.add('full-palette-modal-content');
-      
-      const closeBtn = document.createElement('span');
-      closeBtn.classList.add('close-palette-modal');
-      closeBtn.innerHTML = '&times;';
-      
-      const modalTitle = document.createElement('h3');
-      modalTitle.classList.add('palette-modal-title');
-      
-      const colorsContainer = document.createElement('div');
-      colorsContainer.classList.add('all-colors-container');
-      
-      modalContent.appendChild(closeBtn);
-      modalContent.appendChild(modalTitle);
-      modalContent.appendChild(colorsContainer);
-      modal.appendChild(modalContent);
-      
-      document.body.appendChild(modal);
-      
-      // Add event listener to close button
-      closeBtn.addEventListener('click', function() {
-        modal.style.display = 'none';
-      });
-      
-      // Close modal when clicking outside content
-      window.addEventListener('click', function(event) {
-        if (event.target === modal) {
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'full-palette-modal';
+        modal.classList.add('full-palette-modal');
+        
+        const modalContent = document.createElement('div');
+        modalContent.classList.add('full-palette-modal-content');
+        
+        const closeBtn = document.createElement('span');
+        closeBtn.classList.add('close-palette-modal');
+        closeBtn.innerHTML = '&times;';
+        
+        const modalTitle = document.createElement('h3');
+        modalTitle.classList.add('palette-modal-title');
+        
+        const colorsContainer = document.createElement('div');
+        colorsContainer.classList.add('all-colors-container');
+        
+        modalContent.appendChild(closeBtn);
+        modalContent.appendChild(modalTitle);
+        modalContent.appendChild(colorsContainer);
+        modal.appendChild(modalContent);
+        
+        document.body.appendChild(modal);
+        
+        // Add event listener to close button
+        closeBtn.addEventListener('click', function() {
           modal.style.display = 'none';
-        }
-      });
-    }
-    
-    // Update modal content with current palette
-    const modalTitle = modal.querySelector('.palette-modal-title');
-    const colorsContainer = modal.querySelector('.all-colors-container');
-    
-    modalTitle.textContent = `Full Palette (${collection.toUpperCase()} #${paletteIndex+1})`;
-    colorsContainer.innerHTML = '';
-    
-    // Add all colors to the modal
-    palette.forEach((color, index) => {
-      // Ensure this color is valid
-      let validColor = color;
-      if (!Array.isArray(color) || color.length !== 3 || 
-          !color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)) {
-        // Generate a new color with a hue based on index
-        const hue = index * (360 / palette.length);
-        validColor = hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25);
+        });
+        
+        // Close modal when clicking outside content
+        window.addEventListener('click', function(event) {
+          if (event.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
       }
       
-      const colorBox = document.createElement('div');
-      colorBox.classList.add('full-palette-color');
-      colorBox.style.backgroundColor = `rgb(${validColor.join(',')})`;
+      // Update modal content with current palette
+      const modalTitle = modal.querySelector('.palette-modal-title');
+      const colorsContainer = modal.querySelector('.all-colors-container');
       
-      // Add color information - now includes HEX value
-      const colorInfo = document.createElement('div');
-      colorInfo.classList.add('color-info');
-      const hexValue = rgbToHex(validColor[0], validColor[1], validColor[2]);
-      colorInfo.textContent = `Color ${index+1}: ${hexValue}`;
+      modalTitle.textContent = `Full Palette (${collection.toUpperCase()} #${paletteIndex+1})`;
+      colorsContainer.innerHTML = '';
       
-      // Add tooltip with color name and HEX value
-      colorBox.title = `${getColorName(validColor)}: ${hexValue}`;
+      // Add all colors to the modal
+      palette.forEach((color, index) => {
+        // Ensure this color is valid
+        let validColor = color;
+        if (!Array.isArray(color) || color.length !== 3 || 
+            !color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)) {
+          // Generate a new color with a hue based on index
+          const hue = index * (360 / palette.length);
+          validColor = hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25);
+        }
+        
+        const colorBox = document.createElement('div');
+        colorBox.classList.add('full-palette-color');
+        colorBox.style.backgroundColor = `rgb(${validColor.join(',')})`;
+        
+        // Add color information - now includes HEX value
+        const colorInfo = document.createElement('div');
+        colorInfo.classList.add('color-info');
+        const hexValue = rgbToHex(validColor[0], validColor[1], validColor[2]);
+        colorInfo.textContent = `Color ${index+1}: ${hexValue}`;
+        
+        // Add tooltip with color name and HEX value
+        colorBox.title = `${getColorName(validColor)}: ${hexValue}`;
+        
+        colorBox.appendChild(colorInfo);
+        colorsContainer.appendChild(colorBox);
+      });
       
-      colorBox.appendChild(colorInfo);
-      colorsContainer.appendChild(colorBox);
-    });
-    
-    // Show the modal
-    modal.style.display = 'block';
-  }
-
-  // Main processing logic for single layer
-  if (totalLayers === 1) {
-    // For single layer, generate 10 unique random palettes, with the first one being our predefined palette
-    const randomPalettes = await generateRandomPalettes(validatedColors);
-    
-    for (let i = 0; i < 10; i++) {
-      const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
-      if (!paletteContainer) continue;
+      // Show the modal
+      modal.style.display = 'block';
+    }
+  
+    // Main processing logic for single layer
+    if (totalLayers === 1) {
+      // For single layer, generate 10 unique random palettes, with the first one being our predefined palette
+      const randomPalettes = await generateRandomPalettes(validatedColors);
       
-      paletteContainer.innerHTML = '';
-      
-      // For the first palette (i=0), make sure we're using additionalRgbPalette
-      let paletteColors = i === 0 ? [...additionalRgbPalette] : randomPalettes[i];
-      
-      // Verify that all colors are valid
-      paletteColors = paletteColors.filter(color => 
-        Array.isArray(color) && 
-        color.length === 3 && 
-        color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
-      );
-      
-      // If somehow we lost all colors, generate new ones
-      if (paletteColors.length === 0) {
-        // Use additionalRgbPalette for first palette, generate new for others
-        if (i === 0 && additionalRgbPalette.length > 0) {
-          paletteColors = [...additionalRgbPalette];
-        } else {
-          // Generate new colors with good distribution
-          paletteColors = [];
-          for (let j = 0; j < 9; j++) {
-            const hue = j * (360 / 9);
-            paletteColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
+      for (let i = 0; i < 10; i++) {
+        const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
+        if (!paletteContainer) continue;
+        
+        paletteContainer.innerHTML = '';
+        
+        // For the first palette (i=0), make sure we're using additionalRgbPalette
+        let paletteColors = i === 0 ? [...additionalRgbPalette] : randomPalettes[i];
+        
+        // Verify that all colors are valid
+        paletteColors = paletteColors.filter(color => 
+          Array.isArray(color) && 
+          color.length === 3 && 
+          color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+        );
+        
+        // If somehow we lost all colors, generate new ones
+        if (paletteColors.length === 0) {
+          // Use additionalRgbPalette for first palette, generate new for others
+          if (i === 0 && additionalRgbPalette.length > 0) {
+            paletteColors = [...additionalRgbPalette];
+          } else {
+            // Generate new colors with good distribution
+            paletteColors = [];
+            for (let j = 0; j < 9; j++) {
+              const hue = j * (360 / 9);
+              paletteColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
+            }
           }
         }
+        
+        // Apply collection-specific adjustments
+        if (collection === 'ss') {
+          paletteColors = paletteColors.map(color => {
+            try {
+              const [h, s, l] = rgbToHsl(...color);
+              return hslToRgb(h, Math.min(100, s * 1.2), Math.min(100, l * 1.1));
+            } catch (e) {
+              // Generate a bright color if adjustment fails
+              const hue = Math.random() * 360;
+              return hslToRgb(hue, 80, 65);
+            }
+          });
+        } else if (collection === 'aw') {
+          paletteColors = paletteColors.map(color => {
+            try {
+              const [h, s, l] = rgbToHsl(...color);
+              return hslToRgb(h, s * 0.9, l * 0.85);
+            } catch (e) {
+              // Generate a muted color if adjustment fails
+              const hue = Math.random() * 360;
+              return hslToRgb(hue, 60, 45);
+            }
+          });
+        }
+  
+        // Initialize the storage if needed
+        window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
+        
+        // Store ALL colors in the palette data structure
+        window[`${collection}PaletteColors`][i] = [...paletteColors];
+        
+        // Prepare display colors - ONE FROM EACH COLOR FAMILY
+        const displayColors = prepareDisplayColors(paletteColors);
+        
+        // Create container for the palette that will be clickable as a whole
+        const clickableContainer = document.createElement('div');
+        clickableContainer.classList.add('palette-clickable-container');
+        paletteContainer.appendChild(clickableContainer);
+        
+        // Add data attribute to store the palette index
+        clickableContainer.dataset.paletteIndex = i;
+        clickableContainer.dataset.collection = collection;
+        
+        // Click handler to use the FULL palette
+        clickableContainer.addEventListener('click', function() {
+          const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
+          const collectionName = this.dataset.collection;
+          
+          // Get the FULL palette from storage
+          const fullPalette = window[`${collectionName}PaletteColors`] && 
+                              window[`${collectionName}PaletteColors`][paletteIndex];
+          
+          // Call processPallet with the FULL palette from storage
+          if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
+            window.processPallet(null, totalLayers, null, 0, null, fullPalette, paletteIndex);
+          }
+        });
+        
+        // Display the representative colors
+        displayColors.forEach((color, idx) => {
+          const swatch = document.createElement('div');
+          swatch.classList.add('color-swatch');
+          swatch.style.backgroundColor = `rgb(${color.join(',')})`;
+          
+          // Updated tooltip with HEX value instead of RGB
+          const hexValue = rgbToHex(color[0], color[1], color[2]);
+          swatch.title = ` ${hexValue}`;
+          
+          if (collection === 'ss') {
+            swatch.classList.add('ss-swatch');
+          } else if (collection === 'aw') {
+            swatch.classList.add('aw-swatch');
+          }
+          
+          clickableContainer.appendChild(swatch);
+        });
+        
+        // Add "Show All" button
+        const showAllButton = document.createElement('div');
+        showAllButton.classList.add('show-all-colors-btn');
+        showAllButton.innerHTML = '+';
+        showAllButton.title = 'Show all colors in palette';
+        clickableContainer.appendChild(showAllButton);
+        
+        // Add event listener to show all colors in a modal
+        showAllButton.addEventListener('click', function(e) {
+          e.stopPropagation(); // Prevent triggering the parent container's click
+          
+          const fullPalette = window[`${collection}PaletteColors`][i];
+          if (!fullPalette || fullPalette.length === 0) {
+            return;
+          }
+          
+          showFullPaletteModal(fullPalette, collection, i);
+        });
+      }
+    } else {
+      // Multi-layer logic
+      const paletteContainer = document.getElementById(`${prefix}colorPalette_${layerIndex}`);
+      if (!paletteContainer) return;
+      
+      // For multi-layer, ensure first layer (layerIndex 0) is our additional palette
+      let paletteColors = layerIndex === 0 ? [...additionalRgbPalette] : [...validatedColors];
+      
+      // Apply random transformation for non-first layers
+      if (layerIndex !== 0) {
+        const hueShift = randomInRange(0, 359);
+        const satFactor = 0.7 + (Math.random() * 0.6);
+        const lightFactor = 0.8 + (Math.random() * 0.4);
+        
+        paletteColors = paletteColors.map(color => {
+          try {
+            const [h, s, l] = rgbToHsl(...color);
+            const newHue = (h + hueShift) % 360;
+            const newSat = Math.min(100, s * satFactor);
+            const newLight = Math.min(95, Math.max(5, l * lightFactor));
+            return hslToRgb(newHue, newSat, newLight);
+          } catch (e) {
+            // Generate a new color if transformation fails
+            const hue = Math.random() * 360;
+            return hslToRgb(hue, 70, 50);
+          }
+        });
       }
       
       // Apply collection-specific adjustments
@@ -5907,7 +6083,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             const [h, s, l] = rgbToHsl(...color);
             return hslToRgb(h, Math.min(100, s * 1.2), Math.min(100, l * 1.1));
           } catch (e) {
-            // Generate a bright color if adjustment fails
+            // Generate a new bright color if adjustment fails
             const hue = Math.random() * 360;
             return hslToRgb(hue, 80, 65);
           }
@@ -5918,43 +6094,46 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             const [h, s, l] = rgbToHsl(...color);
             return hslToRgb(h, s * 0.9, l * 0.85);
           } catch (e) {
-            // Generate a muted color if adjustment fails
+            // Generate a new muted color if adjustment fails
             const hue = Math.random() * 360;
             return hslToRgb(hue, 60, 45);
           }
         });
       }
-
+      
       // Initialize the storage if needed
       window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
       
       // Store ALL colors in the palette data structure
-      window[`${collection}PaletteColors`][i] = [...paletteColors];
+      window[`${collection}PaletteColors`][layerIndex] = [...paletteColors];
       
-      // Prepare display colors - adaptive count based on color similarity
+      // Prepare display colors - ONE FROM EACH COLOR FAMILY
       const displayColors = prepareDisplayColors(paletteColors);
+      
+      // Clear container first
+      paletteContainer.innerHTML = '';
       
       // Create container for the palette that will be clickable as a whole
       const clickableContainer = document.createElement('div');
       clickableContainer.classList.add('palette-clickable-container');
       paletteContainer.appendChild(clickableContainer);
       
-      // Add data attribute to store the palette index
-      clickableContainer.dataset.paletteIndex = i;
+      // Add data attribute to store the layer index
+      clickableContainer.dataset.layerIndex = layerIndex;
       clickableContainer.dataset.collection = collection;
       
-      // Click handler to use the FULL palette
+      // Add click handler to use the FULL palette when clicked
       clickableContainer.addEventListener('click', function() {
-        const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
+        const layerIdx = parseInt(this.dataset.layerIndex, 10);
         const collectionName = this.dataset.collection;
         
         // Get the FULL palette from storage
         const fullPalette = window[`${collectionName}PaletteColors`] && 
-                            window[`${collectionName}PaletteColors`][paletteIndex];
+                            window[`${collectionName}PaletteColors`][layerIdx];
         
-        // Call processPallet with the FULL palette from storage
+        // Call processPallet with the FULL palette
         if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
-          window.processPallet(null, totalLayers, null, 0, null, fullPalette, paletteIndex);
+          window.processPallet(null, totalLayers, null, layerIdx, null, fullPalette, layerIdx);
         }
       });
       
@@ -5966,7 +6145,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         
         // Updated tooltip with HEX value instead of RGB
         const hexValue = rgbToHex(color[0], color[1], color[2]);
-        swatch.title = ` ${hexValue}`;
+        swatch.title = `Color ${idx+1}: ${getColorName(color)} - ${hexValue}`;
         
         if (collection === 'ss') {
           swatch.classList.add('ss-swatch');
@@ -5977,7 +6156,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         clickableContainer.appendChild(swatch);
       });
       
-      // Add "Show All" button
+      // Add "Show All" button for the multi-layer case
       const showAllButton = document.createElement('div');
       showAllButton.classList.add('show-all-colors-btn');
       showAllButton.innerHTML = '+';
@@ -5988,144 +6167,15 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       showAllButton.addEventListener('click', function(e) {
         e.stopPropagation(); // Prevent triggering the parent container's click
         
-        const fullPalette = window[`${collection}PaletteColors`][i];
+        const fullPalette = window[`${collection}PaletteColors`][layerIndex];
         if (!fullPalette || fullPalette.length === 0) {
           return;
         }
         
-        showFullPaletteModal(fullPalette, collection, i);
+        showFullPaletteModal(fullPalette, collection, layerIndex);
       });
     }
-  } else {
-    // Multi-layer logic
-    const paletteContainer = document.getElementById(`${prefix}colorPalette_${layerIndex}`);
-    if (!paletteContainer) return;
-    
-    // For multi-layer, ensure first layer (layerIndex 0) is our additional palette
-    let paletteColors = layerIndex === 0 ? [...additionalRgbPalette] : [...validatedColors];
-    
-    // Apply random transformation for non-first layers
-    if (layerIndex !== 0) {
-      const hueShift = randomInRange(0, 359);
-      const satFactor = 0.7 + (Math.random() * 0.6);
-      const lightFactor = 0.8 + (Math.random() * 0.4);
-      
-      paletteColors = paletteColors.map(color => {
-        try {
-          const [h, s, l] = rgbToHsl(...color);
-          const newHue = (h + hueShift) % 360;
-          const newSat = Math.min(100, s * satFactor);
-          const newLight = Math.min(95, Math.max(5, l * lightFactor));
-          return hslToRgb(newHue, newSat, newLight);
-        } catch (e) {
-          // Generate a new color if transformation fails
-          const hue = Math.random() * 360;
-          return hslToRgb(hue, 70, 50);
-        }
-      });
-    }
-    
-    // Apply collection-specific adjustments
-    if (collection === 'ss') {
-      paletteColors = paletteColors.map(color => {
-        try {
-          const [h, s, l] = rgbToHsl(...color);
-          return hslToRgb(h, Math.min(100, s * 1.2), Math.min(100, l * 1.1));
-        } catch (e) {
-          // Generate a new bright color if adjustment fails
-          const hue = Math.random() * 360;
-          return hslToRgb(hue, 80, 65);
-        }
-      });
-    } else if (collection === 'aw') {
-      paletteColors = paletteColors.map(color => {
-        try {
-          const [h, s, l] = rgbToHsl(...color);
-          return hslToRgb(h, s * 0.9, l * 0.85);
-        } catch (e) {
-          // Generate a new muted color if adjustment fails
-          const hue = Math.random() * 360;
-          return hslToRgb(hue, 60, 45);
-        }
-      });
-    }
-    
-    // Initialize the storage if needed
-    window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
-    
-    // Store ALL colors in the palette data structure
-    window[`${collection}PaletteColors`][layerIndex] = [...paletteColors];
-    
-    // Prepare display colors - adaptive count based on color similarity
-    const displayColors = prepareDisplayColors(paletteColors);
-    
-    // Clear container first
-    paletteContainer.innerHTML = '';
-    
-    // Create container for the palette that will be clickable as a whole
-    const clickableContainer = document.createElement('div');
-    clickableContainer.classList.add('palette-clickable-container');
-    paletteContainer.appendChild(clickableContainer);
-    
-    // Add data attribute to store the layer index
-    clickableContainer.dataset.layerIndex = layerIndex;
-    clickableContainer.dataset.collection = collection;
-    
-    // Add click handler to use the FULL palette when clicked
-    clickableContainer.addEventListener('click', function() {
-      const layerIdx = parseInt(this.dataset.layerIndex, 10);
-      const collectionName = this.dataset.collection;
-      
-      // Get the FULL palette from storage
-      const fullPalette = window[`${collectionName}PaletteColors`] && 
-                          window[`${collectionName}PaletteColors`][layerIdx];
-      
-      // Call processPallet with the FULL palette
-      if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
-        window.processPallet(null, totalLayers, null, layerIdx, null, fullPalette, layerIdx);
-      }
-    });
-    
-    // Display the representative colors
-    displayColors.forEach((color, idx) => {
-      const swatch = document.createElement('div');
-      swatch.classList.add('color-swatch');
-      swatch.style.backgroundColor = `rgb(${color.join(',')})`;
-      
-      // Updated tooltip with HEX value instead of RGB
-      const hexValue = rgbToHex(color[0], color[1], color[2]);
-      swatch.title = `Color ${idx+1}: ${getColorName(color)} - ${hexValue}`;
-      
-      if (collection === 'ss') {
-        swatch.classList.add('ss-swatch');
-      } else if (collection === 'aw') {
-        swatch.classList.add('aw-swatch');
-      }
-      
-      clickableContainer.appendChild(swatch);
-    });
-    
-    // Add "Show All" button for the multi-layer case
-    const showAllButton = document.createElement('div');
-    showAllButton.classList.add('show-all-colors-btn');
-    showAllButton.innerHTML = '+';
-    showAllButton.title = 'Show all colors in palette';
-    clickableContainer.appendChild(showAllButton);
-    
-    // Add event listener to show all colors in a modal
-    showAllButton.addEventListener('click', function(e) {
-      e.stopPropagation(); // Prevent triggering the parent container's click
-      
-      const fullPalette = window[`${collection}PaletteColors`][layerIndex];
-      if (!fullPalette || fullPalette.length === 0) {
-        return;
-      }
-      
-      showFullPaletteModal(fullPalette, collection, layerIndex);
-    });
   }
-}
-
 
 
 
@@ -6507,7 +6557,7 @@ function hslToRgbforsingle(h, s, l) {
 
          return maxHue - minHue;
        }
-       function getDistinctColors(imageData, threshold = 30, maxColors = 50, minDistance = 45) {
+       function getDistinctColors(imageData, threshold = 30, maxColors = 50, minDistance = 30) {
         const totalLayers = {{ layers|length }};
         const uniqueColors = new Map(); // Changed to Map to track counts
         const data = imageData.data;
