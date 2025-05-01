@@ -39,7 +39,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.shortcuts import render
 from apps.subscription_module.models import InspirationPDF,PDFLike
-
+from apps.subscription_module.models import BaseColor
 
 from django.db.models import Q
 from rest_framework.decorators import api_view
@@ -56,6 +56,27 @@ import base64
 import io
 from datetime import datetime
 from django.http import HttpResponse, JsonResponse
+
+
+def get_all_colors(request):
+    # Fetch all color entries from the database
+    colors = BaseColor.objects.all()
+
+    # Convert the queryset to a list of dictionaries
+    data = [
+        {
+            "name": color.name,
+            "red": color.red,
+            "green": color.green,
+            "blue": color.blue
+        }
+        for color in colors
+    ]
+
+    # Return JSON response
+    return JsonResponse(data, safe=False)
+
+
 
 @api_view(['GET'])
 def get_palettes(request):

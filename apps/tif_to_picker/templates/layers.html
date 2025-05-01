@@ -4143,504 +4143,6 @@ function selectBackgroundColor(originalColors) {
 // Simplified generateBaseColors function
 function generateBaseColors() {
   const baseColorsGrid = document.querySelector('.base-colors-grid');
-  const baseColors = [
-    // Red tones
-    { rgb: [171, 39, 79], name: "Amaranth purple" },
-    { rgb: [124, 9, 2], name: "Barn red" },
-    { rgb: [254, 111, 94], name: "Bittersweet" },
-    { rgb: [191, 79, 81], name: "Bittersweet shimmer" },
-    { rgb: [102, 0, 0], name: "Blood red" },
-    { rgb: [251, 96, 127], name: "Burgundy" },
-    { rgb: [255, 8, 0], name: "Cantaloupe melon" },
-    { rgb: [197, 30, 58], name: "Cardinal" },
-    { rgb: [150, 0, 24], name: "Carmine" },
-    { rgb: [222, 49, 99], name: "Cerise" },
-    { rgb: [226, 61, 40], name: "Chili red" },
-    { rgb: [88, 17, 26], name: "Chocolate cosmos" },
-    { rgb: [228, 77, 46], name: "Cinnabar" },
-    { rgb: [127, 23, 52], name: "Claret" },
-    { rgb: [255, 56, 0], name: "Coquelicot" },
-    { rgb: [248, 131, 121], name: "Coral pink" },
-    { rgb: [137, 63, 69], name: "Cordovan" },
-    { rgb: [179, 27, 27], name: "Cornell red" },
-    { rgb: [220, 20, 60], name: "Crimson" },
-    { rgb: [139, 0, 0], name: "Dark red" },
-    { rgb: [128, 24, 24], name: "Falu red" },
-    { rgb: [178, 34, 34], name: "Fire brick" },
-    { rgb: [206, 32, 41], name: "Folly" },
-    { rgb: [115, 54, 53], name: "Garnet" },
-    { rgb: [237, 41, 57], name: "Imperial red" },
-    { rgb: [205, 92, 92], name: "Indian red" },
-    { rgb: [208, 83, 64], name: "Jasper" },
-    { rgb: [240, 128, 128], name: "Light coral" },
-    { rgb: [255, 127, 127], name: "Light red" },
-    { rgb: [165, 0, 33], name: "Madder" },
-    { rgb: [192, 64, 0], name: "Mahogany" },
-    { rgb: [128, 0, 0], name: "Maroon" },
-    { rgb: [255, 228, 225], name: "Misty rose" },
-    { rgb: [254, 0, 0], name: "Old rose" },
-    { rgb: [132, 22, 23], name: "OU crimson" },
-    { rgb: [153, 0, 0], name: "Penn red" },
-    { rgb: [204, 51, 51], name: "Persian red" },
-    { rgb: [255, 192, 203], name: "Pink" },
-    { rgb: [220, 52, 59], name: "Poppy" },
-    { rgb: [255, 0, 0], name: "Red" },
-    { rgb: [165, 42, 42], name: "Red Brown" },
-    { rgb: [237, 27, 36], name: "Redwood" },
-    { rgb: [230, 0, 38], name: "Rojo" },
-    { rgb: [255, 0, 128], name: "Rose" },
-    { rgb: [103, 72, 70], name: "Rose ebony" },
-    { rgb: [194, 30, 86], name: "Rose red" },
-    { rgb: [144, 93, 93], name: "Rose taupe" },
-    { rgb: [101, 0, 11], name: "Rosewood" },
-    { rgb: [188, 143, 143], name: "Rosy brown" },
-    { rgb: [183, 65, 14], name: "Rust" },
-    { rgb: [218, 44, 67], name: "Rusty red" },
-    { rgb: [250, 128, 114], name: "Salmon" },
-    { rgb: [255, 145, 164], name: "Salmon pink" },
-    { rgb: [255, 36, 0], name: "Scarlet" },
-    { rgb: [212, 69, 0], name: "Tomato" },
-    { rgb: [169, 17, 1], name: "Turkey red" },
-    { rgb: [227, 66, 52], name: "Vermilion" },
-    { rgb: [114, 47, 55], name: "Wine" },
-    
-    // Orange tones
-    { rgb: [255, 79, 0], name: "Aerospace orange" },
-    { rgb: [196, 98, 16], name: "Alloy orange" },
-    { rgb: [255, 191, 0], name: "Amber" },
-    { rgb: [251, 206, 177], name: "Apricot" },
-    { rgb: [255, 153, 102], name: "Atomic tangerine" },
-    { rgb: [150, 75, 0], name: "Brown" },
-    { rgb: [191, 87, 0], name: "Burnt orange" },
-    { rgb: [224, 149, 64], name: "Butterscotch" },
-    { rgb: [237, 145, 33], name: "Carrot orange" },
-    { rgb: [247, 231, 206], name: "Coral" },
-    { rgb: [255, 140, 0], name: "Engineering orange" },
-    { rgb: [226, 88, 34], name: "Flame" },
-    { rgb: [254, 90, 29], name: "Giants orange" },
-    { rgb: [255, 215, 0], name: "Gold" },
-    { rgb: [240, 74, 0], name: "Goldenrod" },
-    { rgb: [232, 172, 65], name: "Hunyadi yellow" },
-    { rgb: [254, 216, 177], name: "Light orange" },
-    { rgb: [255, 117, 56], name: "Orange peel" },
-    { rgb: [255, 165, 0], name: "Papaya whip" },
-    { rgb: [255, 229, 180], name: "Peach" },
-    { rgb: [217, 144, 88], name: "Persian orange" },
-    { rgb: [236, 88, 0], name: "Persimmon" },
-    { rgb: [255, 143, 0], name: "Princeton orange" },
-    { rgb: [255, 117, 24], name: "Pumpkin" },
-    { rgb: [255, 121, 0], name: "Safety orange" },
-    { rgb: [244, 196, 48], name: "Saffron" },
-    { rgb: [232, 97, 0], name: "Spanish orange" },
-    { rgb: [249, 77, 0], name: "Tangelo" },
-    { rgb: [242, 133, 0], name: "Tangerine" },
-    { rgb: [205, 87, 0], name: "Tawny" },
-    { rgb: [181, 105, 23], name: "Tiger's Eye" },
-    { rgb: [255, 130, 0], name: "UT orange" },
-    { rgb: [241, 180, 47], name: "Xanthous" },
-    
-    // Brown tones
-    { rgb: [239, 222, 205], name: "Almond" },
-    { rgb: [159, 129, 112], name: "Beaver" },
-    { rgb: [245, 245, 220], name: "Beige" },
-    { rgb: [61, 43, 31], name: "Bistre" },
-    { rgb: [61, 12, 2], name: "Black bean" },
-    { rgb: [59, 60, 54], name: "Black olive" },
-    { rgb: [121, 68, 59], name: "Bole" },
-    { rgb: [227, 218, 201], name: "Bone" },
-    { rgb: [205, 127, 50], name: "Bronze" },
-    { rgb: [153, 51, 0], name: "Brown" },
-    { rgb: [175, 110, 77], name: "Brown sugar" },
-    { rgb: [218, 160, 109], name: "Buff" },
-    { rgb: [233, 116, 81], name: "Burnt sienna" },
-    { rgb: [138, 51, 36], name: "Burnt umber" },
-    { rgb: [193, 154, 107], name: "Camel" },
-    { rgb: [89, 39, 32], name: "Caput mortuum" },
-    { rgb: [204, 127, 59], name: "Caramel" },
-    { rgb: [160, 120, 90], name: "Chamoisee" },
-    { rgb: [149, 69, 53], name: "Chestnut" },
-    { rgb: [123, 63, 0], name: "Chocolate" },
-    { rgb: [221, 208, 106], name: "Citron" },
-    { rgb: [210, 105, 30], name: "Cocoa Brown" },
-    { rgb: [111, 78, 55], name: "Coffee" },
-    { rgb: [184, 115, 51], name: "Copper" },
-    { rgb: [129, 97, 62], name: "Coyote" },
-    { rgb: [74, 65, 42], name: "Dun" },
-    { rgb: [225, 169, 95], name: "Earth yellow" },
-    { rgb: [194, 178, 128], name: "Ecru" },
-    { rgb: [229, 170, 112], name: "Fawn" },
-    { rgb: [108, 84, 30], name: "Field drab" },
-    { rgb: [228, 132, 0], name: "Fulvous" },
-    { rgb: [153, 101, 21], name: "Golden brown" },
-    { rgb: [218, 145, 0], name: "Harvest gold" },
-    { rgb: [195, 176, 145], name: "Khaki" },
-    { rgb: [107, 68, 35], name: "Kobicha" },
-    { rgb: [103, 76, 71], name: "Liver" },
-    { rgb: [204, 119, 34], name: "Ochre" },
-    { rgb: [146, 102, 68], name: "Raw umber" },
-    { rgb: [164, 90, 82], name: "Redwood" },
-    { rgb: [168, 28, 7], name: "Rufous" },
-    { rgb: [128, 70, 27], name: "Russet" },
-    { rgb: [244, 164, 96], name: "Sandy brown" },
-    { rgb: [203, 161, 53], name: "Seal brown" },
-    { rgb: [112, 66, 20], name: "Sepia" },
-    { rgb: [136, 45, 23], name: "Sienna" },
-    { rgb: [203, 65, 11], name: "Sinopia" },
-    { rgb: [210, 180, 140], name: "Tan" },
-    { rgb: [72, 60, 50], name: "Taupe" },
-    { rgb: [99, 81, 71], name: "Umber" },
-    { rgb: [68, 54, 47], name: "Van Dyke" },
-    { rgb: [92, 82, 72], name: "Walnut brown" },
-    { rgb: [100, 84, 82], name: "Wenge" },
-    { rgb: [245, 222, 179], name: "Wheat" },
-    
-    // Yellow tones
-    { rgb: [233, 214, 107], name: "Arylide yellow" },
-    { rgb: [253, 238, 0], name: "Aureolin" },
-    { rgb: [224, 171, 118], name: "Buff" },
-    { rgb: [255, 239, 0], name: "Canary" },
-    { rgb: [223, 255, 0], name: "Chartreuse" },
-    { rgb: [228, 208, 10], name: "Citrine" },
-    { rgb: [255, 248, 231], name: "Cosmic latte" },
-    { rgb: [255, 253, 208], name: "Cream" },
-    { rgb: [184, 134, 11], name: "Dark goldenrod" },
-    { rgb: [205, 178, 128], name: "Ecru" },
-    { rgb: [238, 220, 130], name: "Flax" },
-    { rgb: [239, 155, 15], name: "Gamboge" },
-    { rgb: [212, 175, 55], name: "Harvest gold" },
-    { rgb: [252, 247, 94], name: "Icterine" },
-    { rgb: [255, 255, 240], name: "Ivory" },
-    { rgb: [248, 222, 126], name: "Jasmine" },
-    { rgb: [250, 202, 22], name: "Jonquil" },
-    { rgb: [255, 250, 205], name: "Lemon chiffon" },
-    { rgb: [227, 255, 0], name: "Lemon Lime" },
-    { rgb: [255, 255, 224], name: "Light yellow" },
-    { rgb: [251, 236, 93], name: "Maize" },
-    { rgb: [255, 196, 12], name: "Mikado yellow" },
-    { rgb: [227, 249, 136], name: "Mindaro" },
-    { rgb: [255, 219, 88], name: "Mustard" },
-    { rgb: [250, 218, 94], name: "Naples yellow" },
-    { rgb: [255, 222, 173], name: "Navajo white" },
-    { rgb: [207, 181, 59], name: "Old gold" },
-    { rgb: [128, 128, 0], name: "Olive" },
-    { rgb: [250, 223, 173], name: "Peach Yellow" },
-    { rgb: [209, 226, 49], name: "Pear" },
-    { rgb: [244, 196, 49], name: "Saffron" },
-    { rgb: [255, 216, 0], name: "Selective yellow" },
-    { rgb: [228, 217, 111], name: "Straw" },
-    { rgb: [255, 204, 51], name: "Sunglow" },
-    { rgb: [250, 214, 165], name: "Sunset" },
-    { rgb: [243, 229, 171], name: "Vanilla" },
-    { rgb: [255, 255, 0], name: "Yellow" },
-    
-    // Green tones
-    { rgb: [141, 182, 0], name: "Apple green" },
-    { rgb: [0, 255, 191], name: "Aquamarine" },
-    { rgb: [123, 160, 91], name: "Asparagus" },
-    { rgb: [86, 130, 3], name: "Avocado" },
-    { rgb: [102, 255, 0], name: "Bright green" },
-    { rgb: [0, 66, 37], name: "Brunswick green" },
-    { rgb: [30, 77, 43], name: "Castleton green" },
-    { rgb: [172, 225, 175], name: "Celadon" },
-    { rgb: [128, 255, 0], name: "Chartreuse" },
-    { rgb: [0, 255, 255], name: "Cyan" },
-    { rgb: [1, 50, 32], name: "Dark green" },
-    { rgb: [74, 93, 35], name: "Dartmouth green" },
-    { rgb: [80, 200, 120], name: "Emerald" },
-    { rgb: [0, 255, 64], name: "Erin" },
-    { rgb: [79, 121, 66], name: "Fern green" },
-    { rgb: [34, 139, 34], name: "Forest green" },
-    { rgb: [0, 255, 0], name: "Green" },
-    { rgb: [173, 255, 47], name: "Green Yellow" },
-    { rgb: [63, 255, 0], name: "Harlequin" },
-    { rgb: [240, 255, 240], name: "Honeydew" },
-    { rgb: [73, 121, 107], name: "Hunter green" },
-    { rgb: [19, 136, 8], name: "India green" },
-    { rgb: [0, 168, 107], name: "Jade" },
-    { rgb: [41, 171, 135], name: "Jungle green" },
-    { rgb: [76, 187, 23], name: "Kelly green" },
-    { rgb: [124, 252, 0], name: "Lawn green" },
-    { rgb: [144, 238, 144], name: "Light green" },
-    { rgb: [192, 255, 0], name: "Lime" },
-    { rgb: [50, 205, 50], name: "Lime green" },
-    { rgb: [11, 218, 81], name: "Malachite" },
-    { rgb: [116, 195, 101], name: "Mantis" },
-    { rgb: [0, 73, 83], name: "Midnight green" },
-    { rgb: [62, 180, 137], name: "Mint" },
-    { rgb: [138, 154, 91], name: "Moss green" },
-    { rgb: [49, 120, 115], name: "Myrtle green" },
-    { rgb: [57, 255, 20], name: "Neon green" },
-    { rgb: [0, 128, 0], name: "Office green" },
-    { rgb: [154, 185, 115], name: "Olivine" },
-    { rgb: [0, 64, 26], name: "Pakistan green" },
-    { rgb: [0, 166, 147], name: "Persian green" },
-    { rgb: [0, 165, 80], name: "Pigment green" },
-    { rgb: [1, 121, 111], name: "Pine green" },
-    { rgb: [147, 197, 114], name: "Pistachio" },
-    { rgb: [108, 124, 89], name: "Reseda green" },
-    { rgb: [0, 204, 204], name: "Sage" },
-    { rgb: [118, 255, 122], name: "Sea green" },
-    { rgb: [85, 221, 51], name: "SGBUS green" },
-    { rgb: [0, 158, 96], name: "Shamrock green" },
-    { rgb: [167, 252, 0], name: "Spring bud" },
-    { rgb: [0, 255, 127], name: "Spring green" },
-    { rgb: [208, 240, 192], name: "Tea green" },
-    { rgb: [0, 128, 128], name: "Teal" },
-    { rgb: [64, 224, 208], name: "Turquoise" },
-    { rgb: [64, 130, 109], name: "Viridian" },
-    { rgb: [154, 205, 50], name: "Yellow Green" },
-    
-    // Blue tones
-    { rgb: [240, 248, 255], name: "Alice blue" },
-    { rgb: [15, 255, 255], name: "Aqua" },
-    { rgb: [127, 255, 212], name: "Aquamarine" },
-    { rgb: [0, 127, 255], name: "Azure" },
-    { rgb: [240, 255, 255], name: "Blue Green" },
-    { rgb: [0, 191, 255], name: "Capri" },
-    { rgb: [0, 109, 111], name: "Caribbean Current" },
-    { rgb: [178, 255, 255], name: "Celeste" },
-    { rgb: [0, 123, 167], name: "Cerulean" },
-    { rgb: [0, 139, 139], name: "Dark cyan" },
-    { rgb: [125, 249, 255], name: "Electric blue" },
-    { rgb: [21, 244, 238], name: "Fluorescent cyan" },
-    { rgb: [58, 176, 158], name: "Keppel" },
-    { rgb: [153, 255, 255], name: "Ice blue" },
-    { rgb: [224, 255, 255], name: "Light cyan" },
-    { rgb: [32, 178, 170], name: "Mint green" },
-    { rgb: [58, 168, 193], name: "Moonstone" },
-    { rgb: [28, 169, 201], name: "Pacific cyan" },
-    { rgb: [0, 183, 235], name: "Process Cyan" },
-    { rgb: [0, 122, 116], name: "Skobeloff" },
-    { rgb: [129, 216, 208], name: "Tiffany Blue" },
-    { rgb: [67, 179, 174], name: "Verdigris" },
-    { rgb: [0, 204, 255], name: "Zomp" },
-    { rgb: [0, 185, 232], name: "Aero" },
-    { rgb: [93, 138, 168], name: "Argentinian Blue" },
-    { rgb: [0, 112, 187], name: "Azul" },
-    { rgb: [137, 207, 240], name: "Baby blue" },
-    { rgb: [0, 50, 98], name: "Berkeley Blue" },
-    { rgb: [32, 114, 175], name: "Bice blue" },
-    { rgb: [49, 140, 231], name: "Blue" },
-    { rgb: [102, 153, 204], name: "Blue Gray" },
-    { rgb: [0, 149, 182], name: "Bondi blue" },
-    { rgb: [0, 112, 255], name: "Brandeis blue" },
-    { rgb: [52, 87, 213], name: "Byzantine blue" },
-    { rgb: [133, 176, 154], name: "Cambridge blue" },
-    { rgb: [123, 175, 212], name: "Carolina blue" },
-    { rgb: [73, 151, 208], name: "Celestial Blue" },
-    { rgb: [36, 107, 206], name: "Celtic Blue" },
-    { rgb: [70, 143, 234], name: "Chefchaouen Blue" },
-    { rgb: [59, 0, 219], name: "Chrysler blue" },
-    { rgb: [0, 71, 171], name: "Cobalt blue" },
-    { rgb: [185, 217, 235], name: "Columbia blue" },
-    { rgb: [100, 149, 237], name: "Cornflower blue" },
-    { rgb: [31, 117, 254], name: "Dark blue" },
-    { rgb: [31, 48, 94], name: "Delft Blue" },
-    { rgb: [21, 96, 189], name: "Denim" },
-    { rgb: [30, 144, 255], name: "Dodger blue" },
-    { rgb: [0, 0, 156], name: "Duke blue" },
-    { rgb: [16, 52, 166], name: "Egyptian blue" },
-    { rgb: [22, 22, 107], name: "Federal blue" },
-    { rgb: [96, 130, 182], name: "Glaucous" },
-    { rgb: [17, 100, 180], name: "Green Blue" },
-    { rgb: [111, 0, 255], name: "Electric indigo" },
-    { rgb: [0, 114, 187], name: "French Blue" },
-    { rgb: [75, 0, 130], name: "Indigo" },
-    { rgb: [0, 65, 106], name: "Indigo dye" },
-    { rgb: [0, 47, 167], name: "Jordy Blue" },
-    { rgb: [38, 97, 156], name: "Lapis Lazuli" },
-    { rgb: [173, 216, 230], name: "Light blue" },
-    { rgb: [135, 206, 250], name: "Majorelle Blue" },
-    { rgb: [43, 69, 147], name: "Marian blue" },
-    { rgb: [115, 194, 251], name: "Maya blue" },
-    { rgb: [0, 0, 205], name: "Medium blue" },
-    { rgb: [123, 104, 238], name: "Midnight blue" },
-    { rgb: [0, 147, 175], name: "Navy blue" },
-    { rgb: [0, 135, 189], name: "Neon blue" },
-    { rgb: [164, 221, 237], name: "Oxford Blue" },
-    { rgb: [39, 59, 226], name: "Palatinate blue" },
-    { rgb: [135, 211, 248], name: "Pale azure" },
-    { rgb: [1, 31, 91], name: "Penn Blue" },
-    { rgb: [204, 204, 255], name: "Periwinkle" },
-    { rgb: [28, 57, 187], name: "Persian blue" },
-    { rgb: [0, 15, 137], name: "Phthalo blue" },
-    { rgb: [69, 177, 232], name: "Picton Blue" },
-    { rgb: [34, 76, 152], name: "Polynesian blue" },
-    { rgb: [158, 185, 212], name: "Powder blue" },
-    { rgb: [0, 49, 83], name: "Prussian blue" },
-    { rgb: [0, 35, 135], name: "Resolution Blue" },
-    { rgb: [36, 84, 255], name: "RISD Blue" },
-    { rgb: [65, 105, 225], name: "Ruddy Blue" },
-    { rgb: [15, 82, 186], name: "Sapphire" },
-    { rgb: [0, 118, 182], name: "Honolulu Blue" },
-    { rgb: [75, 97, 209], name: "Savoy blue" },
-    { rgb: [93, 137, 186], name: "Sky blue" },
-    { rgb: [30, 41, 82], name: "Space cadet" },
-    { rgb: [70, 130, 180], name: "Steel blue" },
-    { rgb: [0, 89, 207], name: "Tang Blue" },
-    { rgb: [45, 104, 196], name: "True Blue" },
-    { rgb: [62, 142, 222], name: "Tufts Blue" },
-    { rgb: [39, 116, 174], name: "UCLA Blue" },
-    { rgb: [18, 10, 143], name: "Ultramarine" },
-    { rgb: [75, 146, 219], name: "Uranian Blue" },
-    { rgb: [50, 74, 178], name: "Violet Blue" },
-    { rgb: [124, 158, 217], name: "Vista Blue" },
-    { rgb: [0, 53, 107], name: "Yale Blue" },
-    { rgb: [46, 80, 144], name: "YInMn Blue" },
-    { rgb: [0, 20, 168], name: "Zaffre" },
-    
-    // Purple/Violet tones
-    { rgb: [178, 132, 190], name: "African violet" },
-    { rgb: [153, 102, 204], name: "Amethyst" },
-    { rgb: [138, 43, 226], name: "Blue Violet" },
-    { rgb: [112, 41, 99], name: "Byzantium" },
-    { rgb: [133, 96, 136], name: "Chinese violet" },
-    { rgb: [48, 25, 52], name: "Dark purple" },
-    { rgb: [148, 0, 211], name: "Dark violet" },
-    { rgb: [97, 64, 81], name: "Eggplant" },
-    { rgb: [191, 0, 255], name: "Electric purple" },
-    { rgb: [143, 0, 255], name: "Electric violet" },
-    { rgb: [86, 60, 92], name: "English violet" },
-    { rgb: [108, 48, 130], name: "Eminence" },
-    { rgb: [242, 193, 209], name: "Fairy Tale" },
-    { rgb: [181, 51, 137], name: "Fandango" },
-    { rgb: [212, 115, 212], name: "French mauve" },
-    { rgb: [136, 6, 206], name: "French violet" },
-    { rgb: [255, 0, 255], name: "Fuchsia" },
-    { rgb: [111, 45, 168], name: "Grape" },
-    { rgb: [223, 115, 255], name: "Heliotrope" },
-    { rgb: [90, 79, 207], name: "Iris" },
-    { rgb: [91, 50, 86], name: "Japanese violet" },
-    { rgb: [255, 240, 245], name: "Lavender blush" },
-    { rgb: [181, 126, 220], name: "Lilac" },
-    { rgb: [136, 0, 133], name: "Mardi Gras" },
-    { rgb: [224, 176, 255], name: "Mauve" },
-    { rgb: [141, 2, 155], name: "Mauveine" },
-    { rgb: [153, 122, 141], name: "Mountbatten pink" },
-    { rgb: [197, 75, 140], name: "Mulberry" },
-    { rgb: [139, 0, 75], name: "Murrey" },
-    { rgb: [218, 112, 214], name: "Orchid" },
-    { rgb: [104, 40, 96], name: "Palatinate" },
-    { rgb: [250, 230, 250], name: "Pale purple" },
-    { rgb: [50, 18, 122], name: "Persian indigo" },
-    { rgb: [223, 0, 255], name: "Phlox" },
-    { rgb: [219, 178, 209], name: "Pink lavender" },
-    { rgb: [221, 160, 221], name: "Puce" },
-    { rgb: [128, 0, 128], name: "Purple" },
-    { rgb: [154, 78, 174], name: "Purpureus" },
-    { rgb: [102, 51, 153], name: "Rebecca purple" },
-    { rgb: [120, 81, 169], name: "Royal purple" },
-    { rgb: [199, 21, 133], name: "Red Violet" },
-    { rgb: [50, 23, 77], name: "Russian violet" },
-    { rgb: [106, 90, 205], name: "Slate blue" },
-    { rgb: [204, 51, 204], name: "Steel pink" },
-    { rgb: [81, 40, 136], name: "Tekhelet" },
-    { rgb: [216, 191, 216], name: "Thistle" },
-    { rgb: [150, 131, 236], name: "Tropical indigo" },
-    { rgb: [102, 2, 60], name: "Tyrian purple" },
-    { rgb: [100, 83, 148], name: "Ultra Violet" },
-    { rgb: [160, 32, 240], name: "Veronica" },
-    { rgb: [128, 0, 255], name: "Violet" },
-    { rgb: [201, 160, 220], name: "Wisteria" },
-    
-    // Pink/Magenta tones
-    { rgb: [229, 43, 80], name: "Amaranth" },
-    { rgb: [255, 145, 175], name: "Dark Magenta" },
-    { rgb: [104, 48, 104], name: "Finn" },
-    { rgb: [255, 29, 206], name: "Hot magenta" },
-    { rgb: [202, 31, 123], name: "Magenta dye" },
-    { rgb: [255, 0, 144], name: "Magenta haze" },
-    { rgb: [142, 69, 133], name: "Plum" },
-    { rgb: [254, 78, 218], name: "Purple pizzazz" },
-    { rgb: [142, 58, 89], name: "Quinacridone magenta" },
-    { rgb: [227, 11, 92], name: "Raspberry" },
-    { rgb: [255, 51, 204], name: "Rose pink" },
-    { rgb: [170, 152, 169], name: "Rose quartz" },
-    { rgb: [252, 15, 192], name: "Shocking pink" },
-    { rgb: [255, 111, 255], name: "Sky magenta" },
-    { rgb: [207, 52, 118], name: "Telemagenta" },
-    { rgb: [238, 130, 238], name: "Amaranth pink" },
-    { rgb: [222, 93, 131], name: "Blush" },
-    { rgb: [255, 166, 201], name: "Carnation pink" },
-    { rgb: [241, 221, 207], name: "Champagne pink" },
-    { rgb: [255, 183, 197], name: "China rose" },
-    { rgb: [245, 111, 161], name: "Cyclamen" },
-    { rgb: [255, 20, 147], name: "Deep pink" },
-    { rgb: [215, 24, 104], name: "Dogwood rose" },
-    { rgb: [246, 74, 138], name: "French rose" },
-    { rgb: [199, 67, 117], name: "Fuchsia rose" },
-    { rgb: [244, 0, 161], name: "Hollywood cerise" },
-    { rgb: [255, 0, 204], name: "Hot magenta" },
-    { rgb: [255, 105, 180], name: "Hot pink" },
-    { rgb: [251, 174, 210], name: "Lavender pink" },
-    { rgb: [228, 0, 124], name: "Mexican pink" },
-    { rgb: [255, 218, 233], name: "Mimi Pink" },
-    { rgb: [242, 189, 205], name: "Orchid pink" },
-    { rgb: [237, 205, 194], name: "Pale Dogwood" },
-    { rgb: [255, 203, 164], name: "Peach" },
-    { rgb: [254, 40, 162], name: "Persian rose" },
-    { rgb: [247, 127, 190], name: "Persian pink" },
-    { rgb: [237, 122, 155], name: "Rose Pompadour" },
-    { rgb: [227, 37, 107], name: "Razzmatazz" },
-    { rgb: [179, 68, 108], name: "Raspberry rose" },
-    { rgb: [249, 66, 158], name: "Rose Bonbon" },
-    { rgb: [255, 245, 238], name: "Seashell" },
-    { rgb: [252, 137, 172], name: "Thulian pink" },
-    
-    // White tones
-    { rgb: [237, 234, 224], name: "Alabaster" },
-    { rgb: [242, 243, 244], name: "Antique white" },
-    { rgb: [254, 254, 250], name: "Baby powder" },
-    { rgb: [255, 248, 220], name: "Cornsilk" },
-    { rgb: [239, 223, 187], name: "Dutch white" },
-    { rgb: [240, 234, 214], name: "Eggshell" },
-    { rgb: [255, 250, 240], name: "Floral white" },
-    { rgb: [248, 248, 255], name: "Ghost white" },
-    { rgb: [244, 240, 236], name: "Isabelline" },
-    { rgb: [250, 240, 230], name: "Linen" },
-    { rgb: [248, 244, 255], name: "Magnolia" },
-    { rgb: [245, 255, 250], name: "Mint cream" },
-    { rgb: [233, 255, 219], name: "Nyanza" },
-    { rgb: [253, 245, 230], name: "Old lace" },
-    { rgb: [241, 233, 210], name: "Parchment" },
-    { rgb: [234, 224, 200], name: "Pearl" },
-    { rgb: [229, 228, 226], name: "Platinum" },
-    { rgb: [247, 247, 247], name: "Seasalt" },
-    { rgb: [255, 250, 250], name: "Snow" },
-    { rgb: [255, 255, 255], name: "White" },
-    { rgb: [245, 245, 245], name: "White smoke" },
-    
-    // Gray tones
-    { rgb: [219, 215, 210], name: "Timberwolf" },
-    { rgb: [192, 192, 192], name: "Silver" },
-    { rgb: [190, 191, 197], name: "French gray" },
-    { rgb: [178, 190, 181], name: "Ash gray" },
-    { rgb: [152, 129, 123], name: "Cinereous" },
-    { rgb: [145, 163, 176], name: "Cadet gray" },
-    { rgb: [140, 146, 172], name: "Cool gray" },
-    { rgb: [139, 133, 137], name: "Taupe gray" },
-    { rgb: [132, 132, 130], name: "Battleship gray" },
-    { rgb: [128, 128, 128], name: "Gray" },
-    { rgb: [112, 128, 144], name: "Slate gray" },
-    { rgb: [105, 105, 105], name: "Dim gray" },
-    { rgb: [85, 85, 85], name: "Gunmetal" },
-    { rgb: [77, 93, 83], name: "Feldgrau" },
-    
-    // Black tones
-    { rgb: [47, 79, 79], name: "Black" },
-    { rgb: [75, 54, 33], name: "Café noir" },
-    { rgb: [54, 69, 79], name: "Charcoal" },
-    { rgb: [85, 93, 80], name: "Ebony" },
-    { rgb: [27, 27, 27], name: "Eerie black" },
-    { rgb: [52, 52, 52], name: "Jet" },
-    { rgb: [26, 17, 16], name: "Licorice" },
-    { rgb: [17, 17, 17], name: "Night" },
-    { rgb: [53, 56, 57], name: "Onyx" },
-    { rgb: [65, 74, 76], name: "Outer space" },
-    { rgb: [36, 33, 36], name: "Raisin black" },
-    { rgb: [1, 11, 19], name: "Rich black" },
-    { rgb: [16, 12, 8], name: "Smoky black" }
-  ];
   
   // Convert RGB to Hex helper function
   function rgbToHex(r, g, b) {
@@ -4650,28 +4152,45 @@ function generateBaseColors() {
     }).join('');
   }
   
+  // Clear existing content
   baseColorsGrid.innerHTML = '';
   
-  baseColors.forEach(({rgb, name}) => {
-    const colorBlock = document.createElement('div');
-    colorBlock.className = 'base-color-block';
-    colorBlock.style.backgroundColor = `rgb(${rgb.join(',')})`;
-    
-    // Convert RGB to HEX for display
-    const hexColor = rgbToHex(rgb[0], rgb[1], rgb[2]);
-    
-    // Display the color name and hex code
-    colorBlock.innerHTML = `<div class="color-name">${name}</div>`;
-    
-    // Add title attribute with hex code for tooltip
-    colorBlock.title = `${name}: ${hexColor}`;
-    
-    // Now we just directly call the async selectBaseColor function
-    // which will handle the background color selection internally
-    colorBlock.addEventListener('click', () => selectBaseColor(rgb));
-    
-    baseColorsGrid.appendChild(colorBlock);
-  });
+  // Fetch colors from the API endpoint
+  fetch('/tif-editor/api/colors/')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(baseColors => {
+      baseColors.forEach(color => {
+        const colorBlock = document.createElement('div');
+        colorBlock.className = 'base-color-block';
+        
+        // Convert API data format to RGB array
+        const rgb = [color.red, color.green, color.blue];
+        colorBlock.style.backgroundColor = `rgb(${rgb.join(',')})`;
+        
+        // Convert RGB to HEX for display
+        const hexColor = rgbToHex(rgb[0], rgb[1], rgb[2]);
+        
+        // Display the color name
+        colorBlock.innerHTML = `<div class="color-name">${color.name}</div>`;
+        
+        // Add title attribute with hex code for tooltip
+        colorBlock.title = `${color.name}: ${hexColor}`;
+        
+        // Handle color selection
+        colorBlock.addEventListener('click', () => selectBaseColor(rgb));
+        
+        baseColorsGrid.appendChild(colorBlock);
+      });
+    })
+    .catch(error => {
+      console.error('Error fetching colors:', error);
+      baseColorsGrid.innerHTML = '<p>Failed to load colors. Please try again later.</p>';
+    });
 
   // Initially hide the palettes section
   const basePalettesSection = document.querySelector('.base-palettes-section');
@@ -6849,7 +6368,7 @@ function hslToRgbforsingle(h, s, l) {
 
          return maxHue - minHue;
        }
-       function getDistinctColors(imageData, threshold = 30, maxColors = 20) {
+       function getDistinctColors(imageData, threshold = 30, maxColors = 50) {
         const totalLayers = {{ layers|length }};
         const uniqueColors = new Map(); // Changed to Map to track counts
         const data = imageData.data;
@@ -6864,8 +6383,8 @@ function hslToRgbforsingle(h, s, l) {
     
             // Skip fully transparent pixels
             if (a === 0) continue;
-            // Skip black colors
-            if (r === 0 && g === 0 && b === 0) continue;
+            // Skip near-black colors (more lenient check)
+            if (r < 15 && g < 15 && b < 15) continue;
             
             const colorKey = `${r},${g},${b}`;
             if (uniqueColors.has(colorKey)) {
@@ -6880,68 +6399,122 @@ function hslToRgbforsingle(h, s, l) {
             const [r, g, b] = colorStr.split(',').map(Number);
             return {
                 rgb: [r, g, b],
-                count: count
+                count: count,
+                // Add HSL values to help with diversity
+                hsl: rgbToHsl(r, g, b)
             };
         });
     
         console.log('Total unique colors found:', colors.length);
     
-        const distinctColors = [];
-    
-        function colorDistance(c1, c2) {
-            return Math.sqrt(
-                Math.pow(c1[0] - c2[0], 2) +
-                Math.pow(c1[1] - c2[1], 2) +
-                Math.pow(c1[2] - c2[2], 2)
-            );
-        }
-    
         // Sort colors by count (frequency) in descending order
         colors.sort((a, b) => b.count - a.count);
-    
+        
+        const distinctColors = [];
+        
+        // For single layer, prioritize color diversity
         if (isSingleLayer) {
-            // Take all unique colors, up to maxColors, ensuring they're distinct enough
-            for (let i = 0; i < colors.length && distinctColors.length < maxColors; i++) {
-                const currentColor = colors[i].rgb;
-                
-                // Check if this color is significantly different from already selected colors
-                const isUnique = distinctColors.every(existingColor => 
-                    colorDistance(currentColor, existingColor) > 80
-                );
-    
-                if (isUnique) {
-                    distinctColors.push(currentColor);
-                }
+            // First include the most frequent colors as anchors
+            const topColors = Math.min(5, Math.ceil(maxColors / 5));
+            for (let i = 0; i < topColors && i < colors.length; i++) {
+                distinctColors.push(colors[i].rgb);
             }
-    
-            // Ensure we have at least 3 colors 
-            if (distinctColors.length < 3) {
-                for (let i = 0; i < colors.length && distinctColors.length < 3; i++) {
-                    const currentColor = colors[i].rgb;
-                    if (!distinctColors.some(color => 
-                        color[0] === currentColor[0] && 
-                        color[1] === currentColor[1] && 
-                        color[2] === currentColor[2])) {
-                        distinctColors.push(currentColor);
+            
+            // Then add colors with a focus on hue diversity
+            const hueBuckets = new Array(12).fill().map(() => []);
+            
+            // Distribute remaining colors into 12 hue buckets
+            for (let i = topColors; i < colors.length; i++) {
+                const hue = Math.floor(colors[i].hsl[0] * 12); // Split 360 degrees into 12 buckets
+                hueBuckets[hue].push(colors[i]);
+            }
+            
+            // Take the most frequent color from each hue bucket
+            hueBuckets.forEach(bucket => {
+                if (bucket.length > 0 && distinctColors.length < maxColors) {
+                    bucket.sort((a, b) => b.count - a.count);
+                    
+                    // Check if this color is significantly different from already selected colors
+                    const candidate = bucket[0].rgb;
+                    const isUnique = distinctColors.every(existingColor => 
+                        colorDistance(candidate, existingColor) > threshold
+                    );
+                    
+                    if (isUnique) {
+                        distinctColors.push(candidate);
                     }
+                }
+            });
+            
+            // Fill remaining slots with colors that maximize diversity
+            for (let i = 0; i < colors.length && distinctColors.length < maxColors; i++) {
+                const candidate = colors[i].rgb;
+                
+                // Skip if we already added this color
+                if (distinctColors.some(color => 
+                    color[0] === candidate[0] && 
+                    color[1] === candidate[1] && 
+                    color[2] === candidate[2])) {
+                    continue;
+                }
+                
+                // Check if this color is different enough from all existing colors
+                let minDistance = Number.MAX_VALUE;
+                for (const existingColor of distinctColors) {
+                    const distance = colorDistance(candidate, existingColor);
+                    minDistance = Math.min(minDistance, distance);
+                }
+                
+                if (minDistance > threshold) {
+                    distinctColors.push(candidate);
                 }
             }
         } else {
-            // Logic for multiple layers
+            // Logic for multiple layers - use adaptive threshold
+            let adaptiveThreshold = threshold;
+            
+            // First pass with original threshold
             colors.forEach(({ rgb }) => {
                 if (distinctColors.length >= maxColors) return;
-    
-                const isDistinct = distinctColors.every(d => colorDistance(d, rgb) > threshold);
+                
+                const isDistinct = distinctColors.every(d => colorDistance(d, rgb) > adaptiveThreshold);
                 if (isDistinct) {
                     distinctColors.push(rgb);
                 }
             });
+            
+            // If we didn't get enough colors, gradually reduce the threshold
+            while (distinctColors.length < maxColors * 0.5 && adaptiveThreshold > 5) {
+                adaptiveThreshold -= 5;
+                
+                colors.forEach(({ rgb }) => {
+                    if (distinctColors.length >= maxColors) return;
+                    
+                    // Skip if we already have this color
+                    if (distinctColors.some(d => 
+                        d[0] === rgb[0] && d[1] === rgb[1] && d[2] === rgb[2])) {
+                        return;
+                    }
+                    
+                    const isDistinct = distinctColors.every(d => colorDistance(d, rgb) > adaptiveThreshold);
+                    if (isDistinct) {
+                        distinctColors.push(rgb);
+                    }
+                });
+            }
         }
         
         console.log('Final distinct colors:', distinctColors.length);
         localStorage.setItem('distinctColorsArrayColorPallet', JSON.stringify(distinctColors));
         return distinctColors;
     }
+    function colorDistance(c1, c2) {
+      return Math.sqrt(
+          Math.pow(c1[0] - c2[0], 2) +
+          Math.pow(c1[1] - c2[1], 2) +
+          Math.pow(c1[2] - c2[2], 2)
+      );
+  }
     
         function generateUniqueRGBColorArray(count) {
             const colors = [];
@@ -7073,7 +6646,7 @@ function updateLayersWithNewColorCount(layerIndex) {
 
       latestImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const distinctColors = getDistinctColors(imageData, 180, sliderValue);
+      const distinctColors = getDistinctColors(imageData, 30, 50);
 
       console.log('Processing colors for layer:', layerIndex);
 
@@ -7395,7 +6968,7 @@ async function loadFavorites() {
                   if (currentLayer) {
                       const ctx = currentLayer.getContext('2d', { willReadFrequently: true });
                       const imageData = ctx.getImageData(0, 0, currentLayer.width, currentLayer.height);
-                      newImageColors = getDistinctColors(imageData, 100, 10);
+                      newImageColors = getDistinctColors(imageData, 30, 50);
                   }
                   
                   // Generate a complete palette from the favorite colors
@@ -7505,7 +7078,7 @@ function applyPaletteToLayer(colors, layerIndex = 0) {
       if (currentLayer) {
           const ctx = currentLayer.getContext('2d', { willReadFrequently: true });
           const imageData = ctx.getImageData(0, 0, currentLayer.width, currentLayer.height);
-          newImageColors = getDistinctColors(imageData, 100, 10);
+          newImageColors = getDistinctColors(imageData, 30, 50);
       }
       
       // Generate a complete palette from the favorite colors
@@ -7847,7 +7420,7 @@ function updateColorCountDisplay() {
                   if (layer1Canvas) {
                       const ctx = layer1Canvas.getContext('2d', { willReadFrequently: true });
                       const imageData = ctx.getImageData(0, 0, layer1Canvas.width, layer1Canvas.height);
-                      newImageColors = getDistinctColors(imageData, 100, 10);
+                      newImageColors = getDistinctColors(imageData, 30, 50);
                   }
                   
                   // Generate full palette using the function
@@ -7968,7 +7541,7 @@ function updateColorCountDisplay() {
               // IMPORTANT: We need to get the original colors from the original image
               // Analyze the original image to find its colors
               const imageData = ctx.getImageData(0, 0, layerCanvas.width, layerCanvas.height);
-              const originalColors = getDistinctColors(imageData, 100, 20); // Adjust parameters as needed
+              const originalColors = getDistinctColors(imageData, 30, 50); // Adjust parameters as needed
               
               // KEY CHANGE: Track which buttons are locked and their original colors
               const lockedIndexes = new Set();
@@ -8137,7 +7710,7 @@ function updateColorCountDisplay() {
                   
                   // Analyze the original image data to find its dominant color
                   const imageData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
-                  const originalColors = getDistinctColors(imageData, 180, 7); // Adjust parameters as needed
+                  const originalColors = getDistinctColors(imageData, 30, 50); // Adjust parameters as needed
                   
                   if (originalColors.length === 0) {
                       console.error(`No original colors found for layer ${layer}`);
@@ -9184,7 +8757,8 @@ async applyMultipleColorMappingsextra(imageData, colorMappings) {
                 const lowSaturation = hsv1[1] < 40 || hsv2[1] < 40;
                 
                 // Adapt thresholds based on color properties
-                const hueThreshold = areBothDark || lowSaturation ? 60 : 40;
+                // CHANGE: Tighter hue threshold (40 → 30) for better handling of many colors
+                const hueThreshold = areBothDark || lowSaturation ? 45 : 30;
                 const satThreshold = areBothDark ? 50 : 40;
                 
                 // Colors in the same family should have similar hue and not too different saturation
@@ -9322,9 +8896,13 @@ async applyMultipleColorMappingsextra(imageData, colorMappings) {
                         // Only skip pure black (almost zero in all channels)
                         if (pixelColor[0] <= 3 && pixelColor[1] <= 3 && pixelColor[2] <= 3) continue;
                         
-                        // Check if this color fits into an existing family with adaptive thresholds
+                        // CHANGE: For many colors, be more selective about family membership
+                        // Check if this color fits into an existing family with stricter thresholds
                         let foundFamily = false;
-                        for (let i = 0; i < colorFamilies.length; i++) {
+                        
+                        // CHANGE: Only check recent families first to improve performance with many colors
+                        const startIdx = Math.max(0, colorFamilies.length - 50);
+                        for (let i = startIdx; i < colorFamilies.length; i++) {
                             const family = colorFamilies[i];
                             
                             // Check if color belongs to this family with improved detection
@@ -9339,6 +8917,26 @@ async applyMultipleColorMappingsextra(imageData, colorMappings) {
                                 pixelFamilyMap[pixelIndex] = i;
                                 foundFamily = true;
                                 break;
+                            }
+                        }
+                        
+                        // If no matching family in recent ones, check older ones
+                        if (!foundFamily && startIdx > 0) {
+                            for (let i = 0; i < startIdx; i++) {
+                                const family = colorFamilies[i];
+                                
+                                if (sameColorFamily(pixelColor, family.referenceColor)) {
+                                    // Add to family
+                                    family.pixels.push(pixelIndex);
+                                    family.sumR += pixelColor[0];
+                                    family.sumG += pixelColor[1];
+                                    family.sumB += pixelColor[2];
+                                    family.count++;
+                                    
+                                    pixelFamilyMap[pixelIndex] = i;
+                                    foundFamily = true;
+                                    break;
+                                }
                             }
                         }
                         
@@ -9372,6 +8970,7 @@ async applyMultipleColorMappingsextra(imageData, colorMappings) {
                     family.hsv = rgbToHsv(...family.avgColor);
                 });
                 
+                console.log(`Identified ${colorFamilies.length} color families`);
                 return { colorFamilies, pixelFamilyMap };
             }
             
@@ -9408,46 +9007,65 @@ async applyMultipleColorMappingsextra(imageData, colorMappings) {
                 });
             }
             
-            // IMPROVED: More flexible mapping of families to color mappings
-    // IMPROVED: More strict mapping of families to color mappings
-
-
-
-    function mapFamiliesToMappings(colorFamilies, processedMappings) {
-        // For each color family, find the exact matching source color
-        colorFamilies.forEach(family => {
-            let bestMappingIndex = -1;
-            let bestDistance = Infinity;
-            
-            for (let i = 0; i < processedMappings.length; i++) {
-                const mapping = processedMappings[i];
-                
-                // Calculate RGB distance - looking for exact matches
-                const rgbDistance = Math.sqrt(
-                    Math.pow(family.avgColor[0] - mapping.originalColor[0], 2) +
-                    Math.pow(family.avgColor[1] - mapping.originalColor[1], 2) +
-                    Math.pow(family.avgColor[2] - mapping.originalColor[2], 2)
-                );
-                
-                // We want an exact match (or very close) to ensure 1:1 mapping
-                const exactMatchThreshold = 20; // Tighter threshold
-                
-                if (rgbDistance < exactMatchThreshold && rgbDistance < bestDistance) {
-                    bestDistance = rgbDistance;
-                    bestMappingIndex = i;
-                }
+            // IMPROVED: Better mapping for more colors
+            function mapFamiliesToMappings(colorFamilies, processedMappings) {
+                // CHANGE: For each color family, find the best matching source color
+                // When dealing with many colors, we need more precise mapping
+                colorFamilies.forEach(family => {
+                    let bestMappingIndex = -1;
+                    let bestScore = Infinity;
+                    
+                    for (let i = 0; i < processedMappings.length; i++) {
+                        const mapping = processedMappings[i];
+                        
+                        // Calculate weighted distance in both RGB and HSV space
+                        // RGB distance for precise matching
+                        const rgbDistance = Math.sqrt(
+                            Math.pow(family.avgColor[0] - mapping.originalColor[0], 2) +
+                            Math.pow(family.avgColor[1] - mapping.originalColor[1], 2) +
+                            Math.pow(family.avgColor[2] - mapping.originalColor[2], 2)
+                        );
+                        
+                        // HSV comparison for perceptual matching
+                        const familyHsv = family.hsv;
+                        const mappingHsv = mapping.originalHsv;
+                        
+                        // Calculate hue difference with wrap-around
+                        let hueDiff = Math.abs(familyHsv[0] - mappingHsv[0]);
+                        if (hueDiff > 180) hueDiff = 360 - hueDiff;
+                        
+                        // Weight the components differently
+                        const isAchromatic = familyHsv[1] < 15 || mappingHsv[1] < 15;
+                        
+                        let score;
+                        if (isAchromatic) {
+                            // For achromatic colors, focus on brightness
+                            score = (rgbDistance * 0.3) + (Math.abs(familyHsv[2] - mappingHsv[2]) * 2);
+                        } else {
+                            // For chromatic colors, prioritize hue match
+                            score = (rgbDistance * 0.3) + (hueDiff * 0.5) + 
+                                    (Math.abs(familyHsv[1] - mappingHsv[1]) * 0.3) + 
+                                    (Math.abs(familyHsv[2] - mappingHsv[2]) * 0.2);
+                        }
+                        
+                        if (score < bestScore) {
+                            bestScore = score;
+                            bestMappingIndex = i;
+                        }
+                    }
+                    
+                    // CHANGE: Use a threshold that scales with the number of color mappings
+                    // More colors need more relaxed threshold to ensure proper mapping
+                    const threshold = 60 + Math.min(40, processedMappings.length * 2);
+                    
+                    if (bestScore < threshold) {
+                        family.mappingIndex = bestMappingIndex;
+                    } else {
+                        // For families without a good match, leave unmapped
+                        family.mappingIndex = -1;
+                    }
+                });
             }
-            
-            // Only assign if we found a good match
-            if (bestMappingIndex !== -1) {
-                family.mappingIndex = bestMappingIndex;
-            } else {
-                // For families without an exact match, keep them unmapped
-                // This ensures we don't incorrectly map colors
-                family.mappingIndex = -1;
-            }
-        });
-    }
             
             // IMPROVED: Better color transformation logic
             function transformColor(r, g, b, mappingIndex, isGradient = false, gradientStrength = 0) {
@@ -9458,7 +9076,6 @@ async applyMultipleColorMappingsextra(imageData, colorMappings) {
                 const pixelHsv = rgbToHsv(r, g, b);
                 
                 // Check if colors are very close to the original mapping color
-                // If they are, map directly to target color for more consistency
                 const originalRGB = mapping.originalColor;
                 const rgbDistance = Math.sqrt(
                     Math.pow(r - originalRGB[0], 2) +
@@ -9555,137 +9172,110 @@ async applyMultipleColorMappingsextra(imageData, colorMappings) {
             console.log("Processing color mappings...");
             const processedMappings = prepareColorMappings();
             
-            // Step 4: Map families to mappings
+            // Step 4: Map families to mappings - IMPROVED for more colors
             console.log("Mapping color families to target colors...");
-        // Instead of the smart mapping, use a direct mapping approach
-        let defaultMappingIndex = 0;
-        colorFamilies.forEach(family => {
-            // Find which original color this family is closest to
-            let bestMappingIndex = -1;
-            let bestDistance = Infinity;
+            mapFamiliesToMappings(colorFamilies, processedMappings);
             
-            for (let i = 0; i < processedMappings.length; i++) {
-                const mapping = processedMappings[i];
-                const originalColor = mapping.originalColor;
-                
-                // Simple RGB distance for direct matching
-                const distance = Math.sqrt(
-                    Math.pow(family.avgColor[0] - originalColor[0], 2) +
-                    Math.pow(family.avgColor[1] - originalColor[1], 2) +
-                    Math.pow(family.avgColor[2] - originalColor[2], 2)
-                );
-                
-                if (distance < bestDistance) {
-                    bestDistance = distance;
-                    bestMappingIndex = i;
+            // CHANGE: Set a better default mapping for unmatched pixels
+            // Find the most dominant mapping by counting pixels
+            let mappingCounts = new Array(processedMappings.length).fill(0);
+            colorFamilies.forEach(family => {
+                if (family.mappingIndex !== -1) {
+                    mappingCounts[family.mappingIndex] += family.count;
+                }
+            });
+            
+            let defaultMappingIndex = 0;
+            let maxCount = mappingCounts[0];
+            for (let i = 1; i < mappingCounts.length; i++) {
+                if (mappingCounts[i] > maxCount) {
+                    maxCount = mappingCounts[i];
+                    defaultMappingIndex = i;
                 }
             }
             
-            // Use a fairly strict threshold to maintain the expected mapping
-            const threshold = 50; // More strict threshold
-            
-            if (bestDistance < threshold) {
-                family.mappingIndex = bestMappingIndex;
-            } else {
-                // If no close match, leave unmapped
-                family.mappingIndex = -1;
-            }
-        });
-                    
-        console.log("Transforming colors...");
+            console.log("Transforming colors...");
 
-        // Use a cache for processed colors
-        const transformCache = new Map();
+            // Use a cache for processed colors
+            const transformCache = new Map();
 
-        // Apply transformations
-        for (let i = 0; i < data.length; i += 4) {
-            if (data[i + 3] < 128) continue; // Skip transparent
-            
-            const r = data[i], g = data[i + 1], b = data[i + 2];
-            
-            // Only skip absolute black
-            if (r <= 3 && g <= 3 && b <= 3) continue;
-            
-            const pixelIndex = Math.floor(i / 4);
-            const familyIndex = pixelFamilyMap[pixelIndex];
-            
-            // Determine which mapping to use, with fallback for unassigned pixels
-            let mappingToUse = defaultMappingIndex;
-            
-            if (familyIndex !== -1) {
-                const family = colorFamilies[familyIndex];
-                if (family.mappingIndex !== -1) {
-                    mappingToUse = family.mappingIndex;
-                } else {
-                    // If family has no mapping, find closest mapping directly
-                    const pixelHsv = rgbToHsv(r, g, b);
-                    let bestDistance = Infinity;
-                    
-                    for (let j = 0; j < processedMappings.length; j++) {
-                        const mappingHsv = processedMappings[j].originalHsv;
+            // Apply transformations
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] < 128) continue; // Skip transparent
+                
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                
+                // Only skip absolute black
+                if (r <= 3 && g <= 3 && b <= 3) continue;
+                
+                const pixelIndex = Math.floor(i / 4);
+                const familyIndex = pixelFamilyMap[pixelIndex];
+                
+                // Determine which mapping to use, with fallback for unassigned pixels
+                let mappingToUse = defaultMappingIndex;
+                
+                if (familyIndex !== -1 && familyIndex < colorFamilies.length) {
+                    const family = colorFamilies[familyIndex];
+                    if (family.mappingIndex !== -1) {
+                        mappingToUse = family.mappingIndex;
+                    } else {
+                        // CHANGE: For families with no mapping, find closest mapping directly
+                        // This helps with more accurate color matching for many colors
+                        const pixelHsv = rgbToHsv(r, g, b);
+                        let bestDistance = Infinity;
                         
-                        // Simple weighted distance in HSV space
-                        let hueDiff = Math.abs(pixelHsv[0] - mappingHsv[0]);
-                        if (hueDiff > 180) hueDiff = 360 - hueDiff;
-                        
-                        // Weight less by hue for low saturation colors
-                        const hueWeight = pixelHsv[1] / 100;
-                        const distance = 
-                            (hueDiff / 180) * hueWeight +
-                            Math.abs(pixelHsv[1] - mappingHsv[1]) / 100 +
-                            Math.abs(pixelHsv[2] - mappingHsv[2]) / 100;
-                        
-                        if (distance < bestDistance) {
-                            bestDistance = distance;
-                            mappingToUse = j;
+                        for (let j = 0; j < processedMappings.length; j++) {
+                            const mappingHsv = processedMappings[j].originalHsv;
+                            
+                            // Weighted distance calculation for perceptual matching
+                            let hueDiff = Math.abs(pixelHsv[0] - mappingHsv[0]);
+                            if (hueDiff > 180) hueDiff = 360 - hueDiff;
+                            
+                            // For low saturation, focus on brightness
+                            const distance = (pixelHsv[1] < 15 || mappingHsv[1] < 15) ? 
+                                Math.abs(pixelHsv[2] - mappingHsv[2]) / 100 :
+                                (hueDiff / 180) * 0.6 + 
+                                Math.abs(pixelHsv[1] - mappingHsv[1]) / 100 * 0.2 + 
+                                Math.abs(pixelHsv[2] - mappingHsv[2]) / 100 * 0.2;
+                            
+                            if (distance < bestDistance) {
+                                bestDistance = distance;
+                                mappingToUse = j;
+                            }
                         }
                     }
                 }
-            } else {
-                // For unassigned pixels, find closest mapping directly
-                const pixelHsv = rgbToHsv(r, g, b);
-                let bestDistance = Infinity;
                 
-                for (let j = 0; j < processedMappings.length; j++) {
-                    const mappingHsv = processedMappings[j].originalHsv;
-                    
-                    // Simplified distance calculation for unassigned pixels
-                    const distance = Math.abs(pixelHsv[2] - mappingHsv[2]) / 100;
-                    
-                    if (distance < bestDistance) {
-                        bestDistance = distance;
-                        mappingToUse = j;
-                    }
+                // Check cache for this color and mapping combination
+                const colorKey = `${r},${g},${b},${mappingToUse}`;
+                if (transformCache.has(colorKey)) {
+                    const cachedColor = transformCache.get(colorKey);
+                    data[i] = cachedColor[0];
+                    data[i + 1] = cachedColor[1];
+                    data[i + 2] = cachedColor[2];
+                    continue;
+                }
+                
+                // Check if this pixel is part of a gradient
+                const isGradient = gradientMap[pixelIndex];
+                const gradientStrength = gradientStrengthMap[pixelIndex];
+                
+                // Transform the color
+                const newColor = transformColor(r, g, b, mappingToUse, isGradient, gradientStrength);
+                
+                // Apply the transformed color
+                data[i] = newColor[0];
+                data[i + 1] = newColor[1];
+                data[i + 2] = newColor[2];
+                
+                // Cache this transformation
+                // CHANGE: Limit cache size to prevent memory issues with many colors
+                if (transformCache.size < 100000) {
+                    transformCache.set(colorKey, newColor);
                 }
             }
-            
-            // Check cache for this color and mapping combination
-            const colorKey = `${r},${g},${b},${mappingToUse}`;
-            if (transformCache.has(colorKey)) {
-                const cachedColor = transformCache.get(colorKey);
-                data[i] = cachedColor[0];
-                data[i + 1] = cachedColor[1];
-                data[i + 2] = cachedColor[2];
-                continue;
-            }
-            
-            // Check if this pixel is part of a gradient
-            const isGradient = gradientMap[pixelIndex];
-            const gradientStrength = gradientStrengthMap[pixelIndex];
-            
-            // Transform the color
-            const newColor = transformColor(r, g, b, mappingToUse, isGradient, gradientStrength);
-            
-            // Apply the transformed color
-            data[i] = newColor[0];
-            data[i + 1] = newColor[1];
-            data[i + 2] = newColor[2];
-            
-            // Cache this transformation
-            transformCache.set(colorKey, newColor);
-        }
 
-        console.log("Finished color mapping!");
+            console.log("Finished color mapping!");
 
             // Apply the changes to the canvas
             ctx.putImageData(imageDataObj, 0, 0);
@@ -9698,7 +9288,7 @@ async applyMultipleColorMappingsextra(imageData, colorMappings) {
 }
 
 async applyMultipleColorMappings(imageData, colorMappings) {
-  console.log("Starting multiple color mappings with improved algorithm");
+  console.log("Starting multiple color mappings with improved algorithm for gradients and patterns");
   return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -9791,6 +9381,31 @@ async applyMultipleColorMappings(imageData, colorMappings) {
               );
           }
 
+          // LAB to RGB conversion
+          function labToRgb(L, A, B) {
+              let y = (L + 16) / 116;
+              let x = A / 500 + y;
+              let z = y - B / 200;
+              
+              x = 0.95047 * ((x * x * x > 0.008856) ? x * x * x : (x - 16/116) / 7.787);
+              y = 1.00000 * ((y * y * y > 0.008856) ? y * y * y : (y - 16/116) / 7.787);
+              z = 1.08883 * ((z * z * z > 0.008856) ? z * z * z : (z - 16/116) / 7.787);
+              
+              let rr = x *  3.2406 + y * -1.5372 + z * -0.4986;
+              let gg = x * -0.9689 + y *  1.8758 + z *  0.0415;
+              let bb = x *  0.0557 + y * -0.2040 + z *  1.0570;
+              
+              rr = (rr > 0.0031308) ? (1.055 * Math.pow(rr, 1/2.4) - 0.055) : 12.92 * rr;
+              gg = (gg > 0.0031308) ? (1.055 * Math.pow(gg, 1/2.4) - 0.055) : 12.92 * gg;
+              bb = (bb > 0.0031308) ? (1.055 * Math.pow(bb, 1/2.4) - 0.055) : 12.92 * bb;
+              
+              return [
+                  Math.max(0, Math.min(255, Math.round(rr * 255))),
+                  Math.max(0, Math.min(255, Math.round(gg * 255))),
+                  Math.max(0, Math.min(255, Math.round(bb * 255)))
+              ];
+          }
+
           // Prepare all color mappings with their properties
           const processedMappings = colorMappings.map(mapping => {
               const originalColor = mapping.originalColor;
@@ -9805,11 +9420,10 @@ async applyMultipleColorMappings(imageData, colorMappings) {
               const originalHsv = rgbToHsv(...originalColor);
               const replacementHsv = rgbToHsv(...replacementColor);
               const originalLab = rgbToLab(...originalColor);
+              const replacementLab = rgbToLab(...replacementColor);
               
-              // Define if original color has special properties
-              const isOriginalDark = originalHsv[2] < 20;
-              const isOriginalLight = originalHsv[2] > 90 && originalHsv[1] < 15;
-              const isOriginalGray = originalHsv[1] < 15;
+              // Only check if this is a black color (3,3,3 or less)
+              const isBlack = originalColor[0] <= 3 && originalColor[1] <= 3 && originalColor[2] <= 3;
               
               return {
                   originalColor,
@@ -9817,21 +9431,79 @@ async applyMultipleColorMappings(imageData, colorMappings) {
                   originalHsv,
                   replacementHsv,
                   originalLab,
-                  isOriginalDark,
-                  isOriginalLight,
-                  isOriginalGray
+                  replacementLab,
+                  isBlack
               };
           });
 
           // Create a cache for color transformations
           const transformCache = new Map();
 
-          // Define tolerances
-          const RGB_TOLERANCE = 60;       // Direct RGB distance (0-441)
-          const HUE_TOLERANCE = 15;       // Hue degrees (0-180)
-          const SAT_TOLERANCE = 15;       // Saturation % (0-100)
-          const VAL_TOLERANCE = 20;       // Value % (0-100)
-          const LAB_TOLERANCE = 25;       // Lab distance
+          // Define tolerances - improved for better gradient handling
+          const RGB_TOLERANCE = 80;       // Increased for better gradient detection
+          const HUE_TOLERANCE = 20;       // Slightly increased
+          const SAT_TOLERANCE = 25;       // Increased for better pattern handling
+          const VAL_TOLERANCE = 30;       // Increased for better shade detection
+          const LAB_TOLERANCE = 30;       // Increased for better perceptual matching
+          
+          // Maintain a gradient map - colors that are part of gradients
+          const gradientColors = new Set();
+          
+          // First pass - identify gradient colors by analyzing local neighborhoods
+          // This is simplified for performance, but could be more sophisticated
+          if (img.width > 10 && img.height > 10) {  // Only for reasonably sized images
+              for (let y = 1; y < img.height - 1; y++) {
+                  for (let x = 1; x < img.width - 1; x++) {
+                      const idx = (y * img.width + x) * 4;
+                      if (data[idx + 3] < 128) continue; // Skip transparent
+                      
+                      // Get this pixel's color
+                      const r = data[idx];
+                      const g = data[idx + 1];
+                      const b = data[idx + 2];
+                      
+                      // Skip true black
+                      if (r <= 3 && g <= 3 && b <= 3) continue;
+                      
+                      // Check neighbors for gradient patterns
+                      let isGradient = false;
+                      
+                      // Check horizontal neighbors
+                      const leftIdx = (y * img.width + (x-1)) * 4;
+                      const rightIdx = (y * img.width + (x+1)) * 4;
+                      
+                      if (data[leftIdx + 3] >= 128 && data[rightIdx + 3] >= 128) {
+                          const leftDist = rgbDistance(r, g, b, data[leftIdx], data[leftIdx + 1], data[leftIdx + 2]);
+                          const rightDist = rgbDistance(r, g, b, data[rightIdx], data[rightIdx + 1], data[rightIdx + 2]);
+                          
+                          // If colors change gradually, likely a gradient
+                          if (leftDist < 15 && rightDist < 15 && leftDist + rightDist > 5) {
+                              isGradient = true;
+                          }
+                      }
+                      
+                      // Check vertical neighbors if not already identified
+                      if (!isGradient) {
+                          const topIdx = ((y-1) * img.width + x) * 4;
+                          const bottomIdx = ((y+1) * img.width + x) * 4;
+                          
+                          if (data[topIdx + 3] >= 128 && data[bottomIdx + 3] >= 128) {
+                              const topDist = rgbDistance(r, g, b, data[topIdx], data[topIdx + 1], data[topIdx + 2]);
+                              const bottomDist = rgbDistance(r, g, b, data[bottomIdx], data[bottomIdx + 1], data[bottomIdx + 2]);
+                              
+                              if (topDist < 15 && bottomDist < 15 && topDist + bottomDist > 5) {
+                                  isGradient = true;
+                              }
+                          }
+                      }
+                      
+                      // Mark as gradient for special handling
+                      if (isGradient) {
+                          gradientColors.add(`${r},${g},${b}`);
+                      }
+                  }
+              }
+          }
 
           // Process each pixel
           for (let i = 0; i < data.length; i += 4) {
@@ -9841,7 +9513,7 @@ async applyMultipleColorMappings(imageData, colorMappings) {
               const g = data[i + 1];
               const b = data[i + 2];
               
-              // Skip pure black for efficiency
+              // Skip pure black for efficiency (and we won't modify it)
               if (r <= 3 && g <= 3 && b <= 3) continue;
               
               // Create a key for the cache
@@ -9854,11 +9526,16 @@ async applyMultipleColorMappings(imageData, colorMappings) {
                   continue;
               }
               
-              // Find the best mapping for this color
-              let bestMapping = null;
-              let bestMatchScore = -1;
+              // Check if this is a gradient color
+              const isGradientColor = gradientColors.has(colorKey);
+              
+              // Find all matching mappings for this color with their scores
+              const matchedMappings = [];
               
               for (const mapping of processedMappings) {
+                  // Skip black mappings for non-black pixels
+                  if (mapping.isBlack && !(r <= 3 && g <= 3 && b <= 3)) continue;
+                  
                   // Direct RGB distance - fastest check
                   const rgbDist = rgbDistance(r, g, b, 
                       mapping.originalColor[0], 
@@ -9875,38 +9552,18 @@ async applyMultipleColorMappings(imageData, colorMappings) {
                   let hueDist = Math.abs(pixelHsv[0] - mapping.originalHsv[0]);
                   if (hueDist > 180) hueDist = 360 - hueDist;
                   
-                  // Determine if color is similar based on HSV
-                  let isColorMatch = false;
+                  // Set a uniform matching criteria for all colors
+                  const hueMultiplier = isGradientColor ? 1.3 : 1.0;
+                  const satMultiplier = isGradientColor ? 1.4 : 1.0;
+                  const valMultiplier = isGradientColor ? 1.3 : 1.0;
                   
-                  // Special case for grays, blacks, whites
-                  if (mapping.isOriginalGray) {
-                      // For gray colors, focus on brightness and saturation
-                      isColorMatch = 
-                          pixelHsv[1] < 20 && // Low saturation
-                          Math.abs(pixelHsv[2] - mapping.originalHsv[2]) < VAL_TOLERANCE; // Similar brightness
-                  } 
-                  else if (mapping.isOriginalDark) {
-                      // For dark colors, focus more on hue
-                      isColorMatch = 
-                          pixelHsv[2] < 25 && // Dark
-                          (pixelHsv[1] < 20 || hueDist < HUE_TOLERANCE * 1.5); // Either unsaturated or similar hue
-                  }
-                  else if (mapping.isOriginalLight) {
-                      // For light colors, focus more on hue
-                      isColorMatch = 
-                          pixelHsv[2] > 85 && // Light
-                          pixelHsv[1] < 20;  // Low saturation
-                  }
-                  else {
-                      // For normal colors, use stricter HSV matching
-                      isColorMatch = 
-                          hueDist < HUE_TOLERANCE && 
-                          Math.abs(pixelHsv[1] - mapping.originalHsv[1]) < SAT_TOLERANCE &&
-                          Math.abs(pixelHsv[2] - mapping.originalHsv[2]) < VAL_TOLERANCE;
-                  }
+                  const isColorMatch = 
+                      hueDist < HUE_TOLERANCE * hueMultiplier && 
+                      Math.abs(pixelHsv[1] - mapping.originalHsv[1]) < SAT_TOLERANCE * satMultiplier &&
+                      Math.abs(pixelHsv[2] - mapping.originalHsv[2]) < VAL_TOLERANCE * valMultiplier;
                   
                   // If HSV check passes or RGB is close, do a more expensive Lab check
-                  if (isColorMatch || rgbDist < RGB_TOLERANCE/2) {
+                  if (isColorMatch || rgbDist < RGB_TOLERANCE * (isGradientColor ? 0.7 : 0.5)) {
                       const pixelLab = rgbToLab(r, g, b);
                       
                       const labDistance = Math.sqrt(
@@ -9915,52 +9572,117 @@ async applyMultipleColorMappings(imageData, colorMappings) {
                           Math.pow(pixelLab[2] - mapping.originalLab[2], 2)
                       );
                       
+                      // For gradients and patterns, be more generous with matching
+                      const labToleranceAdjusted = isGradientColor ? LAB_TOLERANCE * 1.3 : LAB_TOLERANCE;
+                      
                       // Calculate match score - lower is better
                       // Combine different metrics with appropriate weights
-                      const rgbScore = rgbDist / RGB_TOLERANCE;
-                      const labScore = labDistance / LAB_TOLERANCE;
-                      const matchScore = rgbScore * 0.3 + labScore * 0.7;
+                      const rgbScore = rgbDist / (isGradientColor ? RGB_TOLERANCE * 1.2 : RGB_TOLERANCE);
+                      const labScore = labDistance / labToleranceAdjusted;
                       
-                      // If this is the best match so far, save it
-                      if (matchScore < 1 && (bestMapping === null || matchScore < bestMatchScore)) {
-                          bestMapping = mapping;
-                          bestMatchScore = matchScore;
+                      // Emphasize LAB distance more for gradients (better perceptual matching)
+                      const matchScore = isGradientColor ? 
+                          (rgbScore * 0.2 + labScore * 0.8) : 
+                          (rgbScore * 0.3 + labScore * 0.7);
+                      
+                      // If this is a reasonable match, save it with its score
+                      if (matchScore < 1.2) {  // Slightly more permissive threshold
+                          matchedMappings.push({
+                              mapping,
+                              matchScore
+                          });
                       }
                   }
               }
               
-              // If we found a mapping, apply color transformation
-              if (bestMapping !== null) {
-                  // Calculate pixel in HSV space for transformation
-                  const pixelHsv = rgbToHsv(r, g, b);
-                  
-                  // Determine how close the match is
-                  const exactMatch = bestMatchScore < 0.3;
-                  
-                  let newColor;
-                  
-                  if (exactMatch) {
-                      // Direct replacement for very close matches
-                      newColor = bestMapping.replacementColor;
-                  } else {
-                      // For less exact matches, transform while preserving variation
+              // Sort matched mappings by score (best matches first)
+              matchedMappings.sort((a, b) => a.matchScore - b.matchScore);
+              
+              let newColor;
+              
+              // If we found at least one mapping
+              if (matchedMappings.length > 0) {
+                  // For gradient colors, blend between closest matches if we have multiple matches
+                  if (isGradientColor && matchedMappings.length > 1) {
+                      // Get the best two matches
+                      const bestMapping = matchedMappings[0].mapping;
+                      const secondBestMapping = matchedMappings[1].mapping;
+                      const bestScore = matchedMappings[0].matchScore;
+                      const secondBestScore = matchedMappings[1].matchScore;
                       
-                      // Calculate relative shifts
-                      const hueDiff = bestMapping.replacementHsv[0] - bestMapping.originalHsv[0];
-                      const satRatio = bestMapping.originalHsv[1] > 5 ? 
-                                       bestMapping.replacementHsv[1] / bestMapping.originalHsv[1] : 1;
-                      const valRatio = bestMapping.originalHsv[2] > 5 ? 
-                                       bestMapping.replacementHsv[2] / bestMapping.originalHsv[2] : 1;
+                      // Calculate weights for blending based on scores
+                      // Lower score gets higher weight
+                      const totalWeight = (1 - bestScore) + (1 - secondBestScore);
+                      const bestWeight = (1 - bestScore) / totalWeight;
+                      const secondWeight = (1 - secondBestScore) / totalWeight;
                       
-                      // Apply transformations
-                      let newHue = (pixelHsv[0] + hueDiff) % 360;
-                      if (newHue < 0) newHue += 360;
+                      // Calculate pixel in LAB space for smooth blending
+                      const pixelLab = rgbToLab(r, g, b);
                       
-                      let newSat = Math.max(0, Math.min(100, pixelHsv[1] * satRatio));
-                      let newVal = Math.max(0, Math.min(100, pixelHsv[2] * valRatio));
+                      // Calculate LAB deltas for both mappings
+                      const labDelta1 = [
+                          bestMapping.replacementLab[0] - bestMapping.originalLab[0],
+                          bestMapping.replacementLab[1] - bestMapping.originalLab[1],
+                          bestMapping.replacementLab[2] - bestMapping.originalLab[2]
+                      ];
+                      
+                      const labDelta2 = [
+                          secondBestMapping.replacementLab[0] - secondBestMapping.originalLab[0],
+                          secondBestMapping.replacementLab[1] - secondBestMapping.originalLab[1],
+                          secondBestMapping.replacementLab[2] - secondBestMapping.originalLab[2]
+                      ];
+                      
+                      // Blend the two transformations
+                      const blendedLab = [
+                          pixelLab[0] + (labDelta1[0] * bestWeight + labDelta2[0] * secondWeight),
+                          pixelLab[1] + (labDelta1[1] * bestWeight + labDelta2[1] * secondWeight),
+                          pixelLab[2] + (labDelta1[2] * bestWeight + labDelta2[2] * secondWeight)
+                      ];
                       
                       // Convert back to RGB
-                      newColor = hsvToRgb(newHue, newSat, newVal);
+                      newColor = labToRgb(...blendedLab);
+                  } 
+                  else {
+                      // Use the best match
+                      const bestMapping = matchedMappings[0].mapping;
+                      const matchScore = matchedMappings[0].matchScore;
+                      
+                      // Calculate pixel in HSV space for transformation
+                      const pixelHsv = rgbToHsv(r, g, b);
+                      
+                      // Determine how close the match is (fuzzy threshold based on gradient status)
+                      const exactMatchThreshold = isGradientColor ? 0.4 : 0.3;
+                      const exactMatch = matchScore < exactMatchThreshold;
+                      
+                      if (exactMatch) {
+                          // Direct replacement for very close matches
+                          newColor = bestMapping.replacementColor;
+                      } else {
+                          // Calculate relative shifts
+                          const hueDiff = bestMapping.replacementHsv[0] - bestMapping.originalHsv[0];
+                          const satRatio = bestMapping.originalHsv[1] > 5 ? 
+                                           bestMapping.replacementHsv[1] / bestMapping.originalHsv[1] : 1;
+                          const valRatio = bestMapping.originalHsv[2] > 5 ? 
+                                           bestMapping.replacementHsv[2] / bestMapping.originalHsv[2] : 1;
+                          
+                          // Apply transformations with gradient-aware adjustments
+                          let newHue = (pixelHsv[0] + hueDiff) % 360;
+                          if (newHue < 0) newHue += 360;
+                          
+                          // Preserve more of the original variation for gradients
+                          const preservationFactor = isGradientColor ? 0.3 : 0.15;
+                          
+                          let newSat = Math.max(0, Math.min(100, 
+                              (pixelHsv[1] * satRatio * (1 - preservationFactor)) + 
+                              (pixelHsv[1] * preservationFactor)));
+                              
+                          let newVal = Math.max(0, Math.min(100, 
+                              (pixelHsv[2] * valRatio * (1 - preservationFactor)) + 
+                              (pixelHsv[2] * preservationFactor)));
+                          
+                          // Convert back to RGB
+                          newColor = hsvToRgb(newHue, newSat, newVal);
+                      }
                   }
                   
                   // Apply new color
@@ -11598,7 +11320,7 @@ const imageAdjuster = new ImageAdjuster();
             if(lightnessTolerance<0.5) lightnessTolerance=0.7;
             
             // Now this should return more colors for single layer
-            let distinctColors{{ forloop.counter }} = getDistinctColors(imageData{{ forloop.counter }}, distinctColorTolarance, colorCount);
+            let distinctColors{{ forloop.counter }} = getDistinctColors(imageData{{ forloop.counter }}, 30, 50);
             console.log(distinctColors{{ forloop.counter }})
             //console.info(distinctColors{{forloop.counter}});
             
@@ -12621,7 +12343,7 @@ function createColorButtons() {
       const canvas = canvasElements[0];
       const ctx = canvas.getContext('2d');
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const distinctColors = getDistinctColors(imageData, 100, 20); // Lower tolerance, more colors
+      const distinctColors = getDistinctColors(imageData, 30, 50); // Lower tolerance, more colors
 
       distinctColors.forEach((color, index) => {
           // Create wrapper div for button and lock

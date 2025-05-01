@@ -190,6 +190,15 @@ class Color(models.Model):
 
     def __str__(self):
         return f"RGB({self.red}, {self.green}, {self.blue})"
+    
+class BaseColor(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    red = models.PositiveSmallIntegerField()   # 0 to 255
+    green = models.PositiveSmallIntegerField()
+    blue = models.PositiveSmallIntegerField()
+
+    def __str__(self):
+        return f"{self.name} ({self.red}, {self.green}, {self.blue})"
 
 class PaletteFavorite(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorite_palettes')
