@@ -655,7 +655,7 @@ def is_color_fill_layer(layer):
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
 
-def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=4000, optimize=True):
+def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=3000, optimize=True):
     """
     Extract and compress layers from image files.
     

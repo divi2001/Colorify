@@ -29,6 +29,7 @@
     <script src="
 https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
 "></script>
+
     <style>
 
 
@@ -632,14 +633,18 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
       }
 
       .color-pickers {
-          display: flex;
-          gap: 10px;
-          padding: 10px;
-      }
-
-      .pickr {
-          flex: 0 0 auto; /* Prevents shrinking */
-      }
+        display: flex;
+        gap: 10px;
+        padding: 10px;
+        overflow-x: auto; /* Make it horizontally scrollable */
+        max-width: 100%; /* Ensure it doesn't exceed container width */
+        flex-wrap: nowrap; /* Keep items in a single row */
+    }
+    
+    .pickr {
+        flex: 0 0 auto; /* Prevents shrinking */
+    }
+    
 
       .scroll-btn {
           border:1px solid;
@@ -660,7 +665,23 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
         margin: 0 .3em 0 .3em !important;
 
       }
-
+      .color-picker-container {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        scrollbar-width: thin; /* For Firefox */
+    }
+    
+    /* Style scrollbar for webkit browsers */
+    .color-picker-container::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .color-picker-container::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 3px;
+    }
 
       /* Left Sidebar */
       #leftSidebar {
@@ -6486,7 +6507,7 @@ function hslToRgbforsingle(h, s, l) {
 
          return maxHue - minHue;
        }
-       function getDistinctColors(imageData, threshold = 30, maxColors = 50) {
+       function getDistinctColors(imageData, threshold = 30, maxColors = 50, minDistance = 45) {
         const totalLayers = {{ layers|length }};
         const uniqueColors = new Map(); // Changed to Map to track counts
         const data = imageData.data;
@@ -6528,97 +6549,29 @@ function hslToRgbforsingle(h, s, l) {
         // Sort colors by count (frequency) in descending order
         colors.sort((a, b) => b.count - a.count);
         
+        // Collect distinct colors directly, applying the minimum distance requirement
         const distinctColors = [];
         
-        // For single layer, prioritize color diversity
-        if (isSingleLayer) {
-            // First include the most frequent colors as anchors
-            const topColors = Math.min(5, Math.ceil(maxColors / 5));
-            for (let i = 0; i < topColors && i < colors.length; i++) {
-                distinctColors.push(colors[i].rgb);
-            }
+        // Always include the most frequent color
+        if (colors.length > 0) {
+            distinctColors.push(colors[0].rgb);
+        }
+        
+        // For all remaining colors, check if they meet the minimum distance requirement
+        for (let i = 1; i < colors.length && distinctColors.length < maxColors; i++) {
+            const candidate = colors[i].rgb;
+            let isDistinct = true;
             
-            // Then add colors with a focus on hue diversity
-            const hueBuckets = new Array(12).fill().map(() => []);
-            
-            // Distribute remaining colors into 12 hue buckets
-            for (let i = topColors; i < colors.length; i++) {
-                const hue = Math.floor(colors[i].hsl[0] * 12); // Split 360 degrees into 12 buckets
-                hueBuckets[hue].push(colors[i]);
-            }
-            
-            // Take the most frequent color from each hue bucket
-            hueBuckets.forEach(bucket => {
-                if (bucket.length > 0 && distinctColors.length < maxColors) {
-                    bucket.sort((a, b) => b.count - a.count);
-                    
-                    // Check if this color is significantly different from already selected colors
-                    const candidate = bucket[0].rgb;
-                    const isUnique = distinctColors.every(existingColor => 
-                        colorDistance(candidate, existingColor) > threshold
-                    );
-                    
-                    if (isUnique) {
-                        distinctColors.push(candidate);
-                    }
-                }
-            });
-            
-            // Fill remaining slots with colors that maximize diversity
-            for (let i = 0; i < colors.length && distinctColors.length < maxColors; i++) {
-                const candidate = colors[i].rgb;
-                
-                // Skip if we already added this color
-                if (distinctColors.some(color => 
-                    color[0] === candidate[0] && 
-                    color[1] === candidate[1] && 
-                    color[2] === candidate[2])) {
-                    continue;
-                }
-                
-                // Check if this color is different enough from all existing colors
-                let minDistance = Number.MAX_VALUE;
-                for (const existingColor of distinctColors) {
-                    const distance = colorDistance(candidate, existingColor);
-                    minDistance = Math.min(minDistance, distance);
-                }
-                
-                if (minDistance > threshold) {
-                    distinctColors.push(candidate);
+            for (const existingColor of distinctColors) {
+                const distance = colorDistance(candidate, existingColor);
+                if (distance < minDistance) {
+                    isDistinct = false;
+                    break;
                 }
             }
-        } else {
-            // Logic for multiple layers - use adaptive threshold
-            let adaptiveThreshold = threshold;
             
-            // First pass with original threshold
-            colors.forEach(({ rgb }) => {
-                if (distinctColors.length >= maxColors) return;
-                
-                const isDistinct = distinctColors.every(d => colorDistance(d, rgb) > adaptiveThreshold);
-                if (isDistinct) {
-                    distinctColors.push(rgb);
-                }
-            });
-            
-            // If we didn't get enough colors, gradually reduce the threshold
-            while (distinctColors.length < maxColors * 0.5 && adaptiveThreshold > 5) {
-                adaptiveThreshold -= 5;
-                
-                colors.forEach(({ rgb }) => {
-                    if (distinctColors.length >= maxColors) return;
-                    
-                    // Skip if we already have this color
-                    if (distinctColors.some(d => 
-                        d[0] === rgb[0] && d[1] === rgb[1] && d[2] === rgb[2])) {
-                        return;
-                    }
-                    
-                    const isDistinct = distinctColors.every(d => colorDistance(d, rgb) > adaptiveThreshold);
-                    if (isDistinct) {
-                        distinctColors.push(rgb);
-                    }
-                });
+            if (isDistinct) {
+                distinctColors.push(candidate);
             }
         }
         
@@ -6626,14 +6579,14 @@ function hslToRgbforsingle(h, s, l) {
         localStorage.setItem('distinctColorsArrayColorPallet', JSON.stringify(distinctColors));
         return distinctColors;
     }
-    function colorDistance(c1, c2) {
-      return Math.sqrt(
-          Math.pow(c1[0] - c2[0], 2) +
-          Math.pow(c1[1] - c2[1], 2) +
-          Math.pow(c1[2] - c2[2], 2)
-      );
-  }
     
+    function colorDistance(c1, c2) {
+        return Math.sqrt(
+            Math.pow(c1[0] - c2[0], 2) +
+            Math.pow(c1[1] - c2[1], 2) +
+            Math.pow(c1[2] - c2[2], 2)
+        );
+    }
         function generateUniqueRGBColorArray(count) {
             const colors = [];
         
