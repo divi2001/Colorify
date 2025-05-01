@@ -5272,11 +5272,11 @@ function generateCorrelatedPalettes(distinctColors, collection = 'trending') {
   }
   
 
-  // Modified displayColorPalette function to use the correlated palettes
-// Modified displayColorPalette function to preserve color sequence without BG highlighting
+
 async function displayColorPalette(layerIndex, colors, collection = 'trending', maxVisibleColors = 6, totalLayers = 1) {
   const prefix = collection + '_';
-  const FIXED_DISPLAY_COUNT = 6; // Fixed number for display consistency
+  const MAX_DISPLAY_COUNT = 8; // Maximum number of colors to display
+  const MIN_DISPLAY_COUNT = 4; // Minimum number of colors to display
   
   // Add the provided hex palette - KEEP THIS as our first palette
   const additionalHexPalette = ["#00202e", "#003f5c", "#2c4875", "#8a508f", "#bc5090", "#ff6361", "#ff8531", "#ffa600", "#ffd380"];
@@ -5414,6 +5414,24 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         45 + Math.random() * 25
       ];
     }
+  }
+  
+  // Calculate color difference using CIEDE2000 simplified version
+  function colorDifference(rgb1, rgb2) {
+    // Convert to HSL for a perceptually better difference calculation
+    const hsl1 = rgbToHsl(...rgb1);
+    const hsl2 = rgbToHsl(...rgb2);
+    
+    // Calculate differences in hue, saturation, and lightness
+    let hueDiff = Math.abs(hsl1[0] - hsl2[0]);
+    // Handle the color wheel wraparound
+    hueDiff = Math.min(hueDiff, 360 - hueDiff);
+    
+    const satDiff = Math.abs(hsl1[1] - hsl2[1]);
+    const lightDiff = Math.abs(hsl1[2] - hsl2[2]);
+    
+    // Weight the differences (hue is more important for visual distinctness)
+    return hueDiff * 1.5 + satDiff + lightDiff * 1.2;
   }
   
   function hslToRgb(h, s, l) {
@@ -5593,7 +5611,8 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
   }
   
-  // Function to prepare display colors
+  // IMPROVED: Function to prepare display colors to ensure maximum visual diversity
+  // Now with adaptive display count based on color similarity
   function prepareDisplayColors(colors) {
     // Make sure we have valid colors
     let validColors = colors.filter(color => 
@@ -5602,42 +5621,141 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
     );
     
-    // If no valid colors, generate new ones - NEVER use fallback palettes
+    // If no valid colors, generate new ones with good distribution
     if (validColors.length === 0) {
       validColors = [];
-      for (let i = 0; i < FIXED_DISPLAY_COUNT; i++) {
-        // Generate colors with evenly distributed hues for better variety
-        const hue = i * (360 / FIXED_DISPLAY_COUNT);
+      for (let i = 0; i < MIN_DISPLAY_COUNT; i++) {
+        // Generate colors with evenly distributed hues
+        const hue = i * (360 / MIN_DISPLAY_COUNT);
         validColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
+      }
+      return validColors;
+    }
+    
+    // Always include the first color (may be background or most important)
+    let displayColors = [validColors[0]];
+    
+    // Calculate color similarities and group by perceptual difference
+    const similarityGroups = [];
+    const MIN_DIFFERENCE_THRESHOLD = 30; // Adjust threshold for considering colors similar
+    
+    // Group similar colors
+    for (let i = 1; i < validColors.length; i++) {
+      // Try to find an existing group for this color
+      let foundGroup = false;
+      
+      for (let g = 0; g < similarityGroups.length; g++) {
+        // Check if this color is similar to any color in the group
+        const group = similarityGroups[g];
+        let similarToGroup = false;
+        
+        for (let j = 0; j < group.length; j++) {
+          const groupColorIndex = group[j];
+          const difference = colorDifference(validColors[i], validColors[groupColorIndex]);
+          
+          if (difference < MIN_DIFFERENCE_THRESHOLD) {
+            similarToGroup = true;
+            break;
+          }
+        }
+        
+        if (similarToGroup) {
+          // Add this color index to the existing group
+          group.push(i);
+          foundGroup = true;
+          break;
+        }
+      }
+      
+      if (!foundGroup) {
+        // Create a new group with this color
+        similarityGroups.push([i]);
       }
     }
     
-    // Always preserve the first color (may be background)
-    let displayColors = [validColors[0]]; 
-    
-    // If we have more than FIXED_DISPLAY_COUNT colors, use a subset for display
-    if (validColors.length > FIXED_DISPLAY_COUNT) {
-      // Select remaining display colors evenly distributed to maintain sequence
-      const step = (validColors.length - 1) / (FIXED_DISPLAY_COUNT - 1);
-      for (let i = 1; i < FIXED_DISPLAY_COUNT; i++) {
-        const idx = Math.min(Math.floor(1 + (i - 1) * step), validColors.length - 1);
-        displayColors.push(validColors[idx]);
-      }
-    } else if (validColors.length < FIXED_DISPLAY_COUNT) {
-      // Add remaining colors
-      for (let i = 1; i < validColors.length; i++) {
-        displayColors.push(validColors[i]);
+    // Now select representative colors from each group
+    for (let g = 0; g < similarityGroups.length; g++) {
+      const group = similarityGroups[g];
+      
+      // For each group, select the color with highest saturation for better visibility
+      let bestIndex = group[0];
+      let highestSat = 0;
+      
+      for (let i = 0; i < group.length; i++) {
+        const colorIndex = group[i];
+        const [h, s, l] = rgbToHsl(...validColors[colorIndex]);
+        
+        if (s > highestSat) {
+          highestSat = s;
+          bestIndex = colorIndex;
+        }
       }
       
-      // If still not enough, generate new colors to reach FIXED_DISPLAY_COUNT
-      // DO NOT duplicate existing colors
-      while (displayColors.length < FIXED_DISPLAY_COUNT) {
-        const hue = displayColors.length * (360 / FIXED_DISPLAY_COUNT);
-        displayColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
+      // Add the representative color from this group
+      if (!displayColors.some(c => 
+        c[0] === validColors[bestIndex][0] && 
+        c[1] === validColors[bestIndex][1] && 
+        c[2] === validColors[bestIndex][2]
+      )) {
+        displayColors.push(validColors[bestIndex]);
       }
-    } else {
-      // We have exactly FIXED_DISPLAY_COUNT colors
-      displayColors = [...validColors];
+    }
+    
+    // Determine the optimal display count based on the number of actual distinct colors
+    let optimalDisplayCount = Math.max(
+      MIN_DISPLAY_COUNT, 
+      Math.min(MAX_DISPLAY_COUNT, similarityGroups.length + 1) // +1 for the first color
+    );
+    
+    // If we have fewer actual colors than our minimum, generate some extras for visual appeal
+    if (displayColors.length < MIN_DISPLAY_COUNT) {
+      // Generate additional colors that are distinct from existing ones
+      while (displayColors.length < MIN_DISPLAY_COUNT) {
+        // Find a hue that's maximally distant from existing hues
+        const existingHues = displayColors.map(c => rgbToHsl(...c)[0]);
+        
+        let bestHue = 0;
+        let maxMinDistance = 0;
+        
+        for (let h = 0; h < 360; h += 10) {
+          const minDistance = Math.min(...existingHues.map(existingH => {
+            let dist = Math.abs(existingH - h);
+            return Math.min(dist, 360 - dist); // Account for color wheel wraparound
+          }));
+          
+          if (minDistance > maxMinDistance) {
+            maxMinDistance = minDistance;
+            bestHue = h;
+          }
+        }
+        
+        // Add a new color with this optimal hue
+        displayColors.push(hslToRgb(bestHue, 70 + Math.random() * 30, 45 + Math.random() * 25));
+      }
+    }
+    
+    // If we have more colors than our maximum, trim to keep the most representative
+    if (displayColors.length > MAX_DISPLAY_COUNT) {
+      // Keep the first color and then select the most diverse subset
+      const firstColor = displayColors[0];
+      const remainingColors = displayColors.slice(1);
+      
+      // Sort remaining colors by perceptual importance 
+      // (average difference from other colors - higher means more unique)
+      const colorScores = remainingColors.map((color, idx) => {
+        const avgDifference = remainingColors.reduce((sum, otherColor, otherIdx) => {
+          if (idx === otherIdx) return sum;
+          return sum + colorDifference(color, otherColor);
+        }, 0) / (remainingColors.length - 1);
+        
+        return { color, score: avgDifference };
+      });
+      
+      // Sort by score (descending)
+      colorScores.sort((a, b) => b.score - a.score);
+      
+      // Select top colors
+      displayColors = [firstColor, ...colorScores.slice(0, MAX_DISPLAY_COUNT - 1).map(item => item.color)];
     }
     
     return displayColors;
@@ -5792,7 +5910,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       // Store ALL colors in the palette data structure
       window[`${collection}PaletteColors`][i] = [...paletteColors];
       
-      // Prepare display colors - consistent count for all palettes
+      // Prepare display colors - adaptive count based on color similarity
       const displayColors = prepareDisplayColors(paletteColors);
       
       // Create container for the palette that will be clickable as a whole
@@ -5917,7 +6035,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     // Store ALL colors in the palette data structure
     window[`${collection}PaletteColors`][layerIndex] = [...paletteColors];
     
-    // Prepare display colors - consistent count for all palettes
+    // Prepare display colors - adaptive count based on color similarity
     const displayColors = prepareDisplayColors(paletteColors);
     
     // Clear container first
