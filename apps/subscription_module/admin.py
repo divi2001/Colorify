@@ -1,39 +1,57 @@
+# apps\subscription_module\admin.py
 from django.contrib import admin
 from django import forms
-from .models import (
-    SubscriptionPlan, UserSubscription, InspirationPDF, PDFLike,
-    Palette, Color
-)
 from django.utils.html import format_html
-
 from django.http import JsonResponse
 from django.urls import path
-
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.urls import reverse
-from django.utils.html import format_html
+from .models import (
+    SubscriptionPlan, UserSubscription, PaymentTransaction, Device,
+    InspirationPDF, PDFLike, Palette, Color
+)
 from .utils import AutoPaletteGenerationForm
-# Register SubscriptionPlan and UserSubscription using admin.site.register()
-admin.site.register(SubscriptionPlan)
-admin.site.register(UserSubscription)
 
-# Custom admin classes for SubscriptionPlan and UserSubscription
+# Custom admin classes for Subscription models
+@admin.register(SubscriptionPlan)
 class SubscriptionPlanAdmin(admin.ModelAdmin):
-    list_display = ('name', 'price', 'duration_in_days')
+    list_display = ('name', 'subscription_type', 'current_price', 'duration_in_days', 'is_active')
+    list_filter = ('subscription_type', 'is_active')
+    search_fields = ('name', 'description')
+    readonly_fields = ('current_price',)
 
+    def current_price(self, obj):
+        return obj.current_price
+    current_price.short_description = 'Current Price'
+
+@admin.register(UserSubscription)
 class UserSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'plan', 'start_date', 'end_date', 'active')
+    list_display = ('user', 'plan', 'is_active', 'start_date', 'end_date', 'max_devices')
     list_filter = ('active', 'plan')
     search_fields = ('user__username', 'user__email')
+    raw_id_fields = ('user',)
 
-# Re-register SubscriptionPlan and UserSubscription with custom admin classes
-admin.site.unregister(SubscriptionPlan)
-admin.site.unregister(UserSubscription)
-admin.site.register(SubscriptionPlan, SubscriptionPlanAdmin)
-admin.site.register(UserSubscription, UserSubscriptionAdmin)
+    def is_active(self, obj):
+        return obj.is_active()
+    is_active.boolean = True
+    is_active.short_description = 'Active'
 
-# Register InspirationPDF and PDFLike using the @admin.register decorator
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = ('transaction_id', 'user', 'amount', 'status', 'transaction_type', 'created_at')
+    list_filter = ('status', 'transaction_type')
+    search_fields = ('user__username', 'transaction_id')
+    readonly_fields = ('transaction_id', 'created_at', 'updated_at')
+
+@admin.register(Device)
+class DeviceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'device_name', 'device_id', 'last_login', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('user__username', 'device_name', 'device_id')
+    raw_id_fields = ('user',)
+
+# Models for Inspiration PDFs
 @admin.register(InspirationPDF)
 class InspirationPDFAdmin(admin.ModelAdmin):
     list_display = ('title', 'likes_count', 'created_at', 'updated_at')
@@ -46,7 +64,7 @@ class PDFLikeAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     search_fields = ('user__username', 'pdf__title')
 
-
+# Models for Color Palettes
 class ColorAdminForm(forms.ModelForm):
     color_picker = forms.CharField(widget=forms.TextInput(attrs={'type': 'color', 'class': 'color-picker'}), required=False)
 
@@ -148,6 +166,7 @@ class PaletteAdmin(admin.ModelAdmin):
             path('<int:palette_id>/update_colors/', self.update_colors_view, name='update_palette_colors'),
         ]
         return custom_urls + urls
+
     def update_colors_view(self, request, palette_id):
         palette = Palette.objects.get(id=palette_id)
         new_num_colors = int(request.POST.get('num_colors', palette.num_colors))
@@ -163,6 +182,7 @@ class PaletteAdmin(admin.ModelAdmin):
         palette.save()
 
         return JsonResponse({'status': 'success', 'new_num_colors': new_num_colors})
+
     def generate_palette_view(self, request):
         if request.method == 'POST':
             form = AutoPaletteGenerationForm(request.POST)
@@ -204,13 +224,6 @@ class PaletteAdmin(admin.ModelAdmin):
             'opts': self.model._meta,
         }
         return render(request, 'admin/generate_palette.html', context)
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [
-            path('generate_palette/', self.generate_palette_view, name='generate_palette'),
-            path('<int:palette_id>/update_colors/', self.update_colors_view, name='update_palette_colors'),
-        ]
-        return custom_urls + urls
 
     def generate_palette_button(self, obj):
         url = reverse('admin:generate_palette')
