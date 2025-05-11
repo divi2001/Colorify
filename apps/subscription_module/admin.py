@@ -27,7 +27,8 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
 
 @admin.register(UserSubscription)
 class UserSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'plan', 'is_active', 'start_date', 'end_date', 'max_devices')
+    list_display = ('user', 'plan', 'is_active', 'start_date', 'end_date', 
+                   'devices_used_count', 'get_max_devices', 'file_uploads_used', 'storage_used_mb')
     list_filter = ('active', 'plan')
     search_fields = ('user__username', 'user__email')
     raw_id_fields = ('user',)
@@ -36,6 +37,10 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
         return obj.is_active()
     is_active.boolean = True
     is_active.short_description = 'Active'
+
+    def get_max_devices(self, obj):
+        return obj.plan.max_devices if obj.plan else None
+    get_max_devices.short_description = 'Max Devices'
 
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):

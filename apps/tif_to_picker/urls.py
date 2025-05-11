@@ -18,7 +18,5 @@ urlpatterns = [
     path('api/palettes/favorite/', create_favorite_palette, name='create-favorite-palette'),
     path('api/palettes/favorite/<int:palette_id>/',remove_favorite_palette, name='remove-favorite-palette'),
     path('api/palettes/favorites/', get_favorites, name='get-favorites'),
-    
-
 ]
  
