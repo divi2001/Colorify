@@ -1,0 +1,64 @@
+<!-- templates/account/concurrent_login_error.html -->
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block head_title %}{% trans "Colorify Studio - Session Active" %}{% endblock %}
+
+{% block extra_head %}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#5c6cff",
+                    },
+                },
+            },
+        };
+    </script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white p-8 rounded-3xl shadow-lg">
+            <!-- Logo -->
+            <div class="flex flex-col items-center mb-8">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-orange-400 rotate-45"></div>
+                    <div class="text-xl font-semibold text-gray-800">COLORIFY</div>
+                </div>
+
+                <!-- Session Active Message -->
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Session Active Elsewhere</h2>
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                        <p class="text-amber-700">
+                            {{ error_message }}
+                        </p>
+                    </div>
+                    <p class="text-gray-600 mb-6">
+                        For security reasons, we only allow one active session at a time.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <a href="{% url 'account_login' %}" 
+                   class="block w-full bg-[#4F5DFF] text-white py-3 rounded-xl hover:bg-[#4F5DFF]/90 transition-colors text-center">
+                    Return to Login
+                </a>
+                <a href="{% url 'account_logout' %}" 
+                   class="block w-full bg-white text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition-colors text-center border border-gray-200">
+                    Logout from All Devices
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

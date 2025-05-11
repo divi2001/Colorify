@@ -5,6 +5,7 @@ from . import views
 from apps.subscription_module.views import create_favorite_palette,remove_favorite_palette,get_favorites
 urlpatterns = [
     path('', upload_tiff, name='upload_tiff'),
+    path('projects/<int:user_id>/<int:project_id>/edit/', upload_tiff, name='edit-project'),
     path('color-picker/', single_layer_color_picker, name='single_layer_color_picker'),
     path('export_tiff/', export_tiff, name='export_tiff'),
     path('upload-svg/', process_svg_upload, name='process_svg_upload'),

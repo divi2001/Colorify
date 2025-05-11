@@ -56,6 +56,8 @@ import base64
 import io
 from datetime import datetime
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from apps.core.models import Project
 
 
 def get_all_colors(request):
@@ -331,32 +333,67 @@ def process_svg_upload(request):
     })
 
 
-def upload_tiff(request):
+def upload_tiff(request, user_id=None, project_id=None):
+    # Handle project editing case
+    project = None
+    if user_id and project_id:
+        project = get_object_or_404(Project, id=project_id, user_id=user_id)
+    
     if request.method == 'POST':
         form = TiffUploadForm(request.POST, request.FILES)
         if form.is_valid():
             tiff_file = request.FILES['tiff_file']
-            file_path = os.path.join('media', tiff_file.name)
+            # Create a better file path that includes project_id if available
+            filename = f"project_{project_id}_{tiff_file.name}" if project else tiff_file.name
+            file_path = os.path.join('media', 'uploads', filename)
+
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             with open(file_path, 'wb+') as destination:
                 for chunk in tiff_file.chunks():
                     destination.write(chunk)
-            # Process the TIFF file
-
-            layers = extract_layers(file_path, 'media/output/'+tiff_file.name)
-            # Convert backslashes to forward slashes in layer paths
+            
+            # Process the file
+            output_dir = os.path.join('media', 'output', str(project_id) if project else 'demo')
+            layers = extract_layers(file_path, output_dir)
+            
+            # Convert paths to use MEDIA_URL
             for layer in layers:
-                layer['path'] = layer['path'].replace('\\', '/')
-            print(layers)
+                # Make path relative to media directory
+                rel_path = layer['path'].replace('\\', '/').split('media/')[-1]
+                layer['path'] = os.path.join(settings.MEDIA_URL, rel_path)
 
             with Image.open(file_path) as img:
                 width, height = img.size
-            # return render(request, 'single_layers.html', {'layers': layers})
-            return render(request, 'layers.html', {'layer_count':len(layers),'layers': layers,'width':width,
-                            'height':height})
+            
+            context = {
+                'layer_count': len(layers),
+                'layers': layers,
+                'width': width,
+                'height': height,
+                'MEDIA_URL': settings.MEDIA_URL  # Pass this to template
+            }
+            
+            if project:
+                context.update({
+                    'user': request.user,
+                    'project': project,
+                    'is_edit_mode': True
+                })
+            
+            return render(request, 'layers.html', context)
     else:
         form = TiffUploadForm()
-    return render(request, 'upload.html', {'form': form})
+    
+    context = {'form': form}
+    if project:
+        context.update({
+            'is_edit_mode': True,
+            'project': project
+        })
+    
+    return render(request, 'upload.html', context)
 
 
 import traceback
