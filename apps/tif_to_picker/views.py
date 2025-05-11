@@ -1,63 +1,50 @@
-# apps\tif_to_picker\views.py
+# apps/tif_to_picker/views.py
 import os
-import psdtags
-import numpy as np
-from PIL import Image
-from collections import Counter
-from psdtags import PsdChannelId
-from .forms import TiffUploadForm
-from django.shortcuts import render
-from psdtags.psdtags import TiffImageSourceData, PsdChannelId
-from tifffile import TiffFile, imshow,imwrite,imsave
-from matplotlib import pyplot
-from django.http import HttpResponse
-from django.http import JsonResponse
-from django.conf import settings
-import os
-from PIL import Image
 import json
-from django.views.decorators.csrf import csrf_exempt
-from PIL import Image
 import io
-from PIL import Image
-from django.views import View
-import colorsys
+import base64
+import logging
+import struct
+from collections import Counter
+from datetime import datetime
 from typing import Dict, List, Optional
 
-from colorsys import rgb_to_hls
-import base64
-
-import imagecodecs
-from PIL import ImageOps
+import numpy as np
+import tifffile
+from tifffile import TiffFile, imwrite, imsave
+from PIL import Image, ImageOps
+from psdtags import PsdChannelId
+from psdtags.psdtags import TiffImageSourceData
+from matplotlib import pyplot
 import cv2
-import logging
-from .getcolors import analyze_image_colors
-from io import BytesIO
+import imagecodecs
+from colorsys import rgb_to_hls
 
-logger = logging.getLogger(__name__)
+from django.conf import settings
+from django.db.models import Q
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render, get_object_or_404
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django.shortcuts import render
-from apps.subscription_module.models import InspirationPDF,PDFLike
 
-
-from django.db.models import Q
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from apps.subscription_module.models import Palette
-from apps.subscription_module.serializers import PaletteSerializer
-import tifffile
-from PIL import Image
-import numpy as np
-import os
-import json
-import base64
-import io
-from datetime import datetime
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
+
+from .forms import TiffUploadForm
+from .getcolors import analyze_image_colors
+
 from apps.core.models import Project
+from apps.subscription_module.models import InspirationPDF, PDFLike, Palette
+from apps.subscription_module.serializers import PaletteSerializer
+from django.utils import timezone
+
+
+
+logger = logging.getLogger(__name__)
+
 
 @api_view(['GET'])
 def get_palettes(request):
@@ -322,6 +309,48 @@ def upload_tiff(request, user_id=None, project_id=None):
         form = TiffUploadForm(request.POST, request.FILES)
         if form.is_valid():
             tiff_file = request.FILES['tiff_file']
+            
+            # Check user subscription limits
+            if request.user.is_authenticated:
+                # Get or create user subscription with default Legacy Plan
+                try:
+                    user_subscription = request.user.subscription
+                except:
+                    # If user doesn't have a subscription, create one with the Legacy Default Plan
+                    from apps.subscription_module.models import SubscriptionPlan, UserSubscription
+                    default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
+                    
+                    # Set end date to 30 days from now (as per the plan's duration)
+                    start_date = timezone.now()
+                    end_date = start_date + timezone.timedelta(days=default_plan.duration_in_days)
+                    
+                    user_subscription = UserSubscription.objects.create(
+                        user=request.user,
+                        plan=default_plan,
+                        start_date=start_date,
+                        end_date=end_date,
+                        active=True,
+                        file_uploads_used=0,
+                        storage_used_mb=0
+                    )
+                
+                # Calculate file size in MB - more accurate calculation based on actual file
+                file_size_mb = tiff_file.size / (1024 * 1024)
+                
+                # Check if user has reached file upload limit
+                if not user_subscription.can_upload_file():
+                    return render(request, 'upload.html', {
+                        'form': form,
+                        'error_message': f'You have reached your file upload limit of {user_subscription.plan.file_upload_limit} files. Please upgrade your plan to upload more files.'
+                    })
+                
+                # Check if user has enough storage space
+                if not user_subscription.has_storage_space(file_size_mb):
+                    return render(request, 'upload.html', {
+                        'form': form,
+                        'error_message': f'Not enough storage space. This file requires {file_size_mb:.2f} MB, but you have only {user_subscription.plan.storage_limit_mb - user_subscription.storage_used_mb:.2f} MB remaining of your {user_subscription.plan.storage_limit_mb} MB limit.'
+                    })
+            
             # Create a better file path that includes project_id if available
             filename = f"project_{project_id}_{tiff_file.name}" if project else tiff_file.name
             file_path = os.path.join('media', 'uploads', filename)
@@ -346,6 +375,16 @@ def upload_tiff(request, user_id=None, project_id=None):
             with Image.open(file_path) as img:
                 width, height = img.size
             
+            # Update user subscription metrics after successful upload
+            if request.user.is_authenticated:
+                # Get exact file size from saved file
+                file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+                
+                # Update file count and storage used
+                user_subscription.file_uploads_used += 1
+                user_subscription.storage_used_mb += int(file_size_mb)  # Convert to integer to match model field
+                user_subscription.save()
+            
             context = {
                 'layer_count': len(layers),
                 'layers': layers,
@@ -365,7 +404,55 @@ def upload_tiff(request, user_id=None, project_id=None):
     else:
         form = TiffUploadForm()
     
+    # Add subscription info to context for the template
     context = {'form': form}
+    if request.user.is_authenticated:
+        try:
+            # Try to get existing subscription
+            user_subscription = request.user.subscription
+        except:
+            # If user doesn't have a subscription, create one with the Legacy Default Plan
+            from apps.subscription_module.models import SubscriptionPlan, UserSubscription
+            try:
+                default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
+                
+                # Set end date to 30 days from now (as per the plan's duration)
+                start_date = timezone.now()
+                end_date = start_date + timezone.timedelta(days=default_plan.duration_in_days)
+                
+                user_subscription = UserSubscription.objects.create(
+                    user=request.user,
+                    plan=default_plan,
+                    start_date=start_date,
+                    end_date=end_date,
+                    active=True,
+                    file_uploads_used=0,
+                    storage_used_mb=0
+                )
+            except Exception as e:
+                logger.error(f"Failed to create default subscription: {str(e)}")
+                # Continue without subscription info
+                user_subscription = None
+                
+        # Add subscription info to context if we have a valid subscription
+        if user_subscription and user_subscription.plan:
+            storage_used_percentage = (user_subscription.storage_used_mb / user_subscription.plan.storage_limit_mb) * 100 if user_subscription.plan.storage_limit_mb > 0 else 0
+            files_used_percentage = (user_subscription.file_uploads_used / user_subscription.plan.file_upload_limit) * 100 if user_subscription.plan.file_upload_limit > 0 else 0
+            
+            context.update({
+                'subscription_info': {
+                    'plan_name': user_subscription.plan.name,
+                    'files_used': user_subscription.file_uploads_used,
+                    'files_used_percentage': files_used_percentage,
+                    'file_limit': user_subscription.plan.file_upload_limit,
+                    'storage_used': user_subscription.storage_used_mb,
+                    'storage_used_percentage': storage_used_percentage,
+                    'storage_limit': user_subscription.plan.storage_limit_mb,
+                    'days_remaining': user_subscription.days_remaining(),
+                    'is_active': user_subscription.is_active()
+                }
+            })
+    
     if project:
         context.update({
             'is_edit_mode': True,
@@ -373,6 +460,7 @@ def upload_tiff(request, user_id=None, project_id=None):
         })
     
     return render(request, 'upload.html', context)
+
 
 @csrf_exempt
 def export_tiff(request):
@@ -510,6 +598,8 @@ def export_tiff(request):
             return JsonResponse({'error': error_msg}, status=500)
             
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
 def get_layer_image(layer):
     try:
         channels_data = []
@@ -531,11 +621,6 @@ def get_layer_image(layer):
         print(f"Error retrieving layer image: {str(e)}")
         return None
 
-import os
-import numpy as np
-from matplotlib import pyplot
-from psdtags.psdtags import TiffImageSourceData, PsdChannelId, PsdKey
-import struct
 
 def cmyk_to_rgb(c, m, y, k):
     r = 255 * (1 - c / 100) * (1 - k / 100)

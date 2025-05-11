@@ -229,7 +229,8 @@ class PaymentTransaction(models.Model):
                 }
             )
 
-            
+
+
 class InspirationPDF(models.Model):
     title = models.CharField(max_length=200)
     pdf_file = models.FileField(
@@ -274,6 +275,7 @@ class PDFLike(models.Model):
         pdf = self.pdf
         super().delete(*args, **kwargs)
         pdf.update_likes_count()
+
 
 class Palette(models.Model):
     TYPE_CHOICES = [
