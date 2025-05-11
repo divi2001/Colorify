@@ -655,9 +655,9 @@ def is_color_fill_layer(layer):
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
 
-def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=3000, optimize=True):
+def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=3000, optimize=True, model_path="resnet50_model_scripted.pt"):
     """
-    Extract and compress layers from image files.
+    Extract and compress layers from image files, with optional ML labeling.
     
     Parameters:
     file_path (str): Path to input image file (TIFF, JPEG, PNG)
@@ -666,6 +666,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
     quality (int): Compression quality (1-100) for JPEG/WEBP
     max_dimension (int): Maximum dimension for width/height (maintains aspect ratio)
     optimize (bool): Apply additional optimization
+    model_path (str): Path to the ML model for labeling (optional)
     """
     import tifffile
     from PIL import Image
@@ -675,9 +676,50 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
     import piexif
     from PIL.Image import Resampling
     import json
+    import torch
+    import torchvision.transforms as transforms
+    
+    # Initialize ML model if path is provided
+    ml_model = None
+    if model_path and os.path.exists(model_path):
+        try:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            ml_model = torch.jit.load(model_path, map_location=device)
+            ml_model.eval()
+            
+            # Define the same transforms used during model training (for inference)
+            inference_transforms = transforms.Compose([
+                transforms.Resize((1000, 1000)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ])
+            
+            print(f"ML model loaded from {model_path}")
+        except Exception as e:
+            print(f"Error loading ML model: {str(e)}")
+            ml_model = None
     
     # Increase PIL's maximum image size limit
     Image.MAX_IMAGE_PIXELS = None  # Disable the decompression bomb warning
+    
+    def predict_label(image):
+        """Get ML prediction for an image"""
+        if ml_model is None:
+            return None
+        
+        try:
+            # Apply the same preprocessing as during training
+            img_tensor = inference_transforms(image).unsqueeze(0).to(device)
+            
+            # Get prediction
+            with torch.no_grad():
+                outputs = ml_model(img_tensor)
+                _, predicted = torch.max(outputs, 1)
+                
+            return predicted.item()
+        except Exception as e:
+            print(f"Error during prediction: {str(e)}")
+            return None
     
     def compress_and_save_image(image_array, output_path, original_size=None):
         try:
@@ -708,6 +750,9 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             
             # Store original dimensions to return
             original_dimensions = (orig_width, orig_height)
+            
+            # Run ML prediction on original image
+            ml_label = predict_label(img) if ml_model is not None else None
 
             # Resize if max_dimension is specified and image exceeds it
             if max_dimension and (orig_width > max_dimension or orig_height > max_dimension):
@@ -766,25 +811,32 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
 
                 # Save metadata about original dimensions to a companion file
                 metadata_path = os.path.splitext(output_path)[0] + '.metadata.json'
+                metadata = {
+                    'original_width': orig_width,
+                    'original_height': orig_height,
+                    'display_width': img.width,
+                    'display_height': img.height
+                }
+                
+                # Add ML prediction if available
+                if ml_label is not None:
+                    metadata['ml_label'] = int(ml_label)
+                    print(f"ML prediction for {os.path.basename(output_path)}: {ml_label}")
+                
                 with open(metadata_path, 'w') as metadata_file:
-                    json.dump({
-                        'original_width': orig_width,
-                        'original_height': orig_height,
-                        'display_width': img.width,
-                        'display_height': img.height
-                    }, metadata_file)
+                    json.dump(metadata, metadata_file)
 
-                return img.size, original_dimensions
+                return img.size, original_dimensions, ml_label
 
             except Exception as save_error:
                 print(f"Error saving image: {str(save_error)}")
                 if os.path.exists(output_path):
                     os.remove(output_path)  # Clean up partial file
-                return None, None
+                return None, None, None
 
         except Exception as e:
             print(f"Error processing image: {str(e)}")
-            return None, None
+            return None, None, None
 
     # Check file extension
     file_extension = os.path.splitext(file_path)[1].lower()
@@ -802,7 +854,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             base_filename = os.path.splitext(os.path.basename(file_path))[0]
             layer_output_path = os.path.join(output_dir, f"{base_filename}.{output_format.lower()}")
             
-            size, orig_size = compress_and_save_image(full_image, layer_output_path, original_size)
+            size, orig_size, ml_label = compress_and_save_image(full_image, layer_output_path, original_size)
             if size is None:
                 return []
             
@@ -816,7 +868,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                 'width': width,
                 'height': height,
                 'original_width': orig_width,
-                'original_height': orig_height
+                'original_height': orig_height,
+                'ml_label': ml_label
             }]
             
         except Exception as e:
@@ -853,7 +906,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                         print(f"Processing layer {i}/{n_pages}: {layer_name}")
                         
                         # Compress and save the image
-                        size, orig_size = compress_and_save_image(image, layer_output_path, original_size)
+                        size, orig_size, ml_label = compress_and_save_image(image, layer_output_path, original_size)
                         if size is None:
                             continue
                         
@@ -861,7 +914,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                         orig_width, orig_height = orig_size
                         
                         # Add layer info
-                        layers_info.append({
+                        layer_info = {
                             'name': layer_name,
                             'path': layer_output_path,
                             'layer_position_from_top': 0,
@@ -870,7 +923,13 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                             'height': height,
                             'original_width': orig_width,
                             'original_height': orig_height
-                        })
+                        }
+                        
+                        # Add ML label if available
+                        if ml_label is not None:
+                            layer_info['ml_label'] = ml_label
+                        
+                        layers_info.append(layer_info)
                         
                     except Exception as e:
                         print(f"Error processing layer {i}: {str(e)}")
@@ -883,7 +942,6 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             return []
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
-    
 
 
 def extractColors():
