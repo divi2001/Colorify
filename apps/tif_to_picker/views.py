@@ -1,50 +1,56 @@
-# apps/tif_to_picker/views.py
+# apps\tif_to_picker\views.py
+# Standard library imports
 import os
-import json
 import io
+import json
 import base64
-import logging
 import struct
+import logging
 from collections import Counter
 from datetime import datetime
 from typing import Dict, List, Optional
 
+# Third-party imports
+import cv2
 import numpy as np
 import tifffile
 from tifffile import TiffFile, imwrite, imsave
 from PIL import Image, ImageOps
-from psdtags import PsdChannelId
-from psdtags.psdtags import TiffImageSourceData
 from matplotlib import pyplot
-import cv2
 import imagecodecs
 from colorsys import rgb_to_hls
+from psdtags import PsdChannelId
+from psdtags.psdtags import TiffImageSourceData
 
+# Django imports
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render, get_object_or_404
-from django.views import View
-from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 
+# DRF imports
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
 
+# Local imports
 from .forms import TiffUploadForm
 from .getcolors import analyze_image_colors
-
 from apps.core.models import Project
 from apps.subscription_module.models import InspirationPDF, PDFLike, Palette
 from apps.subscription_module.serializers import PaletteSerializer
-from django.utils import timezone
+from apps.subscription_module.models import SubscriptionPlan
 
-
-
+# Logger
 logger = logging.getLogger(__name__)
-
 
 @api_view(['GET'])
 def get_palettes(request):
@@ -299,98 +305,130 @@ def process_svg_upload(request):
     })
 
 
+@login_required
 def upload_tiff(request, user_id=None, project_id=None):
+    """
+    Handles TIFF file uploads with subscription limit enforcement
+    """
     # Handle project editing case
     project = None
     if user_id and project_id:
         project = get_object_or_404(Project, id=project_id, user_id=user_id)
     
-    if request.method == 'POST':
-        form = TiffUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            tiff_file = request.FILES['tiff_file']
+    # Initialize form
+    form = TiffUploadForm(request.POST or None, request.FILES or None)
+    
+    # Check user subscription
+    try:
+        user_subscription = request.user.subscription
+    except AttributeError:
+        # Create default subscription if none exists
+        from apps.subscription_module.models import SubscriptionPlan, UserSubscription
+        try:
+            default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
+            start_date = timezone.now()
+            end_date = start_date + timezone.timedelta(days=default_plan.duration_in_days)
             
-            # Check user subscription limits
-            if request.user.is_authenticated:
-                # Get or create user subscription with default Legacy Plan
-                try:
-                    user_subscription = request.user.subscription
-                except:
-                    # If user doesn't have a subscription, create one with the Legacy Default Plan
-                    from apps.subscription_module.models import SubscriptionPlan, UserSubscription
-                    default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
-                    
-                    # Set end date to 30 days from now (as per the plan's duration)
-                    start_date = timezone.now()
-                    end_date = start_date + timezone.timedelta(days=default_plan.duration_in_days)
-                    
-                    user_subscription = UserSubscription.objects.create(
-                        user=request.user,
-                        plan=default_plan,
-                        start_date=start_date,
-                        end_date=end_date,
-                        active=True,
-                        file_uploads_used=0,
-                        storage_used_mb=0
-                    )
-                
-                # Calculate file size in MB - more accurate calculation based on actual file
-                file_size_mb = tiff_file.size / (1024 * 1024)
-                
-                # Check if user has reached file upload limit
-                if not user_subscription.can_upload_file():
-                    return render(request, 'upload.html', {
-                        'form': form,
-                        'error_message': f'You have reached your file upload limit of {user_subscription.plan.file_upload_limit} files. Please upgrade your plan to upload more files.'
-                    })
-                
-                # Check if user has enough storage space
-                if not user_subscription.has_storage_space(file_size_mb):
-                    return render(request, 'upload.html', {
-                        'form': form,
-                        'error_message': f'Not enough storage space. This file requires {file_size_mb:.2f} MB, but you have only {user_subscription.plan.storage_limit_mb - user_subscription.storage_used_mb:.2f} MB remaining of your {user_subscription.plan.storage_limit_mb} MB limit.'
-                    })
+            with transaction.atomic():
+                user_subscription = UserSubscription.objects.create(
+                    user=request.user,
+                    plan=default_plan,
+                    start_date=start_date,
+                    end_date=end_date,
+                    active=True
+                )
+        except Exception as e:
+            logger.error(f"Failed to create default subscription: {str(e)}")
+            messages.error(request, "Error initializing your account. Please contact support.")
+            return redirect('home')
+
+    if request.method == 'POST' and form.is_valid():
+        tiff_file = request.FILES['tiff_file']
+        
+        try:
+            # Calculate file size in MB (more accurate than request.FILES size)
+            file_size_bytes = tiff_file.size
+            file_size_mb = file_size_bytes / (1024 * 1024)
             
-            # Create a better file path that includes project_id if available
+            # Check subscription limits
+            if not user_subscription.is_active():
+                return render_limit_reached(
+                    request,
+                    error_message="Your subscription has expired. Please renew to continue uploading files.",
+                    user_subscription=user_subscription
+                )
+            
+            if not user_subscription.can_upload_file():
+                return render_limit_reached(
+                    request,
+                    error_message=f"You've reached your file upload limit ({user_subscription.plan.file_upload_limit} files).",
+                    user_subscription=user_subscription
+                )
+            
+            if not user_subscription.has_storage_space(file_size_mb):
+                return render_limit_reached(
+                    request,
+                    error_message=f"Not enough storage space. This file requires {file_size_mb:.2f}MB.",
+                    user_subscription=user_subscription
+                )
+            
+            # Create file path
             filename = f"project_{project_id}_{tiff_file.name}" if project else tiff_file.name
             file_path = os.path.join('media', 'uploads', filename)
-
-            # Ensure directory exists
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-            with open(file_path, 'wb+') as destination:
+            
+            # Save file temporarily to get exact size
+            temp_path = f"{file_path}.temp"
+            with open(temp_path, 'wb+') as destination:
                 for chunk in tiff_file.chunks():
                     destination.write(chunk)
             
+            # Get precise file size after save
+            precise_file_size_mb = os.path.getsize(temp_path) / (1024 * 1024)
+            
+            # Final storage check with precise size
+            if not user_subscription.has_storage_space(precise_file_size_mb):
+                os.remove(temp_path)
+                return render_limit_reached(
+                    request,
+                    error_message=f"File requires {precise_file_size_mb:.2f}MB (more than estimated).",
+                    user_subscription=user_subscription
+                )
+            
             # Process the file
             output_dir = os.path.join('media', 'output', str(project_id) if project else 'demo')
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Rename temp file to final location
+            os.rename(temp_path, file_path)
+            
+            # Extract layers
             layers = extract_layers(file_path, output_dir)
             
-            # Convert paths to use MEDIA_URL
+            # Convert paths for template
             for layer in layers:
-                # Make path relative to media directory
                 rel_path = layer['path'].replace('\\', '/').split('media/')[-1]
                 layer['path'] = os.path.join(settings.MEDIA_URL, rel_path)
-
+            
+            # Update subscription metrics
+            with transaction.atomic():
+                user_subscription.file_uploads_used += 1
+                user_subscription.storage_used_mb += precise_file_size_mb
+                user_subscription.save()
+            
+            # Get image dimensions
             with Image.open(file_path) as img:
                 width, height = img.size
             
-            # Update user subscription metrics after successful upload
-            if request.user.is_authenticated:
-                # Get exact file size from saved file
-                file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-                
-                # Update file count and storage used
-                user_subscription.file_uploads_used += 1
-                user_subscription.storage_used_mb += int(file_size_mb)  # Convert to integer to match model field
-                user_subscription.save()
-            
+            # Prepare success context
             context = {
                 'layer_count': len(layers),
                 'layers': layers,
                 'width': width,
                 'height': height,
-                'MEDIA_URL': settings.MEDIA_URL  # Pass this to template
+                'MEDIA_URL': settings.MEDIA_URL,
+                'subscription_info': get_subscription_context(user_subscription),
+                'success_message': 'File uploaded successfully!'
             }
             
             if project:
@@ -401,57 +439,19 @@ def upload_tiff(request, user_id=None, project_id=None):
                 })
             
             return render(request, 'layers.html', context)
-    else:
-        form = TiffUploadForm()
-    
-    # Add subscription info to context for the template
-    context = {'form': form}
-    if request.user.is_authenticated:
-        try:
-            # Try to get existing subscription
-            user_subscription = request.user.subscription
-        except:
-            # If user doesn't have a subscription, create one with the Legacy Default Plan
-            from apps.subscription_module.models import SubscriptionPlan, UserSubscription
-            try:
-                default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
-                
-                # Set end date to 30 days from now (as per the plan's duration)
-                start_date = timezone.now()
-                end_date = start_date + timezone.timedelta(days=default_plan.duration_in_days)
-                
-                user_subscription = UserSubscription.objects.create(
-                    user=request.user,
-                    plan=default_plan,
-                    start_date=start_date,
-                    end_date=end_date,
-                    active=True,
-                    file_uploads_used=0,
-                    storage_used_mb=0
-                )
-            except Exception as e:
-                logger.error(f"Failed to create default subscription: {str(e)}")
-                # Continue without subscription info
-                user_subscription = None
-                
-        # Add subscription info to context if we have a valid subscription
-        if user_subscription and user_subscription.plan:
-            storage_used_percentage = (user_subscription.storage_used_mb / user_subscription.plan.storage_limit_mb) * 100 if user_subscription.plan.storage_limit_mb > 0 else 0
-            files_used_percentage = (user_subscription.file_uploads_used / user_subscription.plan.file_upload_limit) * 100 if user_subscription.plan.file_upload_limit > 0 else 0
             
-            context.update({
-                'subscription_info': {
-                    'plan_name': user_subscription.plan.name,
-                    'files_used': user_subscription.file_uploads_used,
-                    'files_used_percentage': files_used_percentage,
-                    'file_limit': user_subscription.plan.file_upload_limit,
-                    'storage_used': user_subscription.storage_used_mb,
-                    'storage_used_percentage': storage_used_percentage,
-                    'storage_limit': user_subscription.plan.storage_limit_mb,
-                    'days_remaining': user_subscription.days_remaining(),
-                    'is_active': user_subscription.is_active()
-                }
-            })
+        except Exception as e:
+            logger.error(f"Error processing TIFF upload: {str(e)}", exc_info=True)
+            messages.error(request, f"Error processing file: {str(e)}")
+            # Clean up any temporary files
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.remove(temp_path)
+    
+    # Prepare context for GET requests or failed POST
+    context = {
+        'form': form,
+        'subscription_info': get_subscription_context(user_subscription)
+    }
     
     if project:
         context.update({
@@ -461,6 +461,61 @@ def upload_tiff(request, user_id=None, project_id=None):
     
     return render(request, 'upload.html', context)
 
+
+def checkout(request, plan_id):
+    plan = get_object_or_404(SubscriptionPlan, id=plan_id)
+    
+    # Here you would integrate with your payment processor
+    # For now, we'll just show a message
+    
+    messages.success(request, f"You've selected the {plan.name} plan. Payment processing would happen here.")
+    return redirect('account_profile')  # Redirect to user profile or appropriate page
+
+def render_limit_reached(request, error_message, user_subscription):
+    """Helper function to render the limit reached template"""
+    return render(request, 'subscription_module/limit_reached.html', {
+        'error_message': error_message,
+        'plan_name': user_subscription.plan.name,
+        'files_used': user_subscription.file_uploads_used,
+        'file_limit': user_subscription.plan.file_upload_limit,
+        'files_used_percentage': (user_subscription.file_uploads_used / user_subscription.plan.file_upload_limit) * 100,
+        'storage_used': user_subscription.storage_used_mb,
+        'storage_limit': user_subscription.plan.storage_limit_mb,
+        'storage_used_percentage': (user_subscription.storage_used_mb / user_subscription.plan.storage_limit_mb) * 100,
+        'days_remaining': user_subscription.days_remaining()
+    })
+
+
+def get_subscription_context(user_subscription):
+    """Helper function to prepare subscription context"""
+    if not user_subscription or not user_subscription.plan:
+        return None
+    
+    return {
+        'plan_name': user_subscription.plan.name,
+        'files_used': user_subscription.file_uploads_used,
+        'file_limit': user_subscription.plan.file_upload_limit,
+        'files_used_percentage': (user_subscription.file_uploads_used / user_subscription.plan.file_upload_limit) * 100,
+        'storage_used': user_subscription.storage_used_mb,
+        'storage_limit': user_subscription.plan.storage_limit_mb,
+        'storage_used_percentage': (user_subscription.storage_used_mb / user_subscription.plan.storage_limit_mb) * 100,
+        'days_remaining': user_subscription.days_remaining(),
+        'is_active': user_subscription.is_active()
+    }
+
+
+
+@login_required
+def upgrade_plan(request):
+    available_plans = SubscriptionPlan.objects.filter(is_active=True)
+    
+    # Mark recommended plan (you can customize this logic)
+    for plan in available_plans:
+        plan.is_recommended = (plan.name == "Premium Monthly")
+    
+    return render(request, 'subscription_module/upgrade.html', {
+        'available_plans': available_plans
+    })
 
 @csrf_exempt
 def export_tiff(request):

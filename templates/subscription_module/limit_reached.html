@@ -1,0 +1,90 @@
+<!-- templates/subscription_module/limit_reached.html -->
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block head_title %}{% trans "Colorify Studio - Subscription Limit Reached" %}{% endblock %}
+
+{% block extra_head %}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#5c6cff",
+                    },
+                },
+            },
+        };
+    </script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white p-8 rounded-3xl shadow-lg">
+            <!-- Logo -->
+            <div class="flex flex-col items-center mb-8">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-orange-400 rotate-45"></div>
+                    <div class="text-xl font-semibold text-gray-800">COLORIFY</div>
+                </div>
+
+                <!-- Limit Reached Message -->
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Subscription Limit Reached</h2>
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                        <p class="text-amber-700">
+                            {{ error_message }}
+                        </p>
+                    </div>
+                    
+                    <!-- Current Usage Stats -->
+                    <div class="mb-6 text-left">
+                        <div class="mb-4">
+                            <p class="text-gray-600 mb-1">File Uploads:</p>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-primary h-2.5 rounded-full" 
+                                     style="width: '{{ files_used_percentage }}%'"></div>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-1">
+                                {{ files_used }} of {{ file_limit }} files used
+                            </p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <p class="text-gray-600 mb-1">Storage Space:</p>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-primary h-2.5 rounded-full" 
+                                     style="width: '{{ storage_used_percentage }}%'"></div>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-1">
+                                {{ storage_used|floatformat:2 }} MB of {{ storage_limit }} MB used
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-gray-600 mb-6">
+                        Your current plan: <strong>{{ plan_name }}</strong>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <a href="{% url 'plans' %}" 
+                class="block w-full bg-[#4F5DFF] text-white py-3 rounded-xl hover:bg-[#4F5DFF]/90 transition-colors text-center">
+                    Upgrade Plan
+                </a>
+                <a href="{% url 'account_logout' %}" 
+                   class="block w-full bg-white text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition-colors text-center border border-gray-200">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
