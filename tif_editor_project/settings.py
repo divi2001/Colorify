@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.subscription_module.apps.SubscriptionModuleConfig',
     'apps.mainadmin.apps.MainadminConfig',
+    'apps.management',
     'apps.tif_to_picker.apps.TifToPickerConfig',
 ]
 
@@ -83,6 +84,16 @@ JAZZMIN_SETTINGS = {
     "copyright": "Colorify Ltd",
     # Field name on user model that contains avatar image
     "user_avatar": None,
+        "custom_links": {
+        "analytics": [{
+            "name": "Dashboard",
+            "url": "admin:analytics_dashboard",
+            "icon": "fas fa-chart-line",
+        }],
+    },
+    
+    # Organize menu items
+    "order_with_respect_to": ["auth", "analytics"],
 }
 
 PAYU_MERCHANT_KEY = 'ZocIjS'  # Replace with your actual PayU merchant key
@@ -118,9 +129,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'colorify',
+        'NAME': 'colorify1',
         'USER': 'root',
-        'PASSWORD': '1221',
+        'PASSWORD': 'tanuj1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {

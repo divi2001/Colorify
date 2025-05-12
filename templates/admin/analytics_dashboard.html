@@ -1,0 +1,402 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<style>
+    .info-box {
+        min-height: 100px;
+        background: #fff;
+        width: 100%;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        border-radius: 2px;
+        margin-bottom: 15px;
+        display: flex;
+    }
+    .info-box-icon {
+        border-top-left-radius: 2px;
+        border-bottom-left-radius: 2px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 90px;
+        height: 100px;
+        font-size: 45px;
+        line-height: 90px;
+    }
+    .info-box-content {
+        padding: 15px 10px;
+        margin-left: 0;
+        flex: 1;
+    }
+    .info-box-text {
+        display: block;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-transform: uppercase;
+    }
+    .info-box-number {
+        display: block;
+        font-weight: bold;
+        font-size: 18px;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .bg-aqua {
+        background-color: #00c0ef !important;
+        color: white !important;
+    }
+    .bg-green {
+        background-color: #00a65a !important;
+        color: white !important;
+    }
+    .bg-yellow {
+        background-color: #f39c12 !important;
+        color: white !important;
+    }
+    .bg-red {
+        background-color: #dd4b39 !important;
+        color: white !important;
+    }
+    .card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        word-wrap: break-word;
+        background-color: #fff;
+        background-clip: border-box;
+        border: 1px solid rgba(0,0,0,.125);
+        border-radius: 0.25rem;
+        margin-bottom: 20px;
+        box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+    }
+    .card-header {
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 0;
+        background-color: rgba(0,0,0,.03);
+        border-bottom: 1px solid rgba(0,0,0,.125);
+    }
+    .card-body {
+        flex: 1 1 auto;
+        padding: 1.25rem;
+    }
+    .card-title {
+        margin-bottom: 0.75rem;
+        font-size: 1.1rem;
+        font-weight: 400;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>Analytics Dashboard</h1>
+    
+    <!-- Stats Overview Cards -->
+    <div class="row">
+        <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-aqua"><i class="fas fa-users"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Users</span>
+                    <span class="info-box-number">{{ total_users }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-green"><i class="fas fa-credit-card"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Active Subscriptions</span>
+                    <span class="info-box-number">{{ total_active_subscriptions }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-yellow"><i class="fas fa-money-bill"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Monthly Revenue</span>
+                    <span class="info-box-number">${{ monthly_revenue_estimate }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-red"><i class="fas fa-clock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Subscriptions Expiring Soon</span>
+                    <span class="info-box-number">{{ expiring_soon }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="row">
+        <!-- User Registration Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">User Registrations (Last 12 Months)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="userRegistrationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Subscription Plan Distribution -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Subscription Plan Distribution</h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="subscriptionPlanChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Project Status Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Project Status Distribution</h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="projectStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Growth Stats -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">User Growth Statistics</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-aqua"><i class="fas fa-user-plus"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">New Users This Month</span>
+                                    <span class="info-box-number">{{ new_users_this_month }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-green"><i class="fas fa-project-diagram"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Projects</span>
+                                    <span class="info-box-number">{{ total_projects }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5>Projects Per User</h5>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {% widthratio total_projects total_users 100 %}%" 
+                             aria-valuenow="{{ total_projects }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ total_users }}">
+                            Avg: {% widthratio total_projects total_users 1 %} projects per user
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Subscriptions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recent Subscriptions</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Plan</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subscription in recent_subscriptions %}
+                            <tr>
+                                <td>{{ subscription.user.username }}</td>
+                                <td>{{ subscription.plan.name }}</td>
+                                <td>{{ subscription.start_date|date:"M d, Y" }}</td>
+                                <td>{{ subscription.end_date|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if subscription.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No recent subscriptions</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // User Registration Chart
+    var userCtx = document.getElementById('userRegistrationChart').getContext('2d');
+    var monthLabels = [
+        {% for item in monthly_registrations %}
+            '{{ item.month|date:"M Y" }}',
+        {% endfor %}
+    ];
+    var userData = [
+        {% for item in monthly_registrations %}
+            {{ item.count }},
+        {% endfor %}
+    ];
+    
+    new Chart(userCtx, {
+        type: 'bar',
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: 'New Users',
+                data: userData,
+                backgroundColor: 'rgba(60,141,188,0.6)',
+                borderColor: 'rgba(60,141,188,1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+
+    // Subscription Plan Distribution Chart
+    var planCtx = document.getElementById('subscriptionPlanChart').getContext('2d');
+    var planLabels = [
+        {% for plan in subscriptions_by_plan %}
+            '{{ plan.plan__name }}',
+        {% endfor %}
+    ];
+    var planData = [
+        {% for plan in subscriptions_by_plan %}
+            {{ plan.count }},
+        {% endfor %}
+    ];
+    
+    new Chart(planCtx, {
+        type: 'pie',
+        data: {
+            labels: planLabels,
+            datasets: [{
+                data: planData,
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+
+    // Project Status Chart
+    var projectCtx = document.getElementById('projectStatusChart').getContext('2d');
+    var statusLabels = [
+        {% for status in projects_by_status %}
+            '{{ status.status|title }}',
+        {% endfor %}
+    ];
+    var statusData = [
+        {% for status in projects_by_status %}
+            {{ status.count }},
+        {% endfor %}
+    ];
+    
+    new Chart(projectCtx, {
+        type: 'doughnut',
+        data: {
+            labels: statusLabels,
+            datasets: [{
+                data: statusData,
+                backgroundColor: [
+                    'rgba(0, 166, 90, 0.7)',  // Green for drafts
+                    'rgba(0, 192, 239, 0.7)', // Blue for exported
+                    'rgba(221, 75, 57, 0.7)'  // Red for deleted
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
