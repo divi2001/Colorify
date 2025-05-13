@@ -3238,8 +3238,7 @@ paletteGridStyles.textContent = `
 document.head.appendChild(paletteGridStyles);
 
 
-
- function generateBaseColorPalettes(baseColor, backgroundColorIndex = 0) {
+function generateBaseColorPalettes(baseColor, backgroundColorIndex = 0) {
   // Conversion utilities
   function rgbToHex(r, g, b) {
     return '#' + [r, g, b].map(x => {
@@ -3312,22 +3311,20 @@ document.head.appendChild(paletteGridStyles);
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  // Get distinct colors from various sources with background color handling
+  // Get the original colors from various sources
   let distinctColors = [];
   let originalBackgroundColor = null;
 
   try {
-    // First try to get from window.originalColors
+    // Get colors from various sources (unchanged)
     if (window.originalColors && Array.isArray(window.originalColors) && window.originalColors.length > 0) {
       console.log("Using originalColors with background index:", backgroundColorIndex);
       distinctColors = [...window.originalColors];
       
-      // If a specific background color index was selected, save the original background color
       if (backgroundColorIndex >= 0 && backgroundColorIndex < distinctColors.length) {
         originalBackgroundColor = [...distinctColors[backgroundColorIndex]];
       }
     } 
-    // Then try localStorage
     else if (localStorage.getItem('distinctColorsArrayColorPallet')) {
       try {
         const storedColorsString = localStorage.getItem('distinctColorsArrayColorPallet');
@@ -3344,7 +3341,6 @@ document.head.appendChild(paletteGridStyles);
         console.error("Error parsing colors from localStorage:", parseError);
       }
     }
-    // Then try window variable
     else if (window.distinctColorsArrayColorPallet &&
              Array.isArray(window.distinctColorsArrayColorPallet) &&
              window.distinctColorsArrayColorPallet.length > 0) {
@@ -3356,7 +3352,6 @@ document.head.appendChild(paletteGridStyles);
       );
     }
 
-    // If still no colors, use default distinct colors
     if (distinctColors.length === 0) {
       distinctColors = [
         [230, 140, 30],  // Orange
@@ -3375,187 +3370,727 @@ document.head.appendChild(paletteGridStyles);
     ];
   }
 
-  // Calculate the base color's HSL values
+  // Get the base color's HSL values
   const baseHsl = rgbToHsl(...baseColor);
   
-  // Check if the base color is achromatic (very low saturation)
-  const isAchromatic = baseHsl[1] < 10; // Less than 10% saturation is considered achromatic
-
-  // Generate palettes with the selected color incorporated
-  const basePalettes = [];
-
   try {
-    // Special handling for background color replacement
-    if (originalBackgroundColor && backgroundColorIndex >= 0 && backgroundColorIndex < distinctColors.length) {
-      // Convert the background color to HSL for comparison
-      const bgHsl = rgbToHsl(...originalBackgroundColor);
+    // Get harmony scheme from the parameters or use default
+    const harmonyScheme = baseColor.harmonyScheme || 'normal';
+    const shadeType = baseColor.shadeType || 'regular';
+    
+    // STEP 1: Create a version of the selected base color with adjusted shade
+    const adjustedBaseColor = [...baseColor]; // Start with the original base color
+    
+    // Apply shade adjustment to the base color
+    if (shadeType === 'faint') {
+      // For faint: keep hue, reduce saturation, increase lightness
+      const faintHsl = [...baseHsl];
+      faintHsl[1] = Math.max(10, baseHsl[1] * 0.8); // Reduce saturation slightly
+      faintHsl[2] = Math.min(95, Math.max(70, baseHsl[2] * 1.3)); // Increase lightness
       
-      // Replace the background color with the base color
-      distinctColors[backgroundColorIndex] = [...baseColor];
+      // Only convert if changes were made
+      if (faintHsl[1] !== baseHsl[1] || faintHsl[2] !== baseHsl[2]) {
+        const rgbColor = hslToRgb(...faintHsl);
+        adjustedBaseColor[0] = rgbColor[0];
+        adjustedBaseColor[1] = rgbColor[1];
+        adjustedBaseColor[2] = rgbColor[2];
+      }
+    } 
+    else if (shadeType === 'dark') {
+      // For dark: keep hue, possibly increase saturation, decrease lightness
+      const darkHsl = [...baseHsl];
+      darkHsl[1] = Math.min(100, baseHsl[1] * 1.1); // Slightly increase saturation
+      darkHsl[2] = Math.max(10, Math.min(35, baseHsl[2] * 0.6)); // Decrease lightness
       
-      // For colors that are similar to the background color, transform them into shades of the base color
-      // Calculate similarity based on hue proximity
-      distinctColors = distinctColors.map((color, i) => {
-        if (i === backgroundColorIndex) return [...baseColor]; // Already replaced
-        
-        const colorHsl = rgbToHsl(...color);
-        
-        // Calculate hue difference (considering the circular nature of hue)
-        const hueDiff = Math.min(
-          Math.abs(colorHsl[0] - bgHsl[0]),
-          360 - Math.abs(colorHsl[0] - bgHsl[0])
-        );
-        
-        // If colors are from the same family (similar hue)
-        if (hueDiff < 30) {
-          // Create a variant of the base color that maintains relative saturation and lightness
-          const satRatio = colorHsl[1] / Math.max(1, bgHsl[1]);
-          const lightRatio = colorHsl[2] / Math.max(1, bgHsl[2]);
+      // Only convert if changes were made
+      if (darkHsl[1] !== baseHsl[1] || darkHsl[2] !== baseHsl[2]) {
+        const rgbColor = hslToRgb(...darkHsl);
+        adjustedBaseColor[0] = rgbColor[0];
+        adjustedBaseColor[1] = rgbColor[1];
+        adjustedBaseColor[2] = rgbColor[2];
+      }
+    }
+    // For 'regular', we keep the color as is
+    
+    // STEP 2: Create palettes based on the adjusted base color
+    const basePalettes = [];
+    const paletteCount = 12; // Generate 12 palettes for each combination
+
+    // Function to group colors by their perceptual distance for better harmony mapping
+    function groupColorsByHarmony(colors, bgIndex, harmonyType) {
+      // First convert all to HSL for easier comparison
+      const colorsHSL = colors.map(color => rgbToHsl(...color));
+      
+      // Get background/base color HSL
+      const bgColorHSL = colorsHSL[bgIndex];
+      
+      // Create groups based on harmony type
+      const groups = [];
+      
+      switch(harmonyType) {
+        case 'monochromatic':
+          // Just one group - all colors
+          groups.push([...Array(colors.length).keys()]);
+          break;
           
-          // Apply the ratios to create a new color in the same family as the base color
-          const newHsl = [
-            baseHsl[0],
-            Math.min(100, Math.max(5, baseHsl[1] * satRatio)),
-            Math.min(95, Math.max(5, baseHsl[2] * lightRatio))
-          ];
+        case 'complementary':
+          // Two groups - those closer to base hue and those closer to complement
+          const compHue = (bgColorHSL[0] + 180) % 360;
           
-          return hslToRgb(...newHsl);
-        }
+          const baseGroup = [];
+          const compGroup = [];
+          
+          colorsHSL.forEach((color, index) => {
+            // Skip background color - it's always in the base group
+            if (index === bgIndex) {
+              baseGroup.push(index);
+              return;
+            }
+            
+            // Calculate angular distance to base and complement
+            const distToBase = Math.min(
+              Math.abs(color[0] - bgColorHSL[0]),
+              360 - Math.abs(color[0] - bgColorHSL[0])
+            );
+            
+            const distToComp = Math.min(
+              Math.abs(color[0] - compHue),
+              360 - Math.abs(color[0] - compHue)
+            );
+            
+            // Assign to closest group
+            if (distToBase <= distToComp) {
+              baseGroup.push(index);
+            } else {
+              compGroup.push(index);
+            }
+          });
+          
+          groups.push(baseGroup);
+          groups.push(compGroup);
+          break;
+          
+        case 'analogous':
+          // Three groups - base and analogous on either side
+          const analog1 = (bgColorHSL[0] - 30 + 360) % 360;
+          const analog2 = (bgColorHSL[0] + 30) % 360;
+          
+          const analogGroup1 = [];
+          const baseAnalogGroup = [];
+          const analogGroup2 = [];
+          
+          colorsHSL.forEach((color, index) => {
+            if (index === bgIndex) {
+              baseAnalogGroup.push(index);
+              return;
+            }
+            
+            // Calculate distance to each analogous center
+            const distToBase = Math.min(
+              Math.abs(color[0] - bgColorHSL[0]),
+              360 - Math.abs(color[0] - bgColorHSL[0])
+            );
+            
+            const distToAnalog1 = Math.min(
+              Math.abs(color[0] - analog1),
+              360 - Math.abs(color[0] - analog1)
+            );
+            
+            const distToAnalog2 = Math.min(
+              Math.abs(color[0] - analog2),
+              360 - Math.abs(color[0] - analog2)
+            );
+            
+            // Find the smallest distance
+            const minDist = Math.min(distToBase, distToAnalog1, distToAnalog2);
+            
+            if (minDist === distToAnalog1) {
+              analogGroup1.push(index);
+            } else if (minDist === distToBase) {
+              baseAnalogGroup.push(index);
+            } else {
+              analogGroup2.push(index);
+            }
+          });
+          
+          groups.push(analogGroup1);
+          groups.push(baseAnalogGroup);
+          groups.push(analogGroup2);
+          break;
+          
+        case 'splitComplementary':
+          // Three groups - base and two split complements
+          const splitComp1 = (bgColorHSL[0] + 150) % 360;
+          const splitComp2 = (bgColorHSL[0] + 210) % 360;
+          
+          const baseSplitGroup = [];
+          const splitGroup1 = [];
+          const splitGroup2 = [];
+          
+          colorsHSL.forEach((color, index) => {
+            if (index === bgIndex) {
+              baseSplitGroup.push(index);
+              return;
+            }
+            
+            // Calculate distance to each split complementary center
+            const distToBase = Math.min(
+              Math.abs(color[0] - bgColorHSL[0]),
+              360 - Math.abs(color[0] - bgColorHSL[0])
+            );
+            
+            const distToSplit1 = Math.min(
+              Math.abs(color[0] - splitComp1),
+              360 - Math.abs(color[0] - splitComp1)
+            );
+            
+            const distToSplit2 = Math.min(
+              Math.abs(color[0] - splitComp2),
+              360 - Math.abs(color[0] - splitComp2)
+            );
+            
+            // Find the smallest distance
+            const minDist = Math.min(distToBase, distToSplit1, distToSplit2);
+            
+            if (minDist === distToBase) {
+              baseSplitGroup.push(index);
+            } else if (minDist === distToSplit1) {
+              splitGroup1.push(index);
+            } else {
+              splitGroup2.push(index);
+            }
+          });
+          
+          groups.push(baseSplitGroup);
+          groups.push(splitGroup1);
+          groups.push(splitGroup2);
+          break;
+          
+        case 'triadic':
+          // Three groups - three colors spaced 120° apart
+          const triad1 = (bgColorHSL[0] + 120) % 360;
+          const triad2 = (bgColorHSL[0] + 240) % 360;
+          
+          const baseTriadGroup = [];
+          const triadGroup1 = [];
+          const triadGroup2 = [];
+          
+          colorsHSL.forEach((color, index) => {
+            if (index === bgIndex) {
+              baseTriadGroup.push(index);
+              return;
+            }
+            
+            // Calculate distance to each triad center
+            const distToBase = Math.min(
+              Math.abs(color[0] - bgColorHSL[0]),
+              360 - Math.abs(color[0] - bgColorHSL[0])
+            );
+            
+            const distToTriad1 = Math.min(
+              Math.abs(color[0] - triad1),
+              360 - Math.abs(color[0] - triad1)
+            );
+            
+            const distToTriad2 = Math.min(
+              Math.abs(color[0] - triad2),
+              360 - Math.abs(color[0] - triad2)
+            );
+            
+            // Find the smallest distance
+            const minDist = Math.min(distToBase, distToTriad1, distToTriad2);
+            
+            if (minDist === distToBase) {
+              baseTriadGroup.push(index);
+            } else if (minDist === distToTriad1) {
+              triadGroup1.push(index);
+            } else {
+              triadGroup2.push(index);
+            }
+          });
+          
+          groups.push(baseTriadGroup);
+          groups.push(triadGroup1);
+          groups.push(triadGroup2);
+          break;
+          
+        case 'tetradic':
+          // Four groups - four colors in a rectangle on the color wheel
+          const tetra1 = (bgColorHSL[0] + 90) % 360;
+          const tetra2 = (bgColorHSL[0] + 180) % 360;
+          const tetra3 = (bgColorHSL[0] + 270) % 360;
+          
+          const baseTetraGroup = [];
+          const tetraGroup1 = [];
+          const tetraGroup2 = [];
+          const tetraGroup3 = [];
+          
+          colorsHSL.forEach((color, index) => {
+            if (index === bgIndex) {
+              baseTetraGroup.push(index);
+              return;
+            }
+            
+            // Calculate distance to each tetradic center
+            const distToBase = Math.min(
+              Math.abs(color[0] - bgColorHSL[0]),
+              360 - Math.abs(color[0] - bgColorHSL[0])
+            );
+            
+            const distToTetra1 = Math.min(
+              Math.abs(color[0] - tetra1),
+              360 - Math.abs(color[0] - tetra1)
+            );
+            
+            const distToTetra2 = Math.min(
+              Math.abs(color[0] - tetra2),
+              360 - Math.abs(color[0] - tetra2)
+            );
+            
+            const distToTetra3 = Math.min(
+              Math.abs(color[0] - tetra3),
+              360 - Math.abs(color[0] - tetra3)
+            );
+            
+            // Find the smallest distance
+            const minDist = Math.min(distToBase, distToTetra1, distToTetra2, distToTetra3);
+            
+            if (minDist === distToBase) {
+              baseTetraGroup.push(index);
+            } else if (minDist === distToTetra1) {
+              tetraGroup1.push(index);
+            } else if (minDist === distToTetra2) {
+              tetraGroup2.push(index);
+            } else {
+              tetraGroup3.push(index);
+            }
+          });
+          
+          groups.push(baseTetraGroup);
+          groups.push(tetraGroup1);
+          groups.push(tetraGroup2);
+          groups.push(tetraGroup3);
+          break;
+          
+        case 'square':
+          // Same as tetradic but with equal spacing (90° apart)
+          const square1 = (bgColorHSL[0] + 90) % 360;
+          const square2 = (bgColorHSL[0] + 180) % 360;
+          const square3 = (bgColorHSL[0] + 270) % 360;
+          
+          const baseSquareGroup = [];
+          const squareGroup1 = [];
+          const squareGroup2 = [];
+          const squareGroup3 = [];
+          
+          colorsHSL.forEach((color, index) => {
+            if (index === bgIndex) {
+              baseSquareGroup.push(index);
+              return;
+            }
+            
+            // Calculate distance to each square center
+            const distToBase = Math.min(
+              Math.abs(color[0] - bgColorHSL[0]),
+              360 - Math.abs(color[0] - bgColorHSL[0])
+            );
+            
+            const distToSquare1 = Math.min(
+              Math.abs(color[0] - square1),
+              360 - Math.abs(color[0] - square1)
+            );
+            
+            const distToSquare2 = Math.min(
+              Math.abs(color[0] - square2),
+              360 - Math.abs(color[0] - square2)
+            );
+            
+            const distToSquare3 = Math.min(
+              Math.abs(color[0] - square3),
+              360 - Math.abs(color[0] - square3)
+            );
+            
+            // Find the smallest distance
+            const minDist = Math.min(distToBase, distToSquare1, distToSquare2, distToSquare3);
+            
+            if (minDist === distToBase) {
+              baseSquareGroup.push(index);
+            } else if (minDist === distToSquare1) {
+              squareGroup1.push(index);
+            } else if (minDist === distToSquare2) {
+              squareGroup2.push(index);
+            } else {
+              squareGroup3.push(index);
+            }
+          });
+          
+          groups.push(baseSquareGroup);
+          groups.push(squareGroup1);
+          groups.push(squareGroup2);
+          groups.push(squareGroup3);
+          break;
+          
+        case 'normal':
+        default:
+          // Normal mode - maintain original relationships
+          // Each color will be treated individually, preserving its relationship to base
+          colorsHSL.forEach((_, index) => {
+            groups.push([index]); // Each color in its own group
+          });
+          break;
+      }
+      
+      return groups;
+    }
+
+    // Function to get target hue based on harmony and group
+    function getHarmonyHue(baseHue, harmonyType, groupIndex) {
+      switch(harmonyType) {
+        case 'monochromatic':
+          return baseHue; // Same hue for all
+          
+        case 'complementary':
+          return groupIndex === 0 ? baseHue : (baseHue + 180) % 360;
+          
+        case 'analogous':
+          if (groupIndex === 0) return (baseHue - 30 + 360) % 360;
+          if (groupIndex === 1) return baseHue;
+          return (baseHue + 30) % 360;
+          
+        case 'splitComplementary':
+          if (groupIndex === 0) return baseHue;
+          if (groupIndex === 1) return (baseHue + 150) % 360;
+          return (baseHue + 210) % 360;
+          
+        case 'triadic':
+          if (groupIndex === 0) return baseHue;
+          if (groupIndex === 1) return (baseHue + 120) % 360;
+          return (baseHue + 240) % 360;
+          
+        case 'tetradic':
+        case 'square':
+          if (groupIndex === 0) return baseHue;
+          if (groupIndex === 1) return (baseHue + 90) % 360;
+          if (groupIndex === 2) return (baseHue + 180) % 360;
+          return (baseHue + 270) % 360;
+          
+        default:
+          return baseHue;
+      }
+    }
+
+    for (let paletteIndex = 0; paletteIndex < paletteCount; paletteIndex++) {
+      // Create a working copy of distinctColors
+      let workingColors = [...distinctColors];
+      
+      // Get the adjusted base color's HSL
+      const baseColorHSL = rgbToHsl(...adjustedBaseColor);
+      
+      // If we have a background color, replace it with our adjusted base color
+      if (backgroundColorIndex >= 0 && backgroundColorIndex < workingColors.length) {
+        workingColors[backgroundColorIndex] = [...adjustedBaseColor];
+      }
+      
+      // Convert all working colors to HSL
+      const workingColorsHSL = workingColors.map(color => rgbToHsl(...color));
+      
+      // Group colors based on harmony type for better correlation
+      const colorGroups = groupColorsByHarmony(
+        workingColors, 
+        backgroundColorIndex, 
+        harmonyScheme
+      );
+      
+      // Process each group separately to maintain better correlation
+      colorGroups.forEach((group, groupIndex) => {
+        // Get the target hue for this group
+        const targetHue = getHarmonyHue(baseColorHSL[0], harmonyScheme, groupIndex);
         
-        return color; // Keep other colors as they are
+        // Process each color in the group
+        group.forEach(colorIndex => {
+          // Skip the background color - it's already set to the adjusted base color
+          if (colorIndex === backgroundColorIndex) return;
+          
+          const originalHSL = workingColorsHSL[colorIndex];
+          let newHSL = [...originalHSL];
+          
+          if (harmonyScheme === 'normal') {
+            // For normal mode, maintain the exact relationship with the original colors
+            // Calculate the relative relationship from original background to this color
+            const bgOriginalHSL = rgbToHsl(...distinctColors[backgroundColorIndex]);
+            
+            // Calculate hue difference (accounting for the circular nature of hue)
+            let hueDiff = originalHSL[0] - bgOriginalHSL[0];
+            if (hueDiff > 180) hueDiff -= 360;
+            if (hueDiff < -180) hueDiff += 360;
+            
+            // Calculate ratios for saturation and lightness
+            const satRatio = originalHSL[1] / Math.max(1, bgOriginalHSL[1]);
+            const lightRatio = originalHSL[2] / Math.max(1, bgOriginalHSL[2]);
+            
+            // Apply these relationships to the new base color
+            newHSL[0] = (baseColorHSL[0] + hueDiff + 360) % 360;
+            newHSL[1] = Math.min(100, Math.max(5, baseColorHSL[1] * satRatio));
+            newHSL[2] = Math.min(95, Math.max(5, baseColorHSL[2] * lightRatio));
+            
+            // Apply small variations based on palette index
+            const hueVar = (paletteIndex % 5) - 2; // -2 to +2 degrees variation
+            newHSL[0] = (newHSL[0] + hueVar + 360) % 360;
+            
+            // Small saturation and lightness variations
+            const satVar = 0.95 + (paletteIndex % 3) * 0.05; // 0.95-1.05
+            const lightVar = 0.95 + (paletteIndex % 3) * 0.05; // 0.95-1.05
+            
+            newHSL[1] = Math.min(100, Math.max(5, newHSL[1] * satVar));
+            newHSL[2] = Math.min(95, Math.max(5, newHSL[2] * lightVar));
+          } else {
+            // For harmony modes, we want to maintain the relationship WITHIN EACH GROUP
+            // Calculate the original relationship in the group
+            
+            // First, find the "reference" color in the original image for this group
+            // This helps maintain the relationships within each color family
+            let referenceIndex = backgroundColorIndex;
+            if (group.length > 1 && group[0] !== backgroundColorIndex) {
+              referenceIndex = group[0];
+            }
+            
+            const referenceHSL = workingColorsHSL[referenceIndex];
+            
+            // Calculate this color's relationship to the reference
+            // For hue: we're replacing it with the target hue, but need to maintain small differences
+            let hueDiff = originalHSL[0] - referenceHSL[0];
+            if (hueDiff > 180) hueDiff -= 360;
+            if (hueDiff < -180) hueDiff += 360;
+            
+            // For saturation and lightness: maintain the ratio
+            const satRatio = originalHSL[1] / Math.max(1, referenceHSL[1]);
+            const lightRatio = originalHSL[2] / Math.max(1, referenceHSL[2]);
+            
+            // Apply the relationship to the target hue
+            // Here we use a smaller hue difference to keep colors more focused around the target hue
+            // This prevents too much deviation while still maintaining some variety
+            const scaledHueDiff = hueDiff * 0.3; // Scale down the hue difference 
+            newHSL[0] = (targetHue + scaledHueDiff + 360) % 360;
+            
+            // Maintain saturation and lightness relationships
+            // For the reference color (typically base), get its transformed values
+            let referenceSaturation, referenceLightness;
+            
+            if (referenceIndex === backgroundColorIndex) {
+              // If reference is background, use the adjusted base color's values
+              referenceSaturation = baseColorHSL[1];
+              referenceLightness = baseColorHSL[2];
+            } else {
+              // Otherwise, get the values from the current working colors
+              const currentReferenceHSL = rgbToHsl(...workingColors[referenceIndex]);
+              referenceSaturation = currentReferenceHSL[1];
+              referenceLightness = currentReferenceHSL[2];
+            }
+            
+            // Apply the relationship
+            newHSL[1] = Math.min(100, Math.max(5, referenceSaturation * satRatio));
+            newHSL[2] = Math.min(95, Math.max(5, referenceLightness * lightRatio));
+            
+            // Apply small variations based on palette index for more diversity
+            const hueVar = (paletteIndex % 5) - 2; // -2 to +2 degrees variation
+            const satVar = 0.95 + (paletteIndex % 3) * 0.05; // 0.95-1.05
+            const lightVar = 0.95 + (paletteIndex % 3) * 0.05; // 0.95-1.05
+            
+            newHSL[0] = (newHSL[0] + hueVar + 360) % 360;
+            newHSL[1] = Math.min(100, Math.max(5, newHSL[1] * satVar));
+            newHSL[2] = Math.min(95, Math.max(5, newHSL[2] * lightVar));
+          }
+          
+          // Apply shade adjustments
+          if (shadeType === 'faint') {
+            // For faint shades: ensure lightness is at least 65%
+            newHSL[2] = Math.max(newHSL[2], 65);
+          } else if (shadeType === 'dark') {
+            // For dark shades: ensure lightness is at most 40%
+            newHSL[2] = Math.min(newHSL[2], 40);
+          }
+          
+          // Convert back to RGB and update the working color
+          workingColors[colorIndex] = hslToRgb(...newHSL);
+        });
       });
-    }
-    
-    // Calculate transformation factors for generating variations
-    // Use the bg color if specified, otherwise use first color
-    let baseColorForTransformation;
-    if (backgroundColorIndex >= 0 && backgroundColorIndex < distinctColors.length) {
-      baseColorForTransformation = distinctColors[backgroundColorIndex];
-    } else {
-      baseColorForTransformation = distinctColors[0] || [128, 128, 128];
-    }
-    
-    const originalHSL = rgbToHsl(...baseColorForTransformation);
-    
-    // Special handling for achromatic colors (black, white, gray)
-    let baseHueShift, baseSatRatio, baseLightRatio;
-    
-    if (isAchromatic) {
-      // For achromatic colors, we need special handling:
-      // 1. Use a default hue if the base color has no meaningful hue
-      // 2. Set a minimum saturation value for the derived colors
-      // 3. Scale lightness according to the base color
       
-      // Assign a default hue if the base color has no meaningful hue
-      const defaultHue = 0; // Red hue - can be changed to any preferred default
-      baseHueShift = defaultHue - originalHSL[0];
-      
-      // For saturation: instead of multiplying (which would keep it near zero),
-      // use absolute saturation values with slight variation for each palette
-      baseSatRatio = 0; // Not used for achromatic colors
-      
-      // For lightness: scale according to the base color's lightness
-      baseLightRatio = baseHsl[2] / originalHSL[2];
-    } else {
-      // Normal handling for chromatic colors
-      baseHueShift = baseHsl[0] - originalHSL[0];
-      baseSatRatio = Math.max(0.1, baseHsl[1] / Math.max(0.1, originalHSL[1]));
-      baseLightRatio = Math.max(0.1, baseHsl[2] / Math.max(0.1, originalHSL[2]));
-    }
-
-    // Generate 10 different palettes
-    for (let i = 0; i < 10; i++) {
-      // Different random offsets for each palette to make them distinct
-      const hueVariation = randomInRange(-40, 40);
-      const satVariation = 0.8 + (Math.random() * 0.4); // 0.8 to 1.2
-      const lightVariation = 0.8 + (Math.random() * 0.4); // 0.8 to 1.2
-
-      // Create a new palette starting with the same color order as distinctColors
-      const newPalette = [];
-      
-      // Transform all distinct colors according to the transformation factors
-      for (let j = 0; j < distinctColors.length; j++) {
-        const srcColor = distinctColors[j];
-        
-        // If this is the background color index and we've already replaced it with base color,
-        // just use the base color directly 
-        if (j === backgroundColorIndex && backgroundColorIndex >= 0) {
-          newPalette.push([...baseColor]);
-          continue;
-        }
-        
-        let [h, s, l] = rgbToHsl(...srcColor);
-
-        if (isAchromatic) {
-          // Special handling for achromatic base colors
-          
-          // For achromatic colors, we'll use a specific hue for each palette
-          // and vary it for each color in the palette
-          const paletteBaseHue = (i * 36) % 360; // Distribute 10 palettes evenly around the color wheel
-          
-          // Assign hues that are related but different for each color
-          const colorOffset = (j * 30) % 360; // Spread colors within the palette
-          h = (paletteBaseHue + colorOffset) % 360;
-          
-          // Use moderate to high saturation values (not related to the base color's saturation)
-          s = 60 + randomInRange(-20, 20) * satVariation;
-          
-          // Scale lightness relative to the base color
-          l = Math.min(95, Math.max(5, l * baseLightRatio * lightVariation));
-        } else {
-          // Normal handling for chromatic colors
-          h = (h + baseHueShift + hueVariation + 360) % 360;
-          s = Math.min(100, Math.max(5, s * baseSatRatio * satVariation));
-          l = Math.min(95, Math.max(5, l * baseLightRatio * lightVariation));
-        }
-
-        // Convert back to RGB
-        const newColor = hslToRgb(h, s, l);
-        newPalette.push(newColor);
-      }
-
       // Ensure we have enough colors (at least 6)
-      while (newPalette.length < 6) {
-        // Generate additional colors by further transforming existing ones
-        const idx = randomInRange(0, newPalette.length - 1);
-        const [h, s, l] = rgbToHsl(...newPalette[idx]);
-
-        // Apply a slight variation for new colors
-        const newH = (h + 15 + Math.random() * 30) % 360;
-        const newS = Math.min(100, Math.max(5, s * (0.9 + Math.random() * 0.2)));
-        const newL = Math.min(95, Math.max(5, l * (0.9 + Math.random() * 0.2)));
-
-        const variedColor = hslToRgb(newH, newS, newL);
-        newPalette.push(variedColor);
+      while (workingColors.length < 6) {
+        // For additional colors, derive from existing ones while maintaining harmony
+        // Choose a source color, preferably not the background
+        let sourceIndex = workingColors.length % workingColors.length;
+        if (sourceIndex === backgroundColorIndex) {
+          sourceIndex = (sourceIndex + 1) % workingColors.length;
+        }
+        
+        const sourceHSL = rgbToHsl(...workingColors[sourceIndex]);
+        
+        // Create a new color with small variations
+        // But keep it in the same general harmony family
+        const newHSL = [...sourceHSL];
+        
+        // Small hue variation that stays within the harmony
+        if (harmonyScheme === 'monochromatic') {
+          // For monochromatic: keep the same hue, vary saturation and lightness
+          newHSL[1] = Math.min(100, Math.max(5, sourceHSL[1] + randomInRange(-15, 15)));
+          newHSL[2] = Math.min(95, Math.max(5, sourceHSL[2] + randomInRange(-15, 15)));
+        } else {
+          // For other harmonies: small hue variation to stay in the same family
+          newHSL[0] = (newHSL[0] + randomInRange(-10, 10) + 360) % 360;
+          newHSL[1] = Math.min(100, Math.max(5, sourceHSL[1] + randomInRange(-10, 10)));
+          newHSL[2] = Math.min(95, Math.max(5, sourceHSL[2] + randomInRange(-10, 10)));
+        }
+        
+        // Apply shade adjustments
+        if (shadeType === 'faint') {
+          newHSL[2] = Math.max(newHSL[2], 65);
+        } else if (shadeType === 'dark') {
+          newHSL[2] = Math.min(newHSL[2], 40);
+        }
+        
+        workingColors.push(hslToRgb(...newHSL));
       }
-
-      basePalettes.push(newPalette);
+      
+      // Add the palette info
+      Object.defineProperty(workingColors, 'info', {
+        value: { 
+          category: shadeType,
+          harmonyScheme: harmonyScheme
+        },
+        enumerable: false
+      });
+      
+      basePalettes.push(workingColors);
     }
+    
+    return basePalettes;
+    
   } catch (e) {
-    console.error("Error generating transformed palettes:", e);
-    // Provide fallback palettes
-    for (let i = 0; i < 10; i++) {
+    console.error("Error generating base color variants:", e);
+    
+    // Provide fallback palettes that maintain color family correlation
+    const basePalettes = [];
+    const fallbackShadeType = baseColor.shadeType || 'regular';
+    const fallbackHarmonyScheme = baseColor.harmonyScheme || 'normal';
+    
+    // Create at least 6 palettes with better color correlation
+    for (let i = 0; i < 12; i++) {
       let fallbackPalette = [];
       
-      // Make sure base color is at the right position
-      for (let j = 0; j < 6; j++) {
+      // Get base color in HSL for easier manipulation
+      const baseHsl = rgbToHsl(...baseColor);
+      
+      // Create a palette with the base color in the background position
+      for (let j = 0; j < Math.max(6, distinctColors.length); j++) {
         if (j === backgroundColorIndex) {
-          fallbackPalette.push([...baseColor]);
+          // Adjust the base color based on shade category, but STAY IN THE SAME COLOR FAMILY
+          let adjustedHsl = [...baseHsl];
+          
+          if (fallbackShadeType === "faint") {
+            // For faint: maintain hue, reduce saturation, increase lightness
+            adjustedHsl[1] = Math.max(10, baseHsl[1] * (0.7 + (i * 0.05)));
+            adjustedHsl[2] = Math.min(95, 70 + (i % 20));
+          } 
+          else if (fallbackShadeType === "dark") {
+            // For dark: maintain hue, possibly increase saturation, decrease lightness
+            adjustedHsl[1] = Math.min(100, baseHsl[1] * (1.0 + (i * 0.05)));
+            adjustedHsl[2] = Math.max(5, 35 - (i % 25));
+          }
+          else {
+            // For regular: maintain hue, make small saturation/lightness adjustments
+            const variation = (i % 10) - 5; // -5 to +5
+            adjustedHsl[1] = Math.min(100, Math.max(10, baseHsl[1] + variation));
+            adjustedHsl[2] = Math.min(80, Math.max(30, baseHsl[2] + variation));
+          }
+          
+          fallbackPalette.push(hslToRgb(...adjustedHsl));
+        } else if (j < distinctColors.length) {
+          // For other colors, preserve their relationship to the base color
+          const originalColor = distinctColors[j];
+          const originalHsl = rgbToHsl(...originalColor);
+          
+          // Calculate the color's relationship to the base color
+          const hueDiff = ((originalHsl[0] - baseHsl[0] + 540) % 360) - 180; // -180 to +180
+          const satRatio = originalHsl[1] / Math.max(1, baseHsl[1]);
+          const lightRatio = originalHsl[2] / Math.max(1, baseHsl[2]);
+          
+          // New color based on harmony scheme
+          let newHue = baseHsl[0];
+          
+          if (fallbackHarmonyScheme === 'monochromatic') {
+            // Keep the same hue
+            newHue = baseHsl[0];
+          } else if (fallbackHarmonyScheme === 'analogous') {
+            // Use analogous hues
+            const analogousOffset = [-30, -15, 0, 15, 30];
+            newHue = (baseHsl[0] + analogousOffset[j % analogousOffset.length] + 360) % 360;
+          } else if (fallbackHarmonyScheme === 'complementary') {
+            // Base and complement
+            newHue = (baseHsl[0] + (j % 2 === 0 ? 0 : 180) + 360) % 360;
+          } else if (fallbackHarmonyScheme === 'splitComplementary') {
+            // Base, and two colors 150° and 210° from base
+            if (j % 3 === 0) newHue = baseHsl[0];
+            else if (j % 3 === 1) newHue = (baseHsl[0] + 150 + 360) % 360;
+            else newHue = (baseHsl[0] + 210 + 360) % 360;
+          } else if (fallbackHarmonyScheme === 'triadic') {
+            // Three colors 120° apart
+            newHue = (baseHsl[0] + (j % 3) * 120 + 360) % 360;
+          } else if (fallbackHarmonyScheme === 'tetradic' || fallbackHarmonyScheme === 'square') {
+            // Four colors 90° apart
+            newHue = (baseHsl[0] + (j % 4) * 90 + 360) % 360;
+          } else {
+            // Normal - maintain relative hue relationships
+            newHue = (baseHsl[0] + hueDiff + 360) % 360;
+          }
+          
+          // Apply shade type adjustments
+          let newSat = baseHsl[1] * satRatio;
+          let newLight = baseHsl[2] * lightRatio;
+          
+          if (fallbackShadeType === "faint") {
+            newLight = Math.max(newLight, 65); // Ensure it's faint
+          } else if (fallbackShadeType === "dark") {
+            newLight = Math.min(newLight, 40); // Ensure it's dark
+          }
+          
+          // Keep values in valid ranges
+          newSat = Math.min(100, Math.max(0, newSat));
+          newLight = Math.min(100, Math.max(0, newLight));
+          
+          fallbackPalette.push(hslToRgb(newHue, newSat, newLight));
         } else {
-          const hue = (i * 36 + j * 60) % 360;
-          fallbackPalette.push(hslToRgb(hue, 70, 50));
+          // For extra colors (if needed), create variations that follow the harmony pattern
+          const baseIndex = j % distinctColors.length;
+          const existingColor = fallbackPalette[baseIndex];
+          const existingHsl = rgbToHsl(...existingColor);
+          
+          // Create a variation
+          const newHsl = [...existingHsl];
+          newHsl[1] = Math.min(100, Math.max(5, existingHsl[1] + randomInRange(-10, 10)));
+          newHsl[2] = Math.min(95, Math.max(5, existingHsl[2] + randomInRange(-10, 10)));
+          
+          fallbackPalette.push(hslToRgb(...newHsl));
         }
       }
+      
+      // Add the palette info
+      Object.defineProperty(fallbackPalette, 'info', {
+        value: { 
+          category: fallbackShadeType,
+          harmonyScheme: fallbackHarmonyScheme
+        },
+        enumerable: false
+      });
       
       basePalettes.push(fallbackPalette);
     }
+    
+    return basePalettes;
   }
-
-  return basePalettes;
 }
 
 
-// Updated selectBaseColor function with 60-70 palettes
 async function selectBaseColor(color) {
   try {
     // Invalidate the cache when a new base color is selected
@@ -3803,63 +4338,48 @@ async function selectBaseColor(color) {
     window.selectedBaseColor = color;
     window.selectedBackgroundColorIndex = backgroundColorIndex;
     
-    // Generate 60-70 palettes based on the selected base color and background color index
-    // We'll generate 70 palettes to give plenty of variation
-    const TOTAL_PALETTES = 70;
-    const basePalettes = [];
+    // Initialize palette storage
+    window.basePaletteColors = {};
+    window.basePaletteColors.shadeCategories = {};
+    window.basePaletteColors.harmonySchemes = {};
     
-    // First, generate 10 primary palette sets
-    const primarySets = [];
-    for (let i = 0; i < 10; i++) {
-      const paletteSet = generateBaseColorPalettes(color, backgroundColorIndex);
-      primarySets.push(...paletteSet);
-    }
+    // Define harmony schemes
+    const harmonySchemes = [
+      'normal', 'monochromatic', 'analogous', 'complementary', 
+      'splitComplementary', 'triadic', 'tetradic', 'square'
+    ];
     
-    // Then select palettes from these sets to reach our 70 total
-    // First take the first palette from each primary set to ensure variety
-    for (let i = 0; i < Math.min(10, primarySets.length); i++) {
-      basePalettes.push(primarySets[i]);
-    }
+    // Define shade types
+    const shadeTypes = ['faint', 'regular', 'dark'];
     
-    // Then randomly select from remaining palettes until we reach TOTAL_PALETTES
-    const remainingPalettes = primarySets.slice(10);
-    while (basePalettes.length < TOTAL_PALETTES && remainingPalettes.length > 0) {
-      const randomIndex = Math.floor(Math.random() * remainingPalettes.length);
-      basePalettes.push(remainingPalettes[randomIndex]);
-      // Remove the selected palette to avoid duplicates
-      remainingPalettes.splice(randomIndex, 1);
-    }
+    // Generate palettes for each combination of harmony scheme and shade type
+    let paletteIndex = 0;
     
-    // If we still don't have enough palettes, generate more using variations
-    if (basePalettes.length < TOTAL_PALETTES) {
-      const needed = TOTAL_PALETTES - basePalettes.length;
-      for (let i = 0; i < needed; i++) {
-        // Create variations by slightly modifying existing palettes
-        const baseIndex = i % basePalettes.length;
-        const basePalette = [...basePalettes[baseIndex]];
+    for (const harmonyScheme of harmonySchemes) {
+      for (const shadeType of shadeTypes) {
+        // Add harmony and shade info to the color object
+        const colorWithInfo = [...color];
+        colorWithInfo.harmonyScheme = harmonyScheme;
+        colorWithInfo.shadeType = shadeType;
         
-        // Apply small random variations to each color
-        const variedPalette = basePalette.map(color => {
-          return [
-            Math.min(255, Math.max(0, color[0] + Math.floor(Math.random() * 40 - 20))),
-            Math.min(255, Math.max(0, color[1] + Math.floor(Math.random() * 40 - 20))),
-            Math.min(255, Math.max(0, color[2] + Math.floor(Math.random() * 40 - 20)))
-          ];
-        });
+        // Generate 12 palettes for this combination
+        const palettes = generateBaseColorPalettes(colorWithInfo, backgroundColorIndex);
         
-        basePalettes.push(variedPalette);
+        // Store generated palettes
+        for (let i = 0; i < palettes.length; i++) {
+          // Store the palette colors
+          window.basePaletteColors[paletteIndex] = [...palettes[i]];
+          
+          // Store the category information
+          window.basePaletteColors.shadeCategories[paletteIndex] = shadeType;
+          window.basePaletteColors.harmonySchemes[paletteIndex] = harmonyScheme;
+          
+          paletteIndex++;
+        }
       }
     }
 
-    // Initialize the base palette colors storage
-    window.basePaletteColors = {};
-
-    // Store the generated palettes
-    for (let i = 0; i < basePalettes.length; i++) {
-      window.basePaletteColors[i] = [...basePalettes[i]];
-    }
-
-    // Also store in localStorage for persistence
+    // Store in localStorage for persistence
     try {
       localStorage.setItem('basePaletteColors', JSON.stringify(window.basePaletteColors));
     } catch (e) {
@@ -3893,6 +4413,9 @@ async function selectBaseColor(color) {
         window.previewCanvases['original'] = previewCanvas.toDataURL();
       }
     }
+    
+    // Create the filters with dropdowns
+    createBaseColorDropdownFilters(color);
     
     // Function to prepare display colors
     function prepareDisplayColors(colors) {
@@ -4002,7 +4525,27 @@ async function selectBaseColor(color) {
       const modalTitle = modal.querySelector('.palette-modal-title');
       const colorsContainer = modal.querySelector('.all-colors-container');
 
-      modalTitle.textContent = `Full Palette (${collection.toUpperCase()} #${paletteIndex+1})`;
+      // Get palette category and harmony if available
+      let category = "Regular";
+      let harmony = "Normal";
+      
+      if (window.basePaletteColors) {
+        if (window.basePaletteColors.shadeCategories && 
+            window.basePaletteColors.shadeCategories[paletteIndex]) {
+          category = window.basePaletteColors.shadeCategories[paletteIndex].charAt(0).toUpperCase() 
+                  + window.basePaletteColors.shadeCategories[paletteIndex].slice(1);
+        }
+        
+        if (window.basePaletteColors.harmonySchemes && 
+            window.basePaletteColors.harmonySchemes[paletteIndex]) {
+          // Format harmony scheme for display (e.g., "splitComplementary" -> "Split Complementary")
+          const harmonyRaw = window.basePaletteColors.harmonySchemes[paletteIndex];
+          harmony = harmonyRaw.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+          if (harmony === "Normal") harmony = "Standard";
+        }
+      }
+
+      modalTitle.textContent = `Full Palette (${collection.toUpperCase()} #${paletteIndex+1} - ${category}, ${harmony})`;
       colorsContainer.innerHTML = '';
 
       // Add all colors to the modal
@@ -4032,213 +4575,213 @@ async function selectBaseColor(color) {
     
     // Function to generate a preview of the palette applied to the image
     async function generatePreview(previewCanvas, paletteColors, paletteIndex) {
-  try {
-    // Mark the container as not ready (ensure loading indicator shows)
-    const container = previewCanvas.closest('.palette-clickable-container');
-    if (container) {
-      container.classList.remove('preview-ready');
-    }
-    
-    // Check cache first - expanded cache check
-    if (window.palettePreviewCache && 
-        window.palettePreviewCache['base'] && 
-        window.palettePreviewCache['base'][paletteIndex]) {
+      try {
+        // Mark the container as not ready (ensure loading indicator shows)
+        const container = previewCanvas.closest('.palette-clickable-container');
+        if (container) {
+          container.classList.remove('preview-ready');
+        }
         
-        // Use cached preview
-        const cachedPreview = window.palettePreviewCache['base'][paletteIndex];
-        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-        
-        // Clear with white background
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-        
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            // Calculate proportional dimensions to maintain aspect ratio
-            const scale = Math.min(
-                previewCanvas.width / img.width,
-                previewCanvas.height / img.height
-            );
+        // Check cache first - expanded cache check
+        if (window.palettePreviewCache && 
+            window.palettePreviewCache['base'] && 
+            window.palettePreviewCache['base'][paletteIndex]) {
             
-            const scaledWidth = img.width * scale;
-            const scaledHeight = img.height * scale;
+            // Use cached preview
+            const cachedPreview = window.palettePreviewCache['base'][paletteIndex];
+            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
             
-            // Center the image
-            const x = (previewCanvas.width - scaledWidth) / 2;
-            const y = (previewCanvas.height - scaledHeight) / 2;
+            // Clear with white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
             
-            // Draw the image with proper aspect ratio
-            ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                // Calculate proportional dimensions to maintain aspect ratio
+                const scale = Math.min(
+                    previewCanvas.width / img.width,
+                    previewCanvas.height / img.height
+                );
+                
+                const scaledWidth = img.width * scale;
+                const scaledHeight = img.height * scale;
+                
+                // Center the image
+                const x = (previewCanvas.width - scaledWidth) / 2;
+                const y = (previewCanvas.height - scaledHeight) / 2;
+                
+                // Draw the image with proper aspect ratio
+                ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+                
+                // Mark preview as ready to hide the loading indicator
+                if (container) {
+                  container.classList.add('preview-ready');
+                }
+                resolve();
+              };
+              img.onerror = () => {
+                // Draw fallback and mark as ready
+                drawFallbackPreview(previewCanvas);
+                if (container) {
+                  container.classList.add('preview-ready');
+                }
+                resolve();
+              };
+              img.src = cachedPreview;
+            });
+        }
             
-            // Mark preview as ready to hide the loading indicator
-            if (container) {
-              container.classList.add('preview-ready');
+            // No cache, create new preview
+            // Get the original image
+            const originalCanvas = document.getElementById('layer_canvas_1');
+            
+            if (!originalCanvas) {
+              console.error('No original canvas found for preview');
+              drawFallbackPreview(previewCanvas);
+              if (container) {
+                container.classList.add('preview-ready');
+              }
+              return;
             }
-            resolve();
-          };
-          img.onerror = () => {
-            // Draw fallback and mark as ready
-            drawFallbackPreview(previewCanvas);
-            if (container) {
-              container.classList.add('preview-ready');
-            }
-            resolve();
-          };
-          img.src = cachedPreview;
-        });
-    }
-        
-        // No cache, create new preview
-        // Get the original image
-        const originalCanvas = document.getElementById('layer_canvas_1');
-        
-        if (!originalCanvas) {
-          console.error('No original canvas found for preview');
-          drawFallbackPreview(previewCanvas);
-          if (container) {
-            container.classList.add('preview-ready');
-          }
-          return;
-        }
-        
-        // Clear the preview canvas with white background
-        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-        
-        // Calculate dimensions that maintain aspect ratio
-        const originalAspect = originalCanvas.width / originalCanvas.height;
-        let previewWidth, previewHeight, offsetX = 0, offsetY = 0;
-        
-        if (originalAspect > 1) {
-          // Image is wider than tall
-          previewWidth = previewCanvas.width;
-          previewHeight = previewWidth / originalAspect;
-          offsetY = (previewCanvas.height - previewHeight) / 2;
-        } else {
-          // Image is taller than wide
-          previewHeight = previewCanvas.height;
-          previewWidth = previewHeight * originalAspect;
-          offsetX = (previewCanvas.width - previewWidth) / 2;
-        }
-        
-        // Create a temporary canvas for the original image at preview size
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = previewWidth;
-        tempCanvas.height = previewHeight;
-        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-        
-        // Draw original image to temp canvas maintaining aspect ratio
-        tempCtx.drawImage(originalCanvas, 0, 0, previewWidth, previewHeight);
-        
-        // Now get the temp canvas data for processing
-        const imageData = tempCtx.getImageData(0, 0, previewWidth, previewHeight);
-        
-        // Find original colors from the image
-        const originalColors = await getDistinctColors(imageData, 30, 50);
-        
-        if (!originalColors || originalColors.length === 0) {
-          console.error('No original colors found for preview');
-          // Still draw the original image with correct aspect ratio
-          ctx.drawImage(tempCanvas, offsetX, offsetY);
-          
-          // Mark preview as ready
-          if (container) {
-            container.classList.add('preview-ready');
-          }
-          return;
-        }
-        
-        // Create color mappings
-        const colorMappings = [];
-        
-        // Special handling for background color
-        if (backgroundColorIndex !== null && 
-            backgroundColorIndex >= 0 && 
-            backgroundColorIndex < originalColors.length) {
             
-            // Map colors with special consideration for the background color
-            for (let i = 0; i < originalColors.length; i++) {
-                if (i === backgroundColorIndex) {
-                    // For the background color index, map to the selected base color (first in palette)
+            // Clear the preview canvas with white background
+            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+            
+            // Calculate dimensions that maintain aspect ratio
+            const originalAspect = originalCanvas.width / originalCanvas.height;
+            let previewWidth, previewHeight, offsetX = 0, offsetY = 0;
+            
+            if (originalAspect > 1) {
+              // Image is wider than tall
+              previewWidth = previewCanvas.width;
+              previewHeight = previewWidth / originalAspect;
+              offsetY = (previewCanvas.height - previewHeight) / 2;
+            } else {
+              // Image is taller than wide
+              previewHeight = previewCanvas.height;
+              previewWidth = previewHeight * originalAspect;
+              offsetX = (previewCanvas.width - previewWidth) / 2;
+            }
+            
+            // Create a temporary canvas for the original image at preview size
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = previewWidth;
+            tempCanvas.height = previewHeight;
+            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+            
+            // Draw original image to temp canvas maintaining aspect ratio
+            tempCtx.drawImage(originalCanvas, 0, 0, previewWidth, previewHeight);
+            
+            // Now get the temp canvas data for processing
+            const imageData = tempCtx.getImageData(0, 0, previewWidth, previewHeight);
+            
+            // Find original colors from the image
+            const originalColors = await getDistinctColors(imageData, 30, 50);
+            
+            if (!originalColors || originalColors.length === 0) {
+              console.error('No original colors found for preview');
+              // Still draw the original image with correct aspect ratio
+              ctx.drawImage(tempCanvas, offsetX, offsetY);
+              
+              // Mark preview as ready
+              if (container) {
+                container.classList.add('preview-ready');
+              }
+              return;
+            }
+            
+            // Create color mappings
+            const colorMappings = [];
+            
+            // Special handling for background color
+            if (backgroundColorIndex !== null && 
+                backgroundColorIndex >= 0 && 
+                backgroundColorIndex < originalColors.length) {
+                
+                // Map colors with special consideration for the background color
+                for (let i = 0; i < originalColors.length; i++) {
+                    if (i === backgroundColorIndex) {
+                        // For the background color index, map to the selected base color (first in palette)
+                        colorMappings.push({
+                            originalColor: originalColors[i],
+                            targetColor: paletteColors[0]
+                        });
+                    } else {
+                        // For other colors, map to rest of palette
+                        const targetIndex = (i < backgroundColorIndex) ? i + 1 : i;
+                        const paletteIndex = targetIndex % paletteColors.length;
+                        
+                        colorMappings.push({
+                            originalColor: originalColors[i],
+                            targetColor: paletteColors[paletteIndex]
+                        });
+                    }
+                }
+            } else {
+                // Regular mapping if no background color is specified
+                for (let i = 0; i < Math.min(originalColors.length, paletteColors.length); i++) {
                     colorMappings.push({
                         originalColor: originalColors[i],
-                        targetColor: paletteColors[0]
-                    });
-                } else {
-                    // For other colors, map to rest of palette
-                    const targetIndex = (i < backgroundColorIndex) ? i + 1 : i;
-                    const paletteIndex = targetIndex % paletteColors.length;
-                    
-                    colorMappings.push({
-                        originalColor: originalColors[i],
-                        targetColor: paletteColors[paletteIndex]
+                        targetColor: paletteColors[i % paletteColors.length]
                     });
                 }
             }
-        } else {
-            // Regular mapping if no background color is specified
-            for (let i = 0; i < Math.min(originalColors.length, paletteColors.length); i++) {
-                colorMappings.push({
-                    originalColor: originalColors[i],
-                    targetColor: paletteColors[i % paletteColors.length]
-                });
-            }
-        }
-        
-        // Use a simplified processor for the preview
-        const colorProcessor = new ColorProcessor();
-        const imageUrl = tempCanvas.toDataURL();
-        
-        // Process the preview
-        const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
-            imageUrl,
-            colorMappings
-        );
-        
-        // Load the processed image back to the preview canvas
-        return new Promise((resolve) => {
-          const resultImg = new Image();
-          resultImg.onload = () => {
-            // Draw the processed image with the correct positioning
-            ctx.drawImage(resultImg, offsetX, offsetY, previewWidth, previewHeight);
             
-            // Cache the generated preview
-            if (!window.palettePreviewCache) {
-                window.palettePreviewCache = {};
-            }
-            if (!window.palettePreviewCache['base']) {
-                window.palettePreviewCache['base'] = {};
-            }
-            window.palettePreviewCache['base'][paletteIndex] = previewCanvas.toDataURL();
+            // Use a simplified processor for the preview
+            const colorProcessor = new ColorProcessor();
+            const imageUrl = tempCanvas.toDataURL();
             
-            // Mark preview as ready to hide loading indicator
-            if (container) {
-              container.classList.add('preview-ready');
-            }
-            resolve();
-          };
-          resultImg.onerror = () => {
-            console.error("Error loading processed preview");
+            // Process the preview
+            const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
+                imageUrl,
+                colorMappings
+            );
+            
+            // Load the processed image back to the preview canvas
+            return new Promise((resolve) => {
+              const resultImg = new Image();
+              resultImg.onload = () => {
+                // Draw the processed image with the correct positioning
+                ctx.drawImage(resultImg, offsetX, offsetY, previewWidth, previewHeight);
+                
+                // Cache the generated preview
+                if (!window.palettePreviewCache) {
+                    window.palettePreviewCache = {};
+                }
+                if (!window.palettePreviewCache['base']) {
+                    window.palettePreviewCache['base'] = {};
+                }
+                window.palettePreviewCache['base'][paletteIndex] = previewCanvas.toDataURL();
+                
+                // Mark preview as ready to hide loading indicator
+                if (container) {
+                  container.classList.add('preview-ready');
+                }
+                resolve();
+              };
+              resultImg.onerror = () => {
+                console.error("Error loading processed preview");
+                drawFallbackPreview(previewCanvas);
+                if (container) {
+                  container.classList.add('preview-ready');
+                }
+                resolve();
+              };
+              resultImg.src = processedImageUrl;
+            });
+            
+          } catch (error) {
+            console.error("Error generating preview:", error);
             drawFallbackPreview(previewCanvas);
+            const container = previewCanvas.closest('.palette-clickable-container');
             if (container) {
               container.classList.add('preview-ready');
             }
-            resolve();
-          };
-          resultImg.src = processedImageUrl;
-        });
-        
-      } catch (error) {
-        console.error("Error generating preview:", error);
-        drawFallbackPreview(previewCanvas);
-        const container = previewCanvas.closest('.palette-clickable-container');
-        if (container) {
-          container.classList.add('preview-ready');
+          }
         }
-      }
-    }
 
     // Helper function to draw fallback preview
     function drawFallbackPreview(canvas) {
@@ -4260,10 +4803,26 @@ async function selectBaseColor(color) {
       // Clear existing containers
       palettesContainer.innerHTML = '';
 
-      // Create containers for all our palettes (70)
+      // Calculate total palettes (all combinations of harmonies × shades × 12 palettes each)
+      const TOTAL_PALETTES = harmonySchemes.length * shadeTypes.length * 12;
+      
+      // Create containers for all our palettes
       for (let i = 0; i < TOTAL_PALETTES; i++) {
         const paletteRow = document.createElement('div');
         paletteRow.className = 'row mb-4 palette-row';
+        
+        // Add data attributes for shade category and harmony scheme if available
+        if (window.basePaletteColors) {
+          if (window.basePaletteColors.shadeCategories && 
+              window.basePaletteColors.shadeCategories[i]) {
+            paletteRow.dataset.shadeCategory = window.basePaletteColors.shadeCategories[i];
+          }
+          
+          if (window.basePaletteColors.harmonySchemes && 
+              window.basePaletteColors.harmonySchemes[i]) {
+            paletteRow.dataset.harmonyScheme = window.basePaletteColors.harmonySchemes[i];
+          }
+        }
         
         const paletteCol = document.createElement('div');
         paletteCol.className = 'col-12';
@@ -4311,14 +4870,17 @@ async function selectBaseColor(color) {
     }
 
     // Display the generated palettes with previews
-    for (let i = 0; i < TOTAL_PALETTES; i++) {
+    for (let i = 0; i < Object.keys(window.basePaletteColors).length; i++) {
+      if (i === 'shadeCategories' || i === 'harmonySchemes') continue;
+      
       const paletteContainer = document.getElementById(`base_colorPalette_${i}`);
       if (!paletteContainer) continue;
 
       paletteContainer.innerHTML = '';
 
       // Get the generated palette
-      const paletteColors = basePalettes[i];
+      const paletteColors = window.basePaletteColors[i];
+      if (!paletteColors) continue;
 
       // Create container for the palette that will be clickable as a whole
       const clickableContainer = document.createElement('div');
@@ -4328,6 +4890,59 @@ async function selectBaseColor(color) {
       // Add data attribute to store the palette index
       clickableContainer.dataset.paletteIndex = i;
       clickableContainer.dataset.collection = 'base';
+      
+      // Get and store shade category and harmony scheme
+      let shadeCategory = 'regular';
+      let harmonyScheme = 'normal';
+      
+      if (window.basePaletteColors.shadeCategories && window.basePaletteColors.shadeCategories[i]) {
+        shadeCategory = window.basePaletteColors.shadeCategories[i];
+        clickableContainer.dataset.shadeCategory = shadeCategory;
+      }
+      
+      if (window.basePaletteColors.harmonySchemes && window.basePaletteColors.harmonySchemes[i]) {
+        harmonyScheme = window.basePaletteColors.harmonySchemes[i];
+        clickableContainer.dataset.harmonyScheme = harmonyScheme;
+      }
+      
+      // Add shade tag - visual indicator of palette type
+      const shadeTags = document.createElement('div');
+      shadeTags.className = 'scheme-tags';
+      
+      // Add shade tag
+      const shadeTag = document.createElement('span');
+      shadeTag.className = 'shade-tag';
+      shadeTag.textContent = shadeCategory.charAt(0).toUpperCase() + shadeCategory.slice(1);
+      shadeTags.appendChild(shadeTag);
+      
+      // Add harmony tag
+      const harmonyTag = document.createElement('span');
+      harmonyTag.className = 'harmony-tag';
+      
+      // Format harmony scheme for display
+      let harmonyDisplay = harmonyScheme;
+      if (harmonyScheme === 'splitComplementary') {
+        harmonyDisplay = 'Split Comp.';
+      } else if (harmonyScheme === 'monochromatic') {
+        harmonyDisplay = 'Monochrome';
+      } else if (harmonyScheme === 'complementary') {
+        harmonyDisplay = 'Complement';
+      } else if (harmonyScheme === 'analogous') {
+        harmonyDisplay = 'Analogous';
+      } else if (harmonyScheme === 'triadic') {
+        harmonyDisplay = 'Triadic';
+      } else if (harmonyScheme === 'tetradic') {
+        harmonyDisplay = 'Tetradic';
+      } else if (harmonyScheme === 'square') {
+        harmonyDisplay = 'Square';
+      } else if (harmonyScheme === 'normal') {
+        harmonyDisplay = 'Standard';
+      }
+      
+      harmonyTag.textContent = harmonyDisplay;
+      shadeTags.appendChild(harmonyTag);
+      
+      clickableContainer.appendChild(shadeTags);
       
       // NEW: Add preview image container
       const previewContainer = document.createElement('div');
@@ -4424,11 +5039,41 @@ async function selectBaseColor(color) {
         e.stopPropagation(); // Prevent triggering palette selection
 
         try {
-          // Generate a new shuffled palette based on the selected base color
-          const newPalette = generateBaseColorPalettes(color, backgroundColorIndex)[0]; // Just use the first generated palette
+          // Get current shade category and harmony scheme for this palette
+          let shadeCategory = 'regular';
+          let harmonyScheme = 'normal';
+          
+          if (window.basePaletteColors && window.basePaletteColors.shadeCategories &&
+              window.basePaletteColors.shadeCategories[paletteIndex]) {
+            shadeCategory = window.basePaletteColors.shadeCategories[paletteIndex];
+          }
+          
+          if (window.basePaletteColors && window.basePaletteColors.harmonySchemes &&
+              window.basePaletteColors.harmonySchemes[paletteIndex]) {
+            harmonyScheme = window.basePaletteColors.harmonySchemes[paletteIndex];
+          }
+          
+          // Add harmony and shade info to the color object
+          const colorWithInfo = [...color];
+          colorWithInfo.harmonyScheme = harmonyScheme;
+          colorWithInfo.shadeType = shadeCategory;
+          
+          // Generate a new shuffled palette that maintains the shade and harmony types
+          const newPalette = generateBaseColorPalettes(colorWithInfo, backgroundColorIndex)[0];
 
           // Store the new palette
           window.basePaletteColors[paletteIndex] = [...newPalette];
+          
+          // Update shade category and harmony scheme
+          if (!window.basePaletteColors.shadeCategories) {
+            window.basePaletteColors.shadeCategories = {};
+          }
+          window.basePaletteColors.shadeCategories[paletteIndex] = shadeCategory;
+          
+          if (!window.basePaletteColors.harmonySchemes) {
+            window.basePaletteColors.harmonySchemes = {};
+          }
+          window.basePaletteColors.harmonySchemes[paletteIndex] = harmonyScheme;
 
           // Update localStorage
           try {
@@ -4451,6 +5096,47 @@ async function selectBaseColor(color) {
           // Store data
           clickableContainer.dataset.paletteIndex = paletteIndex;
           clickableContainer.dataset.collection = 'base';
+          clickableContainer.dataset.shadeCategory = shadeCategory;
+          clickableContainer.dataset.harmonyScheme = harmonyScheme;
+          
+          // Add scheme tags
+          const shadeTags = document.createElement('div');
+          shadeTags.className = 'scheme-tags';
+          
+          // Add shade tag
+          const shadeTag = document.createElement('span');
+          shadeTag.className = 'shade-tag';
+          shadeTag.textContent = shadeCategory.charAt(0).toUpperCase() + shadeCategory.slice(1);
+          shadeTags.appendChild(shadeTag);
+          
+          // Add harmony tag
+          const harmonyTag = document.createElement('span');
+          harmonyTag.className = 'harmony-tag';
+          
+          // Format harmony scheme for display
+          let harmonyDisplay = harmonyScheme;
+          if (harmonyScheme === 'splitComplementary') {
+            harmonyDisplay = 'Split Comp.';
+          } else if (harmonyScheme === 'monochromatic') {
+            harmonyDisplay = 'Monochrome';
+          } else if (harmonyScheme === 'complementary') {
+            harmonyDisplay = 'Complement';
+          } else if (harmonyScheme === 'analogous') {
+            harmonyDisplay = 'Analogous';
+          } else if (harmonyScheme === 'triadic') {
+            harmonyDisplay = 'Triadic';
+          } else if (harmonyScheme === 'tetradic') {
+            harmonyDisplay = 'Tetradic';
+          } else if (harmonyScheme === 'square') {
+            harmonyDisplay = 'Square';
+          } else if (harmonyScheme === 'normal') {
+            harmonyDisplay = 'Standard';
+          }
+          
+          harmonyTag.textContent = harmonyDisplay;
+          shadeTags.appendChild(harmonyTag);
+          
+          clickableContainer.appendChild(shadeTags);
           
           // NEW: Add preview image container
           const previewContainer = document.createElement('div');
@@ -4565,107 +5251,8 @@ async function selectBaseColor(color) {
       });
     });
     
-    // Add pagination controls for the many palettes
-    if (!document.querySelector('.palette-pagination')) {
-      const paginationContainer = document.createElement('div');
-      paginationContainer.className = 'palette-pagination d-flex justify-content-center mt-4 mb-2';
-      
-      // We'll show 10 palettes per page
-      const totalPages = Math.ceil(TOTAL_PALETTES / 10);
-      
-      // Create previous button
-      const prevButton = document.createElement('button');
-      prevButton.className = 'btn btn-outline-secondary me-2';
-      prevButton.innerHTML = '&laquo; Previous';
-      prevButton.disabled = true; // Initially disabled
-      
-      // Create page indicator
-      const pageIndicator = document.createElement('div');
-      pageIndicator.className = 'page-indicator mx-2 d-flex align-items-center';
-      pageIndicator.innerHTML = `<span class="current-page">1</span>/<span class="total-pages">${totalPages}</span>`;
-      
-      // Create next button
-      const nextButton = document.createElement('button');
-      nextButton.className = 'btn btn-outline-secondary ms-2';
-      nextButton.innerHTML = 'Next &raquo;';
-      
-      // Add to container
-      paginationContainer.appendChild(prevButton);
-      paginationContainer.appendChild(pageIndicator);
-      paginationContainer.appendChild(nextButton);
-      
-      // Store current page
-      paginationContainer.dataset.currentPage = 1;
-      
-      // Add pagination controls after palettes container
-      palettesContainer.parentNode.insertBefore(paginationContainer, palettesContainer.nextSibling);
-      
-      // Add event listeners for pagination
-      prevButton.addEventListener('click', function() {
-        let currentPage = parseInt(paginationContainer.dataset.currentPage, 10);
-        if (currentPage > 1) {
-          currentPage--;
-          updatePalettesPage(currentPage, totalPages);
-          paginationContainer.dataset.currentPage = currentPage;
-          pageIndicator.querySelector('.current-page').textContent = currentPage;
-          
-          // Update button states
-          nextButton.disabled = false;
-          prevButton.disabled = currentPage === 1;
-          
-          // Scroll to top of palettes
-          palettesContainer.scrollIntoView({ behavior: 'smooth' });
-        }
-      });
-      
-      nextButton.addEventListener('click', function() {
-        let currentPage = parseInt(paginationContainer.dataset.currentPage, 10);
-        if (currentPage < totalPages) {
-          currentPage++;
-          updatePalettesPage(currentPage, totalPages);
-          paginationContainer.dataset.currentPage = currentPage;
-          pageIndicator.querySelector('.current-page').textContent = currentPage;
-          
-          // Update button states
-          prevButton.disabled = false;
-          nextButton.disabled = currentPage === totalPages;
-          
-          // Scroll to top of palettes
-          palettesContainer.scrollIntoView({ behavior: 'smooth' });
-        }
-      });
-      
-      // Initial page setup
-      updatePalettesPage(1, totalPages);
-    }
-    
-    // Function to update which palettes are visible based on current page
-    function updatePalettesPage(page, totalPages) {
-      const palettesPerPage = 10;
-      const startIndex = (page - 1) * palettesPerPage;
-      const endIndex = Math.min(startIndex + palettesPerPage, TOTAL_PALETTES);
-      
-      // Hide all palette rows
-      document.querySelectorAll('.palette-row').forEach((row, index) => {
-        if (index >= startIndex && index < endIndex) {
-          row.style.display = 'flex';
-        } else {
-          row.style.display = 'none';
-        }
-      });
-      
-      // Update pagination controls
-      const pagination = document.querySelector('.palette-pagination');
-      if (pagination) {
-        const prevButton = pagination.querySelector('button:first-child');
-        const nextButton = pagination.querySelector('button:last-child');
-        
-        prevButton.disabled = page === 1;
-        nextButton.disabled = page === totalPages;
-        
-        pagination.querySelector('.current-page').textContent = page;
-      }
-    }
+    // Set up lazy loading for palette previews
+    setupLazyLoadingForPalettes();
     
     // Add the necessary CSS if it doesn't exist
     if (!document.getElementById('palette-preview-styles')) {
@@ -4856,19 +5443,6 @@ async function selectBaseColor(color) {
             opacity: 1;
         }
         
-        .palette-pagination {
-            margin: 20px 0;
-        }
-        
-        .page-indicator {
-            padding: 0 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            min-width: 60px;
-            justify-content: center;
-            font-size: 0.9rem;
-        }
-        
         .palette-number {
             position: absolute;
             top: 5px;
@@ -4884,14 +5458,189 @@ async function selectBaseColor(color) {
             font-size: 12px;
             z-index: 3;
         }
+        
+        .scheme-tags {
+            position: absolute;
+            top: 5px;
+            right: 34px;
+            display: flex;
+            gap: 4px;
+            z-index: 3;
+        }
+        
+        .shade-tag, .harmony-tag {
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        
+        .harmony-tag {
+            background-color: rgba(60,60,120,0.8);
+        }
+        
+        .base-color-filters {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .filter-dropdown {
+            min-width: 140px;
+        }
+        
+        .filter-dropdown select {
+            width: 100%;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            background-color: white;
+        }
       `;
       document.head.appendChild(styleElement);
     }
-    setupLazyLoadingForPalettes();
   } catch (error) {
     console.error("Error in selectBaseColor:", error);
   }
 }
+
+// Create base color dropdown filters
+function createBaseColorDropdownFilters(baseColor) {
+  // Remove any existing filter container
+  const existingFilters = document.querySelector('.base-color-filters');
+  if (existingFilters) {
+    existingFilters.remove();
+  }
+  
+  // Create filter container
+  const filterContainer = document.createElement('div');
+  filterContainer.className = 'base-color-filters';
+  
+  // Create filter label for harmony
+  const harmonyLabel = document.createElement('div');
+  harmonyLabel.className = 'filter-label';
+  harmonyLabel.textContent = 'Harmony:';
+  
+  // Create harmony dropdown
+  const harmonyDropdown = document.createElement('div');
+  harmonyDropdown.className = 'filter-dropdown harmony-dropdown';
+  
+  const harmonySelect = document.createElement('select');
+  harmonySelect.id = 'harmony-filter';
+  harmonySelect.className = 'form-select';
+  
+  // Add harmony options
+  const harmonyOptions = [
+    { value: 'all', label: 'All Harmonies' },
+    { value: 'normal', label: 'Standard' },
+    { value: 'monochromatic', label: 'Monochromatic' },
+    { value: 'analogous', label: 'Analogous' },
+    { value: 'complementary', label: 'Complementary' },
+    { value: 'splitComplementary', label: 'Split Complementary' },
+    { value: 'triadic', label: 'Triadic' },
+    { value: 'tetradic', label: 'Tetradic' },
+    { value: 'square', label: 'Square' }
+  ];
+  
+  harmonyOptions.forEach(option => {
+    const optionElement = document.createElement('option');
+    optionElement.value = option.value;
+    optionElement.textContent = option.label;
+    harmonySelect.appendChild(optionElement);
+  });
+  
+  harmonyDropdown.appendChild(harmonySelect);
+  
+  // Create filter label for shade
+  const shadeLabel = document.createElement('div');
+  shadeLabel.className = 'filter-label';
+  shadeLabel.textContent = 'Shade:';
+  
+  // Create shade dropdown
+  const shadeDropdown = document.createElement('div');
+  shadeDropdown.className = 'filter-dropdown shade-dropdown';
+  
+  const shadeSelect = document.createElement('select');
+  shadeSelect.id = 'shade-filter';
+  shadeSelect.className = 'form-select';
+  
+  // Add shade options
+  const shadeOptions = [
+    { value: 'all', label: 'All Shades' },
+    { value: 'faint', label: 'Faint' },
+    { value: 'regular', label: 'Regular' },
+    { value: 'dark', label: 'Dark' }
+  ];
+  
+  shadeOptions.forEach(option => {
+    const optionElement = document.createElement('option');
+    optionElement.value = option.value;
+    optionElement.textContent = option.label;
+    shadeSelect.appendChild(optionElement);
+  });
+  
+  shadeDropdown.appendChild(shadeSelect);
+  
+  // Add event listeners to dropdowns
+  harmonySelect.addEventListener('change', function() {
+    applyFilters(this.value, shadeSelect.value, baseColor);
+  });
+  
+  shadeSelect.addEventListener('change', function() {
+    applyFilters(harmonySelect.value, this.value, baseColor);
+  });
+  
+  // Add all elements to filter container
+  filterContainer.appendChild(harmonyLabel);
+  filterContainer.appendChild(harmonyDropdown);
+  filterContainer.appendChild(shadeLabel);
+  filterContainer.appendChild(shadeDropdown);
+  
+  // Add filter container before the palettes container
+  const palettesSection = document.querySelector('.base-palettes-section');
+  if (palettesSection) {
+    const palettesContainer = palettesSection.querySelector('.base-palettes-container');
+    palettesSection.insertBefore(filterContainer, palettesContainer);
+  }
+}
+
+// Apply filters to the displayed palettes
+function applyFilters(harmonyFilter, shadeFilter, baseColor) {
+  console.log(`Applying filters - Harmony: ${harmonyFilter}, Shade: ${shadeFilter}`);
+  
+  // Get all palette rows
+  const paletteRows = document.querySelectorAll('.palette-row');
+  let visibleCount = 0;
+  
+  paletteRows.forEach(row => {
+    // Get the palette's shade category and harmony scheme
+    const shadeCategory = row.dataset.shadeCategory || 'regular';
+    const harmonyScheme = row.dataset.harmonyScheme || 'normal';
+    
+    // Show or hide based on filters
+    const matchesShade = shadeFilter === 'all' || shadeFilter === shadeCategory;
+    const matchesHarmony = harmonyFilter === 'all' || harmonyFilter === harmonyScheme;
+    
+    if (matchesShade && matchesHarmony) {
+      row.style.display = 'flex';
+      visibleCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  
+  console.log(`Filters applied - ${visibleCount} palettes visible`);
+}
+
 // Add a function to let users select which color is the background
 function selectBackgroundColor(originalColors) {
   // Create a modal for selecting background color
