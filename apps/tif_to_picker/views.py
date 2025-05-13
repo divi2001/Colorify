@@ -418,8 +418,14 @@ def export_tiff(request):
                     img_data = base64.b64decode(base64_str)
                     img = Image.open(io.BytesIO(img_data))
                     
-                    # Get original DPI if available
-                    dpi = img.info.get('dpi', (500, 500))
+                    # Get DPI information
+                    dpi_x = int(layer_data.get('dpi_x', 300))
+                    dpi_y = int(layer_data.get('dpi_y', 300))
+                    dpi = (dpi_x, dpi_y)
+                    
+                    # Use DPI if available, otherwise default
+                    if 'dpi_x' not in layer_data or 'dpi_y' not in layer_data:
+                        dpi = img.info.get('dpi', (300, 300))
                     
                     if img.mode != 'RGBA':
                         img = img.convert('RGBA')
@@ -561,6 +567,8 @@ def export_tiff(request):
             return JsonResponse({'error': error_msg}, status=500)
             
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
 def get_layer_image(layer):
     try:
         channels_data = []
@@ -758,7 +766,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             print(f"Error during prediction: {str(e)}")
             return None
     
-    def compress_and_save_image(image_array, output_path, original_size=None):
+    def compress_and_save_image(image_array, output_path, original_size=None, dpi=(300, 300)):
         try:
             # Convert numpy array to PIL Image
             if isinstance(image_array, np.ndarray):
@@ -783,7 +791,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
 
             # Get original dimensions - store these before any resize happens
             orig_width, orig_height = img.size
-            print(f"Original dimensions: {orig_width}x{orig_height}")
+            print(f"Original dimensions: {orig_width}x{orig_height}, DPI: {dpi}")
             
             # Store original dimensions to return
             original_dimensions = (orig_width, orig_height)
@@ -824,19 +832,22 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                     img.save(output_path, 
                            'PNG',
                            optimize=optimize,
-                           compress_level=9)
+                           compress_level=9,
+                           dpi=dpi)
                 elif output_format.upper() == 'JPEG':
                     img.save(output_path, 
                            'JPEG',
                            quality=quality,
                            optimize=optimize,
-                           progressive=True)
+                           progressive=True,
+                           dpi=dpi)
                 elif output_format.upper() == 'WEBP':
                     img.save(output_path, 
                            'WEBP',
                            quality=quality,
                            method=6,  # Highest compression method
                            lossless=False)
+                    # Note: WebP doesn't support DPI directly in PIL
                 else:
                     raise ValueError(f"Unsupported output format: {output_format}")
 
@@ -852,7 +863,9 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                     'original_width': orig_width,
                     'original_height': orig_height,
                     'display_width': img.width,
-                    'display_height': img.height
+                    'display_height': img.height,
+                    'dpi_x': dpi[0],
+                    'dpi_y': dpi[1]
                 }
                 print(f"ML prediction for {os.path.basename(output_path)}: {ml_label}")
                 # Add ML prediction if available
@@ -884,6 +897,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             original_size = os.path.getsize(file_path)
             with Image.open(file_path) as img:
                 full_image = np.array(img)
+                # Get DPI from image if available
+                dpi = img.info.get('dpi', (300, 300))  # Default to 300 DPI
             
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
@@ -891,7 +906,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             base_filename = os.path.splitext(os.path.basename(file_path))[0]
             layer_output_path = os.path.join(output_dir, f"{base_filename}.{output_format.lower()}")
             
-            size, orig_size, ml_label = compress_and_save_image(full_image, layer_output_path, original_size)
+            size, orig_size, ml_label = compress_and_save_image(full_image, layer_output_path, original_size, dpi=dpi)
             if size is None:
                 return []
             
@@ -906,6 +921,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                 'height': height,
                 'original_width': orig_width,
                 'original_height': orig_height,
+                'dpi_x': dpi[0],
+                'dpi_y': dpi[1],
                 'ml_label': ml_label
             }]
             
@@ -934,6 +951,38 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                         # Get the image data
                         image = page.asarray()
                         
+                        # Extract DPI information from TIFF tags
+                        dpi = (300, 300)  # Default DPI if not found
+                        try:
+                            # Get resolution tags
+                            if 'XResolution' in page.tags and 'YResolution' in page.tags:
+                                x_resolution = page.tags['XResolution'].value
+                                y_resolution = page.tags['YResolution'].value
+                                
+                                # Resolution values are often stored as rational numbers (tuples)
+                                if isinstance(x_resolution, tuple) and len(x_resolution) == 2:
+                                    x_dpi = x_resolution[0] / x_resolution[1]
+                                else:
+                                    x_dpi = x_resolution
+                                    
+                                if isinstance(y_resolution, tuple) and len(y_resolution) == 2:
+                                    y_dpi = y_resolution[0] / y_resolution[1]
+                                else:
+                                    y_dpi = y_resolution
+                                
+                                # Check resolution unit (1 = none, 2 = inch, 3 = cm)
+                                resolution_unit = page.tags.get('ResolutionUnit', 2).value
+                                if resolution_unit == 3:  # Convert from cm to inches if needed
+                                    x_dpi = x_dpi * 2.54
+                                    y_dpi = y_dpi * 2.54
+                                
+                                dpi = (int(x_dpi), int(y_dpi))
+                                print(f"Extracted DPI: {dpi}")
+                            else:
+                                print("No resolution tags found, using default DPI")
+                        except Exception as dpi_error:
+                            print(f"Error extracting DPI: {str(dpi_error)}")
+                        
                         # Create layer name
                         layer_name = f"layer_{i}"
                         
@@ -942,8 +991,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                         
                         print(f"Processing layer {i}/{n_pages}: {layer_name}")
                         
-                        # Compress and save the image
-                        size, orig_size, ml_label = compress_and_save_image(image, layer_output_path, original_size)
+                        # Compress and save the image with DPI information
+                        size, orig_size, ml_label = compress_and_save_image(image, layer_output_path, original_size, dpi=dpi)
                         if size is None:
                             continue
                         
@@ -959,7 +1008,9 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                             'width': width,
                             'height': height,
                             'original_width': orig_width,
-                            'original_height': orig_height
+                            'original_height': orig_height,
+                            'dpi_x': dpi[0],
+                            'dpi_y': dpi[1]
                         }
                         
                         # Add ML label if available
@@ -979,7 +1030,6 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             return []
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
-
 
 def extractColors():
     print("testing")
