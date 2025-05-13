@@ -1768,8 +1768,10 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
                   data-original-src="{{ layer.path }}"
                   data-original-width="{{ layer.original_width }}"
                   data-original-height="{{ layer.original_height }}"
-                  data-dpi-x="{{ layer.dpi_x|default:300 }}"
-                  data-dpi-y="{{ layer.dpi_y|default:300 }}"
+                  data-dpi-x="{{ layer.dpi_x|default:500 }}"
+                  data-dpi-y="{{ layer.dpi_y|default:500 }}"
+                  data-original-physical-width-inches="{{ layer.physical_width_inches }}"
+                  data-original-physical-height-inches="{{ layer.physical_height_inches }}"
                 ></canvas>
                 <!-- Removed the visible ml-label-indicator div -->
               </div>
