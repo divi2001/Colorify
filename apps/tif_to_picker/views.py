@@ -855,7 +855,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
     import json
     import torch
     import torchvision.transforms as transforms
-    
+    import numpy as np
     # Initialize ML model if path is provided
     ml_model = None
     if model_path and os.path.exists(model_path):
@@ -994,7 +994,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                     'display_width': img.width,
                     'display_height': img.height
                 }
-                
+                print(f"ML prediction for {os.path.basename(output_path)}: {ml_label}")
                 # Add ML prediction if available
                 if ml_label is not None:
                     metadata['ml_label'] = int(ml_label)
