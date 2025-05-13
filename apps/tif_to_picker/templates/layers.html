@@ -1600,32 +1600,11 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
     <!-- Color blocks will be generated here -->
   </div>
 
-  <!-- Hidden palettes section - matched exactly to trending structure -->
+  <!-- Hidden palettes section - modified to support 70 palettes -->
   <div class="base-palettes-section" style="display: none;">
     <hr/>
-    <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
-      {% for i in "0123456789" %}
-        <div class="layer-toggle-item d-flex flex-column gap-2">
-          <div id="base_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
-          <div class="d-flex align-items-center justify-content-between w-100">
-            <button id="base_shufflePalette_{{ forloop.counter0 }}" class="btn btn-sm btn-primary">
-              <i class="bi bi-shuffle"></i>
-            </button>
-            <button type="button" 
-                    id="base_fav_btn_{{ forloop.counter0 }}" 
-                    class="btn favorite-btn"
-                    data-palette-type="BC"
-                    data-colors-id="{{ forloop.counter0 }}"
-                    onclick="toggleFavorite(this, 'base')">
-              <i class="bi bi-heart"></i>
-              <span class="fav-count">0</span>
-            </button>
-            <button type="button" id="base_applyButton_{{ forloop.counter0 }}" class="btn btn-success">
-              <i class="bi bi-magic"></i>
-            </button>
-          </div>
-        </div>
-      {% endfor %}
+    <div class="base-palettes-container">
+      <!-- The palette containers will be generated dynamically via JavaScript -->
     </div>
   </div>
 </div>
@@ -3211,6 +3190,54 @@ function showBackgroundColorSelector(baseColor, originalColors) {
 }
 
  // Modified selectBaseColor function
+// Add this style block to your CSS to make the grid of palettes look better
+const paletteGridStyles = document.createElement('style');
+paletteGridStyles.textContent = `
+  .base-palettes-section .layer-toggles {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+    gap: 15px !important;
+    justify-content: start !important;
+    width: 100%;
+  }
+  
+  .layer-toggle-item {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+  
+  .color-palette {
+    width: 100%;
+    min-height: 220px;
+  }
+  
+  /* Make the palette container take full width within its grid cell */
+  .palette-clickable-container {
+    width: 100%;
+    margin: 0 auto;
+  }
+  
+  /* Make the preview container expand to fit width */
+  .palette-preview-container {
+    width: 100%;
+    height: 200px;
+  }
+  
+  /* Ensure palette number always visible */
+  .palette-number {
+    z-index: 5;
+    background-color: rgba(0,0,0,0.7);
+    font-weight: bold;
+  }
+  
+  /* Add some extra breathing room */
+  .base-palettes-section {
+    margin-bottom: 40px;
+  }
+`;
+document.head.appendChild(paletteGridStyles);
+
+
 
  function generateBaseColorPalettes(baseColor, backgroundColorIndex = 0) {
   // Conversion utilities
@@ -4005,62 +4032,62 @@ async function selectBaseColor(color) {
     
     // Function to generate a preview of the palette applied to the image
     async function generatePreview(previewCanvas, paletteColors, paletteIndex) {
-      try {
-        // Mark the container as not ready (ensure loading indicator shows)
-        const container = previewCanvas.closest('.palette-clickable-container');
-        if (container) {
-          container.classList.remove('preview-ready');
-        }
+  try {
+    // Mark the container as not ready (ensure loading indicator shows)
+    const container = previewCanvas.closest('.palette-clickable-container');
+    if (container) {
+      container.classList.remove('preview-ready');
+    }
+    
+    // Check cache first - expanded cache check
+    if (window.palettePreviewCache && 
+        window.palettePreviewCache['base'] && 
+        window.palettePreviewCache['base'][paletteIndex]) {
         
-        // Check cache first
-        if (window.palettePreviewCache && 
-            window.palettePreviewCache['base'] && 
-            window.palettePreviewCache['base'][paletteIndex]) {
+        // Use cached preview
+        const cachedPreview = window.palettePreviewCache['base'][paletteIndex];
+        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+        
+        // Clear with white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+        
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            // Calculate proportional dimensions to maintain aspect ratio
+            const scale = Math.min(
+                previewCanvas.width / img.width,
+                previewCanvas.height / img.height
+            );
             
-            // Use cached preview
-            const cachedPreview = window.palettePreviewCache['base'][paletteIndex];
-            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+            const scaledWidth = img.width * scale;
+            const scaledHeight = img.height * scale;
             
-            // Clear with white background
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+            // Center the image
+            const x = (previewCanvas.width - scaledWidth) / 2;
+            const y = (previewCanvas.height - scaledHeight) / 2;
             
-            return new Promise((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                // Calculate proportional dimensions to maintain aspect ratio
-                const scale = Math.min(
-                    previewCanvas.width / img.width,
-                    previewCanvas.height / img.height
-                );
-                
-                const scaledWidth = img.width * scale;
-                const scaledHeight = img.height * scale;
-                
-                // Center the image
-                const x = (previewCanvas.width - scaledWidth) / 2;
-                const y = (previewCanvas.height - scaledHeight) / 2;
-                
-                // Draw the image with proper aspect ratio
-                ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-                
-                // Mark preview as ready to hide the loading indicator
-                if (container) {
-                  container.classList.add('preview-ready');
-                }
-                resolve();
-              };
-              img.onerror = () => {
-                // Draw fallback and mark as ready
-                drawFallbackPreview(previewCanvas);
-                if (container) {
-                  container.classList.add('preview-ready');
-                }
-                resolve();
-              };
-              img.src = cachedPreview;
-            });
-        }
+            // Draw the image with proper aspect ratio
+            ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+            
+            // Mark preview as ready to hide the loading indicator
+            if (container) {
+              container.classList.add('preview-ready');
+            }
+            resolve();
+          };
+          img.onerror = () => {
+            // Draw fallback and mark as ready
+            drawFallbackPreview(previewCanvas);
+            if (container) {
+              container.classList.add('preview-ready');
+            }
+            resolve();
+          };
+          img.src = cachedPreview;
+        });
+    }
         
         // No cache, create new preview
         // Get the original image
@@ -4860,7 +4887,7 @@ async function selectBaseColor(color) {
       `;
       document.head.appendChild(styleElement);
     }
-    
+    setupLazyLoadingForPalettes();
   } catch (error) {
     console.error("Error in selectBaseColor:", error);
   }
@@ -4965,6 +4992,140 @@ function selectBackgroundColor(originalColors) {
   });
 }
 
+
+function setupLazyLoadingForPalettes() {
+  // Remove pagination controls if they exist
+  const paginationContainer = document.querySelector('.palette-pagination');
+  if (paginationContainer) {
+    paginationContainer.remove();
+  }
+  
+  // Show all palette rows
+  document.querySelectorAll('.palette-row').forEach(row => {
+    row.style.display = 'flex';
+  });
+  
+  // Set up IntersectionObserver to load previews only when they become visible
+  const previewObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const container = entry.target;
+        const previewCanvas = container.querySelector('.palette-preview-canvas');
+        const paletteIndex = parseInt(container.dataset.paletteIndex, 10);
+        
+        if (previewCanvas && window.basePaletteColors && window.basePaletteColors[paletteIndex]) {
+          const paletteColors = window.basePaletteColors[paletteIndex];
+          
+          // Generate the preview
+          generatePreview(previewCanvas, paletteColors, paletteIndex);
+          
+          // Stop observing this container after loading
+          observer.unobserve(container);
+        }
+      }
+    });
+  }, {
+    rootMargin: '200px 0px', // Start loading when within 200px of viewport
+    threshold: 0.01
+  });
+  
+  // Start observing all palette containers
+  document.querySelectorAll('.palette-clickable-container').forEach(container => {
+    previewObserver.observe(container);
+    
+    // Add a placeholder instead of immediately loading
+    const previewCanvas = container.querySelector('.palette-preview-canvas');
+    if (previewCanvas) {
+      const ctx = previewCanvas.getContext('2d');
+      ctx.fillStyle = '#f8f8f8';
+      ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+      
+      // Add a visual indicator that this will load
+      ctx.fillStyle = '#cccccc';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('Preview will load when visible', previewCanvas.width/2, previewCanvas.height/2);
+    }
+  });
+  
+  // Add a scroll to top button for better navigation
+  const scrollButton = document.createElement('button');
+  scrollButton.className = 'scroll-to-top-btn';
+  scrollButton.innerHTML = '↑';
+  scrollButton.title = 'Scroll to top';
+  scrollButton.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(0,123,255,0.8);
+    color: white;
+    font-size: 20px;
+    border: none;
+    cursor: pointer;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  `;
+  
+  document.body.appendChild(scrollButton);
+  
+  // Show/hide scroll button based on scroll position
+  window.addEventListener('scroll', () => {
+    if (document.documentElement.scrollTop > 300) {
+      scrollButton.style.display = 'block';
+    } else {
+      scrollButton.style.display = 'none';
+    }
+  });
+  
+  // Add click handler for scroll button
+  scrollButton.addEventListener('click', () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  });
+  
+  // Add a "loading more palettes" indicator at the bottom
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.className = 'palettes-loading-indicator';
+  loadingIndicator.style.cssText = `
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+  `;
+  loadingIndicator.textContent = 'Loading more palettes as you scroll...';
+  
+  const palettesContainer = document.querySelector('.base-palettes-container');
+  if (palettesContainer) {
+    palettesContainer.parentNode.appendChild(loadingIndicator);
+    
+    // Set up observer to hide the loading indicator when all palettes are loaded
+    const loadingObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        // When we see the loading indicator in view, check if all palettes are loaded
+        const notLoadedPalettes = document.querySelectorAll('.palette-clickable-container:not(.preview-ready)');
+        
+        if (notLoadedPalettes.length === 0) {
+          // All palettes loaded, hide the indicator
+          loadingIndicator.textContent = 'All palettes loaded!';
+          setTimeout(() => {
+            loadingIndicator.style.display = 'none';
+          }, 2000);
+          
+          loadingObserver.disconnect();
+        }
+      }
+    });
+    
+    loadingObserver.observe(loadingIndicator);
+  }
+}
 
 
 
