@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.subscription_module.apps.SubscriptionModuleConfig',
     'apps.mainadmin.apps.MainadminConfig',
-    'apps.management',
     'apps.tif_to_picker.apps.TifToPickerConfig',
 ]
 
@@ -129,9 +128,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'colorify1',
+        'NAME': 'colorify',
         'USER': 'root',
-        'PASSWORD': 'tanuj1221',
+        'PASSWORD': '1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
