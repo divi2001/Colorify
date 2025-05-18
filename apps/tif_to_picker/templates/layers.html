@@ -3455,7 +3455,7 @@ async function generatePreview(previewCanvas, paletteColors, paletteIndex) {
 
 
 
-        function generateBaseColorPalettes(baseColor, backgroundColorIndex = 0) {
+function generateBaseColorPalettes(baseColor, backgroundColorIndex = 0) {
   // Conversion utilities remain the same
   function rgbToHex(r, g, b) {
     return '#' + [r, g, b].map(x => {
@@ -8081,6 +8081,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             tempCanvas.height = 200;
             tempCanvas.width = Math.round(200 * originalAspect);
         }
+        console.log('Temp canvas size:', tempCanvas.width, tempCanvas.height);
         
         const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
         
@@ -8091,7 +8092,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
         
         // Find original colors from the image
-        const originalColors = await getDistinctColors(imageData, 30, 50);
+        const originalColors = await getDistinctColors(imageData, 10, 10,10);
         
         if (!originalColors || originalColors.length === 0) {
             console.error('No original colors found for preview');
@@ -11077,7 +11078,12 @@ async getColorMapping(imageData) {
       });
   }
   // Add this new method to the ColorProcessor class
-async applyDirectColorMapping(imageData, colorMappings) {
+
+
+
+
+
+  async applyDirectColorMapping(imageData, colorMappings) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -11251,7 +11257,8 @@ async applyDirectColorMapping(imageData, colorMappings) {
   }
 
 
-async applyMultipleColorMappingsextra(imageData, colorMappings) {
+
+  async applyMultipleColorMappingsextra(imageData, colorMappings) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
