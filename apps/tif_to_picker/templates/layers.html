@@ -7485,6 +7485,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       return validColors;
     }
     
+    
     // Function to convert RGB to HEX
     function rgbToHex(r, g, b) {
       return '#' + [r, g, b].map(x => {
@@ -7925,71 +7926,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       return displayColors;
     }
     
-    // Helper function to get distinct colors from an image
-    async function getDistinctColors(imageData, maxColors = 30, quality = 10) {
-      return new Promise((resolve) => {
-        try {
-          // Extract pixels from the image data
-          const pixels = [];
-          const data = imageData.data;
-          const width = imageData.width;
-          const height = imageData.height;
-          
-          // Sample pixels at intervals for better performance
-          for (let y = 0; y < height; y += quality) {
-            for (let x = 0; x < width; x += quality) {
-              const i = (y * width + x) * 4;
-              // Skip fully transparent pixels
-              if (data[i+3] < 50) continue;
-              
-              pixels.push([data[i], data[i+1], data[i+2]]);
-            }
-          }
-          
-          // If very few pixels, just return them all
-          if (pixels.length <= maxColors) {
-            resolve(pixels);
-            return;
-          }
-          
-          // Use k-means clustering to find representative colors
-          if (window.ColorThief && typeof window.ColorThief.getPalette === 'function') {
-            try {
-              const palette = window.ColorThief.getPalette(imageData, maxColors, quality);
-              if (palette && palette.length > 0) {
-                resolve(palette);
-                return;
-              }
-            } catch (e) {
-              console.error("ColorThief error:", e);
-            }
-          }
-          
-          // Simple fallback if ColorThief fails: just sample evenly
-          const step = Math.max(1, Math.floor(pixels.length / maxColors));
-          const sampledColors = [];
-          for (let i = 0; i < pixels.length; i += step) {
-            sampledColors.push(pixels[i]);
-            if (sampledColors.length >= maxColors) break;
-          }
-          
-          resolve(sampledColors);
-        } catch (error) {
-          console.error("Error in getDistinctColors:", error);
-          // Return some basic colors as a fallback
-          resolve([
-            [0, 0, 0],
-            [255, 255, 255],
-            [255, 0, 0],
-            [0, 255, 0],
-            [0, 0, 255],
-            [255, 255, 0],
-            [0, 255, 255],
-            [255, 0, 255]
-          ]);
-        }
-      });
-    }
+
     
     // New function to generate and immediately show preview
     // Modify the generateAndShowPreview function to use 1000x1000 for processing but 200x200 for display
@@ -8092,7 +8029,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
         
         // Find original colors from the image
-        const originalColors = await getDistinctColors(imageData, 10, 10,10);
+        const originalColors = await getDistinctColors(imageData, 30, 50,30);
         
         if (!originalColors || originalColors.length === 0) {
             console.error('No original colors found for preview');
@@ -11883,6 +11820,8 @@ async getColorMapping(imageData) {
         img.src = imageData;
     });
 }
+
+
 async applyMultipleColorMappings(imageData, colorMappings, useJimp = false) {
   
 
