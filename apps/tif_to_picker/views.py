@@ -800,11 +800,6 @@ def export_tiff(request):
             return JsonResponse({'error': error_msg}, status=500)
             
     return JsonResponse({'error': 'Invalid request method'}, status=400)
-
-
-
-
-
 def get_layer_image(layer):
     try:
         channels_data = []
