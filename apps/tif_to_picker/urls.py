@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/palettes/favorite/<int:palette_id>/',remove_favorite_palette, name='remove-favorite-palette'),
     path('api/palettes/favorites/', get_favorites, name='get-favorites'),
      path('api/colors/', views.get_all_colors, name='get_all_colors'),
+      path('api/mockups/', views.get_mockups_api, name='get_mockups_api'),
 
 ]
  

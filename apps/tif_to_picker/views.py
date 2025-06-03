@@ -21,7 +21,7 @@ import imagecodecs
 from colorsys import rgb_to_hls
 from psdtags import PsdChannelId
 from psdtags.psdtags import TiffImageSourceData
-
+from django.views.decorators.http import require_http_methods
 # Django imports
 from django.conf import settings
 from django.db import transaction
@@ -52,7 +52,36 @@ from apps.subscription_module.models import SubscriptionPlan
 # Logger
 logger = logging.getLogger(__name__)
 
+from .models import Mockup
 
+@require_http_methods(["GET"])
+def get_mockups_api(request):
+    try:
+        # Get all active mockups
+        mockups = Mockup.objects.filter(is_active=True)
+        
+        mockups_data = []
+        for mockup in mockups:
+            mockups_data.append({
+                'id': mockup.id,
+                'name': mockup.name,
+                'image_url': mockup.image.url if mockup.image else None,
+                'description': mockup.description,
+                'created_at': mockup.created_at.isoformat(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'mockups': mockups_data,
+            'count': len(mockups_data)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+    
 def get_all_colors(request):
     # Fetch all color entries from the database
     colors = BaseColor.objects.all()
