@@ -570,6 +570,7 @@ def upgrade_plan(request):
     })
 
 @csrf_exempt
+
 def export_tiff(request):
     if request.method == 'POST':
         try:
@@ -583,6 +584,9 @@ def export_tiff(request):
             max_width = 0
             max_height = 0
             
+            # Collect the original physical dimensions from the metadata JSON files
+            original_physical_dimensions = {}
+            
             # First pass: process layers and determine canvas size
             for layer_data in layers_data:
                 try:
@@ -590,8 +594,59 @@ def export_tiff(request):
                     img_data = base64.b64decode(base64_str)
                     img = Image.open(io.BytesIO(img_data))
                     
-                    # Get original DPI if available
-                    dpi = img.info.get('dpi', (500, 500))
+                    # Try to get the original physical dimensions from metadata
+                    layer_name = layer_data['name']
+                    original_width_inches = None
+                    original_height_inches = None
+                    
+                    # Check if there's a metadata file with the original physical dimensions
+                    if 'original_path' in layer_data:
+                        metadata_path = os.path.splitext(layer_data['original_path'])[0] + '.metadata.json'
+                        if os.path.exists(metadata_path):
+                            try:
+                                with open(metadata_path, 'r') as metadata_file:
+                                    metadata = json.load(metadata_file)
+                                    if 'physical_width_inches' in metadata and 'physical_height_inches' in metadata:
+                                        original_width_inches = metadata['physical_width_inches']
+                                        original_height_inches = metadata['physical_height_inches']
+                                        print(f"Found original physical dimensions from metadata: {original_width_inches}\" × {original_height_inches}\"")
+                            except Exception as metadata_error:
+                                print(f"Error reading metadata file: {str(metadata_error)}")
+                    
+                    # Get DPI information from the layer data
+                    dpi_x = int(layer_data.get('dpi_x', 300))
+                    dpi_y = int(layer_data.get('dpi_y', 300))
+                    dpi = (dpi_x, dpi_y)
+                    
+                    # Get physical size from the layer data or calculate from DPI
+                    physical_width_inches = float(layer_data.get('physical_width_inches', img.width / dpi_x))
+                    physical_height_inches = float(layer_data.get('physical_height_inches', img.height / dpi_y))
+                    
+                    # If we have original physical dimensions, use those instead
+                    if original_width_inches is not None and original_height_inches is not None:
+                        physical_width_inches = original_width_inches
+                        physical_height_inches = original_height_inches
+                        
+                        # Recalculate DPI based on original physical dimensions
+                        dpi_x = int(img.width / physical_width_inches)
+                        dpi_y = int(img.height / physical_height_inches)
+                        dpi = (dpi_x, dpi_y)
+                    
+                    # Check if we should use the original physical dimensions from the first file
+                    # This is a workaround to handle the specific TIFF with 36.5333" × 58.0000" dimensions
+                    if 'original_physical_width_inches' in layer_data and 'original_physical_height_inches' in layer_data:
+                        orig_physical_width = float(layer_data['original_physical_width_inches'])
+                        orig_physical_height = float(layer_data['original_physical_height_inches'])
+                        
+                        if orig_physical_width > 0 and orig_physical_height > 0:
+                            physical_width_inches = orig_physical_width
+                            physical_height_inches = orig_physical_height
+                            print(f"Using original physical dimensions: {physical_width_inches}\" × {physical_height_inches}\"")
+                    
+                    print(f"Layer: {layer_data['name']}")
+                    print(f"  Pixel dimensions: {img.width}x{img.height}")
+                    print(f"  DPI: {dpi}")
+                    print(f"  Physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\"")
                     
                     if img.mode != 'RGBA':
                         img = img.convert('RGBA')
@@ -619,6 +674,12 @@ def export_tiff(request):
                         img = img.resize((original_width, original_height), Image.LANCZOS)
                         width = original_width
                         height = original_height
+                        
+                        # When upscaling to original dimensions, keep the physical size the same
+                        # but recalculate the DPI to maintain the physical dimensions
+                        dpi_x = int(width / physical_width_inches)
+                        dpi_y = int(height / physical_height_inches)
+                        dpi = (dpi_x, dpi_y)
                     else:
                         # Use current dimensions
                         width = img.width
@@ -629,6 +690,9 @@ def export_tiff(request):
                     max_width = max(max_width, left_pos + width)
                     max_height = max(max_height, top_pos + height)
                     
+                    # Store the physical dimensions for this layer
+                    original_physical_dimensions[layer_data['name']] = (physical_width_inches, physical_height_inches)
+                    
                     metadata = {
                         'Name': layer_data['name'],
                         'TopPosition': top_pos,
@@ -636,6 +700,8 @@ def export_tiff(request):
                         'Width': width,
                         'Height': height,
                         'DPI': dpi,
+                        'PhysicalWidthInches': physical_width_inches,
+                        'PhysicalHeightInches': physical_height_inches,
                         'OriginalWidth': original_width if original_width > 0 else width,
                         'OriginalHeight': original_height if original_height > 0 else height
                     }
@@ -649,8 +715,41 @@ def export_tiff(request):
                     
                 except Exception as e:
                     print(f"Error processing layer {layer_data.get('name', 'unknown')}: {str(e)}")
+                    traceback.print_exc()
                     continue
 
+            # Determine the physical dimensions for the entire document
+            # Check if we have original physical dimensions from the first TIFF
+            if len(original_physical_dimensions) > 0:
+                # Get the maximum physical dimensions from all layers
+                max_physical_width = max(dim[0] for dim in original_physical_dimensions.values())
+                max_physical_height = max(dim[1] for dim in original_physical_dimensions.values())
+                
+                # If we have significantly larger dimensions (like our 36.5" × 58.0" example)
+                # use those as the document dimensions
+                if max_physical_width > 20 or max_physical_height > 20:  # Arbitrary threshold
+                    document_physical_width = max_physical_width
+                    document_physical_height = max_physical_height
+                    print(f"Using large original dimensions: {document_physical_width}\" × {document_physical_height}\"")
+                else:
+                    # Calculate based on pixel dimensions and a standard DPI (like 150)
+                    document_physical_width = max_width / 150
+                    document_physical_height = max_height / 150
+                    print(f"Using calculated dimensions: {document_physical_width}\" × {document_physical_height}\"")
+            else:
+                # Default calculation if we don't have original physical dimensions
+                document_physical_width = max_width / 150
+                document_physical_height = max_height / 150
+            
+            print(f"Document physical dimensions: {document_physical_width:.4f}\" × {document_physical_height:.4f}\"")
+            
+            # Calculate document DPI based on physical dimensions
+            document_dpi_x = int(max_width / document_physical_width)
+            document_dpi_y = int(max_height / document_physical_height)
+            document_dpi = (document_dpi_x, document_dpi_y)
+            
+            print(f"Calculated document DPI: {document_dpi}")
+            
             # Create a blank transparent image with the maximum dimensions
             composite_image = Image.new('RGBA', (max_width, max_height), (0, 0, 0, 0))
             
@@ -666,12 +765,6 @@ def export_tiff(request):
             
             composite_array = np.array(composite_image)
             
-            # Get the highest DPI from all layers for the composite
-            max_dpi = (300, 300)  # default
-            for layer in processed_layers:
-                layer_dpi = layer['metadata']['DPI']
-                max_dpi = (max(max_dpi[0], layer_dpi[0]), max(max_dpi[1], layer_dpi[1]))
-            
             composite_metadata = {
                 'Name': 'Composite View',
                 'Width': max_width,
@@ -679,12 +772,14 @@ def export_tiff(request):
                 'LayerCount': len(processed_layers),
                 'LayerNames': [layer['metadata']['Name'] for layer in processed_layers],
                 'IsComposite': True,
-                'DPI': max_dpi
+                'DPI': document_dpi,
+                'PhysicalWidthInches': document_physical_width,
+                'PhysicalHeightInches': document_physical_height
             }
             
             # Write multi-page TIFF with high quality settings
             with tifffile.TiffWriter(output_path) as tif:
-                # Write composite as first page
+                # Write composite as first page with the document DPI
                 tif.write(
                     composite_array,
                     photometric='rgb',
@@ -693,11 +788,11 @@ def export_tiff(request):
                     compression='adobe_deflate',  # Better compression
                     compressionargs={'level': 9},  # Maximum compression level
                     resolutionunit='INCH',
-                    resolution=max_dpi,
+                    resolution=document_dpi,  # Use the document DPI
                     description='Composite View'
                 )
                 
-                # Write individual layers
+                # Write individual layers with consistent DPI values
                 for layer in processed_layers:
                     layer_full = np.zeros((max_height, max_width, 4), dtype=np.uint8)
                     h, w = layer['data'].shape[:2]
@@ -705,9 +800,10 @@ def export_tiff(request):
                     left = layer['metadata']['LeftPosition']
                     layer_full[top:top+h, left:left+w] = layer['data']
                     
-                    # Use original DPI for each layer
-                    layer_dpi = layer['metadata']['DPI']
+                    # Update the layer metadata to use the document DPI
+                    layer['metadata']['DPI'] = document_dpi
                     
+                    # Use the document DPI for all layers to ensure consistency
                     tif.write(
                         layer_full,
                         photometric='rgb',
@@ -716,7 +812,7 @@ def export_tiff(request):
                         compression='adobe_deflate',  # Better compression
                         compressionargs={'level': 9},  # Maximum compression level
                         resolutionunit='INCH',
-                        resolution=layer_dpi,
+                        resolution=document_dpi,  # Use the document DPI
                         description=layer['metadata']['Name']
                     )
 
@@ -733,6 +829,9 @@ def export_tiff(request):
             return JsonResponse({'error': error_msg}, status=500)
             
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+
 
 
 def get_layer_image(layer):
@@ -861,7 +960,7 @@ def is_color_fill_layer(layer):
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
 
-def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=3000, optimize=True, model_path="resnet50_model_scripted.pt"):
+def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=4000, optimize=True, model_path="resnet50_model_scripted.pt"):
     """
     Extract and compress layers from image files, with optional ML labeling.
     
@@ -875,7 +974,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
     model_path (str): Path to the ML model for labeling (optional)
     """
     import tifffile
-    from PIL import Image
+    from PIL import Image, ExifTags
     import os
     import numpy as np
     from matplotlib import pyplot
@@ -884,7 +983,10 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
     import json
     import torch
     import torchvision.transforms as transforms
-    
+    import numpy as np
+    import struct
+    from fractions import Fraction
+
     # Initialize ML model if path is provided
     ml_model = None
     if model_path and os.path.exists(model_path):
@@ -908,6 +1010,177 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
     # Increase PIL's maximum image size limit
     Image.MAX_IMAGE_PIXELS = None  # Disable the decompression bomb warning
     
+    def get_dpi_and_physical_size(file_path):
+        """Extract both DPI and physical dimensions (in inches) from an image file"""
+        default_dpi = (300, 300)
+        physical_size_inches = None
+        dpi = default_dpi
+        
+        try:
+            # For TIFF files, use tifffile to get accurate measurements
+            if file_path.lower().endswith(('.tif', '.tiff')):
+                with tifffile.TiffFile(file_path) as tif:
+                    if len(tif.pages) > 0:
+                        page = tif.pages[0]
+                        
+                        # Get pixel dimensions
+                        pixel_width = page.imagewidth
+                        pixel_height = page.imagelength
+                        
+                        # Extract resolution information
+                        if 'XResolution' in page.tags and 'YResolution' in page.tags:
+                            x_resolution = page.tags['XResolution'].value
+                            y_resolution = page.tags['YResolution'].value
+                            
+                            # Handle rational numbers
+                            if isinstance(x_resolution, tuple) and len(x_resolution) == 2:
+                                x_dpi = x_resolution[0] / x_resolution[1]
+                            else:
+                                x_dpi = x_resolution
+                                
+                            if isinstance(y_resolution, tuple) and len(y_resolution) == 2:
+                                y_dpi = y_resolution[0] / y_resolution[1]
+                            else:
+                                y_dpi = y_resolution
+                            
+                            # Check resolution unit (1 = none, 2 = inch, 3 = cm)
+                            resolution_unit = page.tags.get('ResolutionUnit', 2).value
+                            if resolution_unit == 3:  # Convert from cm to inches
+                                x_dpi = x_dpi * 2.54
+                                y_dpi = y_dpi * 2.54
+                            
+                            dpi = (int(x_dpi), int(y_dpi))
+                            
+                            # Calculate physical size in inches
+                            physical_width_inches = pixel_width / x_dpi
+                            physical_height_inches = pixel_height / y_dpi
+                            physical_size_inches = (physical_width_inches, physical_height_inches)
+                            
+                            print(f"TIFF physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
+                            return dpi, physical_size_inches
+            
+            # For other formats, use PIL
+            with Image.open(file_path) as img:
+                # Get pixel dimensions
+                pixel_width, pixel_height = img.size
+                
+                # Try to get DPI from PIL
+                if 'dpi' in img.info:
+                    dpi = img.info['dpi']
+                    x_dpi, y_dpi = dpi
+                    
+                    # Calculate physical size in inches
+                    physical_width_inches = pixel_width / x_dpi
+                    physical_height_inches = pixel_height / y_dpi
+                    physical_size_inches = (physical_width_inches, physical_height_inches)
+                    
+                    print(f"PIL physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
+                    return dpi, physical_size_inches
+                
+                # For JPEGs, try EXIF data
+                if file_path.lower().endswith(('.jpg', '.jpeg')):
+                    try:
+                        exif = img._getexif()
+                        if exif:
+                            x_dpi = None
+                            y_dpi = None
+                            resolution_unit = 2  # Default to inches
+                            
+                            # Look for resolution tags in EXIF
+                            for tag_id, value in exif.items():
+                                tag_name = ExifTags.TAGS.get(tag_id, '')
+                                if tag_name == 'XResolution':
+                                    x_dpi = value[0] / value[1] if isinstance(value, tuple) else value
+                                elif tag_name == 'YResolution':
+                                    y_dpi = value[0] / value[1] if isinstance(value, tuple) else value
+                                elif tag_name == 'ResolutionUnit':
+                                    resolution_unit = value
+                            
+                            if x_dpi and y_dpi:
+                                # If resolution unit is in cm, convert to inches
+                                if resolution_unit == 3:
+                                    x_dpi = x_dpi * 2.54
+                                    y_dpi = y_dpi * 2.54
+                                
+                                dpi = (int(x_dpi), int(y_dpi))
+                                
+                                # Calculate physical size in inches
+                                physical_width_inches = pixel_width / x_dpi
+                                physical_height_inches = pixel_height / y_dpi
+                                physical_size_inches = (physical_width_inches, physical_height_inches)
+                                
+                                print(f"EXIF physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
+                                return dpi, physical_size_inches
+                    except:
+                        pass
+            
+            # If we couldn't determine physical size, use default DPI
+            physical_width_inches = pixel_width / default_dpi[0]
+            physical_height_inches = pixel_height / default_dpi[1]
+            physical_size_inches = (physical_width_inches, physical_height_inches)
+            
+            print(f"Default physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {default_dpi} DPI")
+            return default_dpi, physical_size_inches
+            
+        except Exception as e:
+            print(f"Error measuring physical size: {str(e)}")
+            return default_dpi, None
+    
+    def get_dpi_from_tiff_page(page):
+        """Extract DPI and physical dimensions from a TIFF page"""
+        default_dpi = (300, 300)
+        physical_size_inches = None
+        
+        try:
+            # Get pixel dimensions
+            pixel_width = page.imagewidth
+            pixel_height = page.imagelength
+            
+            # Get resolution tags
+            if 'XResolution' in page.tags and 'YResolution' in page.tags:
+                x_resolution = page.tags['XResolution'].value
+                y_resolution = page.tags['YResolution'].value
+                
+                # Resolution values are often stored as rational numbers (tuples)
+                if isinstance(x_resolution, tuple) and len(x_resolution) == 2:
+                    x_dpi = x_resolution[0] / x_resolution[1]
+                else:
+                    x_dpi = x_resolution
+                    
+                if isinstance(y_resolution, tuple) and len(y_resolution) == 2:
+                    y_dpi = y_resolution[0] / y_resolution[1]
+                else:
+                    y_dpi = y_resolution
+                
+                # Check resolution unit (1 = none, 2 = inch, 3 = cm)
+                resolution_unit = page.tags.get('ResolutionUnit', 2).value
+                if resolution_unit == 3:  # Convert from cm to inches if needed
+                    x_dpi = x_dpi * 2.54
+                    y_dpi = y_dpi * 2.54
+                
+                dpi = (int(x_dpi), int(y_dpi))
+                
+                # Calculate physical size in inches
+                physical_width_inches = pixel_width / x_dpi
+                physical_height_inches = pixel_height / y_dpi
+                physical_size_inches = (physical_width_inches, physical_height_inches)
+                
+                print(f"TIFF page physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
+                return dpi, physical_size_inches
+            else:
+                print(f"No resolution tags found, using default {default_dpi} DPI")
+                
+                # Calculate physical size using default DPI
+                physical_width_inches = pixel_width / default_dpi[0]
+                physical_height_inches = pixel_height / default_dpi[1]
+                physical_size_inches = (physical_width_inches, physical_height_inches)
+                
+                return default_dpi, physical_size_inches
+                
+        except Exception as e:
+            print(f"Error getting physical size from TIFF page: {str(e)}")
+            return default_dpi, None
+    
     def predict_label(image):
         """Get ML prediction for an image"""
         if ml_model is None:
@@ -927,7 +1200,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             print(f"Error during prediction: {str(e)}")
             return None
     
-    def compress_and_save_image(image_array, output_path, original_size=None):
+    def compress_and_save_image(image_array, output_path, original_size=None, dpi=(300, 300), physical_size_inches=None):
         try:
             # Convert numpy array to PIL Image
             if isinstance(image_array, np.ndarray):
@@ -952,7 +1225,17 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
 
             # Get original dimensions - store these before any resize happens
             orig_width, orig_height = img.size
-            print(f"Original dimensions: {orig_width}x{orig_height}")
+            
+            # If we didn't get physical size, calculate it from DPI
+            if physical_size_inches is None:
+                physical_width_inches = orig_width / dpi[0]
+                physical_height_inches = orig_height / dpi[1]
+                physical_size_inches = (physical_width_inches, physical_height_inches)
+            else:
+                physical_width_inches, physical_height_inches = physical_size_inches
+            
+            print(f"Original dimensions: {orig_width}x{orig_height}, "
+                  f"Physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
             
             # Store original dimensions to return
             original_dimensions = (orig_width, orig_height)
@@ -961,6 +1244,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             ml_label = predict_label(img) if ml_model is not None else None
 
             # Resize if max_dimension is specified and image exceeds it
+            resized = False
             if max_dimension and (orig_width > max_dimension or orig_height > max_dimension):
                 if orig_width > orig_height:
                     new_width = max_dimension
@@ -971,6 +1255,14 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                 
                 print(f"Resizing to: {new_width}x{new_height}")
                 img = img.resize((new_width, new_height), Resampling.LANCZOS)
+                resized = True
+                
+                # When we resize, we need to recalculate DPI to maintain physical size
+                if physical_size_inches:
+                    new_x_dpi = new_width / physical_width_inches
+                    new_y_dpi = new_height / physical_height_inches
+                    dpi = (int(new_x_dpi), int(new_y_dpi))
+                    print(f"Adjusted DPI after resize: {dpi}")
 
             # Convert color mode if necessary
             if output_format.upper() == 'JPEG' and img.mode in ('RGBA', 'LA', 'P'):
@@ -990,22 +1282,96 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             # Save with format-specific optimizations
             try:
                 if output_format.upper() == 'PNG':
+                    # For PNG, we need to set up the pHYs chunk for DPI
+                    ppm_x = int(dpi[0] / 0.0254)  # Convert DPI to pixels per meter
+                    ppm_y = int(dpi[1] / 0.0254)
+                    
+                    # Create a new PNG info object
+                    png_info = None
+                    try:
+                        from PIL import PngImagePlugin
+                        png_info = PngImagePlugin.PngInfo()
+                        png_info.add_text("Software", "Python PIL")
+                        
+                        # Add physical pixel dimensions
+                        # This adds the pHYs chunk with pixels per meter and unit = 1 (meters)
+                        png_info.add(b'pHYs', struct.pack('>IIB', ppm_x, ppm_y, 1))
+                    except:
+                        print("Warning: Could not create PNG info")
+                    
+                    # Save the PNG with DPI information
                     img.save(output_path, 
                            'PNG',
                            optimize=optimize,
-                           compress_level=9)
+                           compress_level=9,
+                           dpi=dpi,
+                           pnginfo=png_info)
+                    
+                    # Double check with a more reliable method for critical files
+                    try:
+                        import png
+                        # Read the written file
+                        with open(output_path, 'rb') as f:
+                            reader = png.Reader(file=f)
+                            w, h, pixels, metadata = reader.read()
+                        
+                        # Create a new file with explicitly set physical information
+                        with open(output_path, 'wb') as f:
+                            writer = png.Writer(
+                                width=w,
+                                height=h,
+                                alpha='alpha' in metadata,
+                                bitdepth=metadata.get('bitdepth', 8),
+                                compression=9,
+                                physical=(ppm_x, ppm_y, 1)  # This sets the pHYs chunk
+                            )
+                            writer.write(f, pixels)
+                    except Exception as png_err:
+                        print(f"Warning: pypng rewrite failed: {str(png_err)}")
+                
                 elif output_format.upper() == 'JPEG':
+                    # JPEG DPI handling
+                    # Convert DPI to rational numbers for EXIF
+                    def dpi_to_rational(dpi_value):
+                        fraction = Fraction(dpi_value).limit_denominator(65535)
+                        return (fraction.numerator, fraction.denominator)
+                    
+                    x_dpi_rational = dpi_to_rational(dpi[0])
+                    y_dpi_rational = dpi_to_rational(dpi[1])
+                    
+                    # Basic save with PIL's DPI parameter
                     img.save(output_path, 
                            'JPEG',
                            quality=quality,
                            optimize=optimize,
-                           progressive=True)
+                           progressive=True,
+                           dpi=dpi)
+                    
+                    # Add more explicit EXIF resolution data
+                    try:
+                        # Create EXIF dictionary
+                        exif_dict = {"0th": {}, "Exif": {}, "1st": {}, "GPS": {}}
+                        
+                        # Add resolution data to EXIF
+                        exif_dict["0th"][piexif.ImageIFD.XResolution] = x_dpi_rational
+                        exif_dict["0th"][piexif.ImageIFD.YResolution] = y_dpi_rational
+                        exif_dict["0th"][piexif.ImageIFD.ResolutionUnit] = 2  # inches
+                        
+                        # Convert to bytes and insert into image
+                        exif_bytes = piexif.dump(exif_dict)
+                        piexif.insert(exif_bytes, output_path)
+                    except Exception as exif_err:
+                        print(f"Warning: Could not add EXIF resolution: {str(exif_err)}")
+                
                 elif output_format.upper() == 'WEBP':
+                    # WebP doesn't directly support DPI in PIL
                     img.save(output_path, 
                            'WEBP',
                            quality=quality,
                            method=6,  # Highest compression method
                            lossless=False)
+                    
+                    # For WebP, we rely completely on the metadata file
                 else:
                     raise ValueError(f"Unsupported output format: {output_format}")
 
@@ -1015,13 +1381,17 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                     reduction = ((original_size - new_size) / original_size) * 100
                     print(f"Size reduced by {reduction:.1f}% ({original_size/1024/1024:.1f}MB -> {new_size/1024/1024:.1f}MB)")
 
-                # Save metadata about original dimensions to a companion file
+                # Save metadata about dimensions and physical size to a companion file
                 metadata_path = os.path.splitext(output_path)[0] + '.metadata.json'
                 metadata = {
                     'original_width': orig_width,
                     'original_height': orig_height,
                     'display_width': img.width,
-                    'display_height': img.height
+                    'display_height': img.height,
+                    'dpi_x': dpi[0],
+                    'dpi_y': dpi[1],
+                    'physical_width_inches': physical_width_inches,
+                    'physical_height_inches': physical_height_inches,
                 }
                 
                 # Add ML prediction if available
@@ -1032,17 +1402,17 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                 with open(metadata_path, 'w') as metadata_file:
                     json.dump(metadata, metadata_file)
 
-                return img.size, original_dimensions, ml_label
+                return img.size, original_dimensions, ml_label, dpi, physical_size_inches
 
             except Exception as save_error:
                 print(f"Error saving image: {str(save_error)}")
                 if os.path.exists(output_path):
                     os.remove(output_path)  # Clean up partial file
-                return None, None, None
+                return None, None, None, None, None
 
         except Exception as e:
             print(f"Error processing image: {str(e)}")
-            return None, None, None
+            return None, None, None, None, None
 
     # Check file extension
     file_extension = os.path.splitext(file_path)[1].lower()
@@ -1051,6 +1421,11 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
         # Handle JPEG/PNG files
         try:
             original_size = os.path.getsize(file_path)
+            
+            # Get both DPI and physical size from the file
+            dpi, physical_size_inches = get_dpi_and_physical_size(file_path)
+            print(f"Using DPI {dpi} and physical size {physical_size_inches} for {file_path}")
+            
             with Image.open(file_path) as img:
                 full_image = np.array(img)
             
@@ -1060,12 +1435,18 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             base_filename = os.path.splitext(os.path.basename(file_path))[0]
             layer_output_path = os.path.join(output_dir, f"{base_filename}.{output_format.lower()}")
             
-            size, orig_size, ml_label = compress_and_save_image(full_image, layer_output_path, original_size)
+            # Pass the physical size to maintain exact dimensions
+            size, orig_size, ml_label, dpi, physical_size = compress_and_save_image(
+                full_image, layer_output_path, original_size, dpi=dpi, physical_size_inches=physical_size_inches
+            )
+            
             if size is None:
                 return []
             
             width, height = size
             orig_width, orig_height = orig_size
+            physical_width_inches, physical_height_inches = physical_size
+            
             return [{
                 'name': base_filename,
                 'path': layer_output_path,
@@ -1075,6 +1456,10 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                 'height': height,
                 'original_width': orig_width,
                 'original_height': orig_height,
+                'dpi_x': dpi[0],
+                'dpi_y': dpi[1],
+                'physical_width_inches': physical_width_inches,
+                'physical_height_inches': physical_height_inches,
                 'ml_label': ml_label
             }]
             
@@ -1088,7 +1473,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             with tifffile.TiffFile(file_path) as tif:
                 # Get the number of pages/layers
                 n_pages = len(tif.pages)
-                original_size = os.path.getsize(file_path) // n_pages  # Approximate size per layer
+                original_size = os.path.getsize(file_path) // max(1, n_pages)  # Approximate size per layer
                 
                 print(f"Processing TIFF file with {n_pages} pages")
                 
@@ -1103,21 +1488,39 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                         # Get the image data
                         image = page.asarray()
                         
+                        # Extract both DPI and physical dimensions
+                        dpi, physical_size_inches = get_dpi_from_tiff_page(page)
+                        print(f"Layer {i} - DPI: {dpi}, Physical size: {physical_size_inches}")
+                        
                         # Create layer name
                         layer_name = f"layer_{i}"
+                        
+                        # Try to get a better name from metadata if available
+                        try:
+                            if hasattr(page, 'description') and page.description:
+                                better_name = page.description.strip()
+                                if better_name:  # Use description as name if available
+                                    layer_name = better_name
+                                    print(f"Using description as layer name: {layer_name}")
+                        except:
+                            pass
                         
                         # Create output path
                         layer_output_path = os.path.join(output_dir, f"{layer_name}.{output_format.lower()}")
                         
                         print(f"Processing layer {i}/{n_pages}: {layer_name}")
                         
-                        # Compress and save the image
-                        size, orig_size, ml_label = compress_and_save_image(image, layer_output_path, original_size)
+                        # Pass both DPI and physical dimensions to maintain exact sizing
+                        size, orig_size, ml_label, dpi, physical_size = compress_and_save_image(
+                            image, layer_output_path, original_size, dpi=dpi, physical_size_inches=physical_size_inches
+                        )
+                        
                         if size is None:
                             continue
                         
                         width, height = size
                         orig_width, orig_height = orig_size
+                        physical_width_inches, physical_height_inches = physical_size
                         
                         # Add layer info
                         layer_info = {
@@ -1128,7 +1531,11 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                             'width': width,
                             'height': height,
                             'original_width': orig_width,
-                            'original_height': orig_height
+                            'original_height': orig_height,
+                            'dpi_x': dpi[0],
+                            'dpi_y': dpi[1],
+                            'physical_width_inches': physical_width_inches,
+                            'physical_height_inches': physical_height_inches
                         }
                         
                         # Add ML label if available
@@ -1148,8 +1555,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             return []
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
-
-
+    
 def extractColors():
     print("testing")
 

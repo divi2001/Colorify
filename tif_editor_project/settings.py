@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.subscription_module.apps.SubscriptionModuleConfig',
     'apps.mainadmin.apps.MainadminConfig',
+   
+
     'apps.tif_to_picker.apps.TifToPickerConfig',
 ]
 
