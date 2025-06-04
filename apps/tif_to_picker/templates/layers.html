@@ -8433,7 +8433,7 @@ function generateCorrelatedPalettes(distinctColors, collection = 'trending') {
         // Create all palette containers first
         const paletteContainers = [];
         
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 10; i++) {
             const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
             if (!paletteContainer) continue;
             
@@ -9217,7 +9217,7 @@ function hslToRgbforsingle(h, s, l) {
 
          return maxHue - minHue;
        }
-       function getDistinctColors(imageData, threshold = 30, maxColors = 50, minDistance = 30) {
+       function getDistinctColors(imageData, threshold = 30, maxColors = 50, minDistance = 40) {
         const totalLayers = {{ layers|length }};
         const uniqueColors = new Map(); // Changed to Map to track counts
         const data = imageData.data;
