@@ -1,9 +1,9 @@
-<!-- templates\account\email_confirm.html -->
+<!-- templates/account/email_confirm.html -->
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
 
-{% block head_title %}{% trans "Colorify Studio - Email Confirmation" %}{% endblock %}
+{% block head_title %}{% trans "Colorify Studio - Confirm Email" %}{% endblock %}
 
 {% block extra_head %}
     <meta charset="UTF-8" />
@@ -35,31 +35,38 @@
             </div>
 
             <!-- Messages -->
-            {% if messages %}
             <div class="mb-8 text-center">
-                {% for message in messages %}
-                <div class="{% if message.tags %}{{ message.tags }}{% endif %} mb-2">
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <!-- Menu -->
-            <div class="mb-8 text-center">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Menu</h2>
-                <ul class="space-y-2">
-                    <li><a href="{% url 'account_login' %}" class="text-gray-600 hover:text-primary">Sign In</a></li>
-                    <li><a href="{% url 'account_signup' %}" class="text-gray-600 hover:text-primary">Sign Up</a></li>
-                    <li><a href="{% url 'account_reset_password' %}" class="text-gray-600 hover:text-primary">Password Reset</a></li>
-                </ul>
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="text-green-600 mb-2">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
             </div>
 
-            <!-- Email Confirmation Message -->
+            <!-- Email Confirmation Section -->
             <div class="text-center">
                 <h3 class="text-xl font-semibold text-gray-800 mb-4">Confirm Your Email Address</h3>
-                <p class="text-gray-600 mb-6">
-                    We have sent an email to you for verification. Follow the link provided to finalize the signup process. If you do not see the verification email in your main inbox, check your spam folder. Please contact us if you do not receive the verification email within a few minutes.
+                
+                {% if confirmation %}
+                    <p class="text-gray-600 mb-6">
+                        Please confirm that <strong>{{ confirmation.email_address.email }}</strong> is your email address.
+                    </p>
+                    
+                    <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
+                            Confirm Email
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-gray-600 mb-6">
+                        This email confirmation link expired or is invalid. Please 
+                        <a href="{% url 'account_email' %}" class="text-primary hover:underline">issue a new email confirmation request</a>.
+                    </p>
+                {% endif %}
+
+                <p class="text-gray-600 mt-6 text-sm">
+                    If you didn't request this email, please ignore it or contact our support team.
                 </p>
             </div>
         </div>
