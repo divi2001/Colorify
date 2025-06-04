@@ -1243,7 +1243,7 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
         });
         // Function to load mockups via AJAX
 function loadMockups() {
-    fetch('/api/mockups/')
+    fetch('/tif-editor/api/mockups/')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
