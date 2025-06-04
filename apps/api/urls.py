@@ -1,3 +1,4 @@
+# apps/api/urls.py
 from django.urls import path
 from . import views
 
@@ -9,8 +10,6 @@ urlpatterns = [
     path('privacy-policy/', views.privacy_policy_view, name='privacy_policy'),
     path('terms-of-service/', views.terms_of_service_view, name='terms_of_service'),
     path('affiliate/', views.affiliate_view, name='affiliate'),
-    path('profile-dashboard/', views.profile_dashboard_view, name='profile_dashboard'),
-    path('edit-project/<int:user_id>/<int:project_id>/', views.edit_project_view, name='edit_project'),
-    
-    # Removed custom signup URL - using django-allauth's default
+    path('profile-dashboard/', views.profile_dashboard_view, name='profile-dashboard'),
+    path('projects/<int:user_id>/<int:project_id>/edit/', views.edit_project_view, name='edit-project'),
 ]
