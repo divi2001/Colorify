@@ -59,38 +59,168 @@ MIDDLEWARE = [
 ]
 
 JAZZMIN_SETTINGS = {
-    # title of the window (Will default to current_admin_site.site_title if absent or None)
-    "site_title": "Colorify Admin",
-    # Title on the login screen (19 chars max) (defaults to current_admin_site.site_header if absent or None)
-    "site_header": "Colorify",
-    # # Logo to use for your site, must be present in static files
-    # "site_logo": "images/colorifylogo.jpg",
-    # # CSS classes that are applied to the logo above
-    # "site_logo_classes": "img-circle",
-    # # Logo to use for login form in dark themes
-    # "login_logo": None,
-    # # URL to a logo in the login form
-    # "login_logo_dark": None,
-    # # CSS classes that are applied to the login logo
-    # "login_logo_classes": "img-circle",
-    # # Relative path to a favicon for your site (will default to site_logo if absent)
-    # "site_icon": None,
-    # Welcome text on the login screen
-    "welcome_sign": "Welcome to Colorify",
-    # Copyright on the footer
-    "copyright": "Colorify Ltd",
-    # Field name on user model that contains avatar image
-    "user_avatar": None,
-        "custom_links": {
-        "analytics": [{
-            "name": "Dashboard",
-            "url": "admin:analytics_dashboard",
-            "icon": "fas fa-chart-line",
-        }],
-    },
+    # Basic Site Info
+    "site_title": "Colorify Administration",
+    "site_header": "Colorify Administration", 
+    "site_brand": "Colorify Studio",
+    "site_logo": "images/colorifylogo.jpg",
+    "site_logo_classes": "img-circle",
+    "site_icon": "images/colorifylogo.jpg",
+    "welcome_sign": "Welcome to Colorify Studio",
+    "copyright": "Colorify Studio Ltd",
+    "search_model": "auth.User",
     
-    # Organize menu items
-    "order_with_respect_to": ["auth", "analytics"],
+    # IMPORTANT: Make sure this path is correct
+    "custom_css": "images/admin/css/colorify_theme.css",
+    "custom_js": None,
+    
+    "show_ui_builder": False,
+    "user_avatar": None,
+    
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Analytics", "url": "admin:analytics_dashboard"},
+        {"model": "auth.User"},
+        {"app": "subscription_module"},
+    ],
+
+    "usermenu_links": [
+        {"name": "Analytics Dashboard", "url": "admin:analytics_dashboard", "icon": "fas fa-chart-line"},
+        {"model": "auth.user"}
+    ],
+
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "order_with_respect_to": ["auth", "subscription_module", "core"],
+
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.User": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "core.Contact": "fas fa-address-book",
+        "core.CustomUser": "fas fa-user-circle",
+        "account.EmailAddress": "fas fa-envelope",
+        "sites.Site": "fas fa-globe",
+        "socialaccount.SocialAccount": "fab fa-connectdevelop",
+        "socialaccount.SocialToken": "fas fa-key",
+        "socialaccount.SocialApp": "fas fa-share-alt",
+        "subscription_module": "fas fa-palette",
+        "subscription_module.Colors": "fas fa-fill-drip",
+        "subscription_module.Devices": "fas fa-mobile-alt",
+        "subscription_module.InspirationPdf": "fas fa-file-pdf",
+        "subscription_module.Palettes": "fas fa-swatchbook",
+        "subscription_module.PaymentTransaction": "fas fa-money-bill-wave",
+        "subscription_module.PdfLike": "fas fa-heart",
+        "subscription_module.SubscriptionPlan": "fas fa-clipboard-list",
+        "subscription_module.UserSubscription": "fas fa-user-tag",
+        "tif_to_picker": "fas fa-image",
+        "tif_to_picker.Mockup": "fas fa-object-group",
+        "mainadmin.Dashboard": "fas fa-tachometer-alt",
+                "auth.Group": "fas fa-users",
+        
+        # Dashboard
+        "mainadmin.Dashboard": "fas fa-tachometer-alt",
+        
+        # Colors and Devices
+        "subscription_module.Color": "fas fa-fill-drip",  # or "fas fa-palette"
+        "subscription_module.Device": "fas fa-laptop",    # or "fas fa-mobile-alt"
+    },
+
+    "site_logo_classes": "brand-image img-circle elevation-3",
+    "login_logo": "images/colorifylogo.jpg",
+    "login_logo_dark": None,
+    "theme": "default",
+    
+    "related_modal_active": False,
+
+    "custom_menu": [
+        {
+            "name": "User Management",
+            "icon": "fas fa-users-cog",
+            "models": [
+                {"model": "auth.User"},
+                {"model": "auth.Group"},
+                {"model": "core.CustomUser"}
+            ]
+        },
+        {
+            "name": "Color & Design",
+            "icon": "fas fa-palette", 
+            "models": [
+                {"model": "subscription_module.Colors"},
+                {"model": "subscription_module.Palettes"},
+                {"model": "subscription_module.InspirationPdf"},
+                {"model": "tif_to_picker.Mockup"}
+            ]
+        },
+        {
+            "name": "Subscriptions & Payments",
+            "icon": "fas fa-credit-card",
+            "models": [
+                {"model": "subscription_module.SubscriptionPlan"},
+                {"model": "subscription_module.UserSubscription"},
+                {"model": "subscription_module.PaymentTransaction"}
+            ]
+        },
+        {
+            "name": "Device Management", 
+            "icon": "fas fa-mobile-alt",
+            "models": [
+                {"model": "subscription_module.Devices"}
+            ]
+        },
+        {
+            "name": "Social & Communication",
+            "icon": "fas fa-share-alt",
+            "models": [
+                {"model": "socialaccount.SocialAccount"},
+                {"model": "socialaccount.SocialApp"},
+                {"model": "core.Contact"}
+            ]
+        },
+        {
+            "name": "Site Configuration",
+            "icon": "fas fa-cog",
+            "models": [
+                {"model": "sites.Site"},
+                {"model": "mainadmin.Dashboard"}
+            ]
+        }
+    ],
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": False,
+    "accent": "accent-primary",
+    "navbar": "navbar-primary navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": False,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_nav_legacy": False,
+    "sidebar_nav_compact": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_accordion": True,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary", 
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
 }
 
 PAYU_MERCHANT_KEY = 'ZocIjS'  # Replace with your actual PayU merchant key
@@ -129,7 +259,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'colorify',
         'USER': 'root',
-        'PASSWORD': '1221',
+        'PASSWORD': 'tanuj1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {

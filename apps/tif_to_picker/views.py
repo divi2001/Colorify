@@ -21,7 +21,7 @@ import imagecodecs
 from colorsys import rgb_to_hls
 from psdtags import PsdChannelId
 from psdtags.psdtags import TiffImageSourceData
-
+from django.views.decorators.http import require_http_methods
 # Django imports
 from django.conf import settings
 from django.db import transaction
@@ -52,7 +52,36 @@ from apps.subscription_module.models import SubscriptionPlan
 # Logger
 logger = logging.getLogger(__name__)
 
+from .models import Mockup
 
+@require_http_methods(["GET"])
+def get_mockups_api(request):
+    try:
+        # Get all active mockups
+        mockups = Mockup.objects.filter(is_active=True)
+        
+        mockups_data = []
+        for mockup in mockups:
+            mockups_data.append({
+                'id': mockup.id,
+                'name': mockup.name,
+                'image_url': mockup.image.url if mockup.image else None,
+                'description': mockup.description,
+                'created_at': mockup.created_at.isoformat(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'mockups': mockups_data,
+            'count': len(mockups_data)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+    
 def get_all_colors(request):
     # Fetch all color entries from the database
     colors = BaseColor.objects.all()
@@ -327,6 +356,7 @@ def process_svg_upload(request):
 
 
 @login_required
+@login_required
 def upload_tiff(request, user_id=None, project_id=None):
     """
     Handles TIFF file uploads with subscription limit enforcement
@@ -398,8 +428,15 @@ def upload_tiff(request, user_id=None, project_id=None):
             file_path = os.path.join('media', 'uploads', filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             
+            # Generate unique temporary path
+            temp_path = None
+            counter = 0
+            while temp_path is None or os.path.exists(temp_path):
+                temp_suffix = f"_{counter}" if counter > 0 else ""
+                temp_path = f"{file_path}.temp{temp_suffix}"
+                counter += 1
+
             # Save file temporarily to get exact size
-            temp_path = f"{file_path}.temp"
             with open(temp_path, 'wb+') as destination:
                 for chunk in tiff_file.chunks():
                     destination.write(chunk)
@@ -420,11 +457,34 @@ def upload_tiff(request, user_id=None, project_id=None):
             output_dir = os.path.join('media', 'output', str(project_id) if project else 'demo')
             os.makedirs(output_dir, exist_ok=True)
             
+            # Handle existing file
+            if os.path.exists(file_path):
+                try:
+                    # Remove existing file
+                    os.remove(file_path)
+                except OSError as e:
+                    logger.error(f"Error removing existing file: {e}")
+                    messages.error(request, "Error updating existing file. Please try again.")
+                    os.remove(temp_path)
+                    return redirect(request.path)
+            
             # Rename temp file to final location
-            os.rename(temp_path, file_path)
+            try:
+                os.rename(temp_path, file_path)
+            except OSError as e:
+                logger.error(f"Error moving file to final location: {e}")
+                os.remove(temp_path)
+                messages.error(request, "Error saving file. Please try again.")
+                return redirect(request.path)
             
             # Extract layers
-            layers = extract_layers(file_path, output_dir)
+            try:
+                layers = extract_layers(file_path, output_dir)
+            except Exception as e:
+                logger.error(f"Error extracting layers: {e}")
+                os.remove(file_path)
+                messages.error(request, "Error processing TIFF layers. Please check the file format.")
+                return redirect(request.path)
             
             # Convert paths for template
             for layer in layers:
@@ -432,14 +492,22 @@ def upload_tiff(request, user_id=None, project_id=None):
                 layer['path'] = os.path.join(settings.MEDIA_URL, rel_path)
             
             # Update subscription metrics
-            with transaction.atomic():
-                user_subscription.file_uploads_used += 1
-                user_subscription.storage_used_mb += precise_file_size_mb
-                user_subscription.save()
+            try:
+                with transaction.atomic():
+                    user_subscription.file_uploads_used += 1
+                    user_subscription.storage_used_mb += precise_file_size_mb
+                    user_subscription.save()
+            except Exception as e:
+                logger.error(f"Error updating subscription metrics: {e}")
+                # Continue processing as this is not critical for file upload
             
             # Get image dimensions
-            with Image.open(file_path) as img:
-                width, height = img.size
+            try:
+                with Image.open(file_path) as img:
+                    width, height = img.size
+            except Exception as e:
+                logger.error(f"Error getting image dimensions: {e}")
+                width, height = 0, 0  # Default values if dimensions can't be read
             
             # Prepare success context
             context = {
@@ -466,7 +534,10 @@ def upload_tiff(request, user_id=None, project_id=None):
             messages.error(request, f"Error processing file: {str(e)}")
             # Clean up any temporary files
             if 'temp_path' in locals() and os.path.exists(temp_path):
-                os.remove(temp_path)
+                try:
+                    os.remove(temp_path)
+                except OSError as cleanup_error:
+                    logger.error(f"Error cleaning up temporary file: {cleanup_error}")
     
     # Prepare context for GET requests or failed POST
     context = {
@@ -481,7 +552,6 @@ def upload_tiff(request, user_id=None, project_id=None):
         })
     
     return render(request, 'upload.html', context)
-
 
 import traceback
 

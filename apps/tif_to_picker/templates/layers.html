@@ -1241,6 +1241,115 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
             
 
         });
+        // Function to load mockups via AJAX
+function loadMockups() {
+    fetch('/tif-editor/api/mockups/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderMockups(data.mockups);
+            } else {
+                console.error('Error loading mockups:', data.error);
+                showToast('Failed to load mockups', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Network error:', error);
+            showToast('Network error while loading mockups', 'error');
+        });
+}
+
+// Function to render mockups in the UI
+function renderMockups(mockups) {
+    const mockupsGrid = document.querySelector('.mockups-grid');
+    
+    if (!mockupsGrid) {
+        console.error('Mockups grid container not found');
+        return;
+    }
+    
+    // Clear existing content
+    mockupsGrid.innerHTML = '';
+    
+    if (mockups.length === 0) {
+        mockupsGrid.innerHTML = '<p class="text-center text-muted">No mockups available.</p>';
+        return;
+    }
+    
+    // Create mockup items
+    mockups.forEach(mockup => {
+        const mockupItem = document.createElement('div');
+        mockupItem.className = 'mockup-item';
+        mockupItem.dataset.mockupId = mockup.id;
+        
+        mockupItem.innerHTML = `
+            <img src="${mockup.image_url}" alt="${mockup.name}" onerror="this.src='/static/images/placeholder.png'">
+            <div class="mockup-info">
+                <span class="mockup-name">${mockup.name}</span>
+                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
+            </div>
+        `;
+        
+        mockupsGrid.appendChild(mockupItem);
+    });
+}
+
+// Updated DOMContentLoaded event
+document.addEventListener('DOMContentLoaded', function() {
+    // Add mockups button handler
+    const mockupsButton = document.getElementById('mockupsButton');
+    if (mockupsButton) {
+        mockupsButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Set this button as active
+            const navButtons = document.querySelectorAll('.mostLeftUl li a');
+            navButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            // Make sure secondaryColumn is visible
+            const secondaryColumn = document.getElementById('secondaryColumn');
+            secondaryColumn.style.display = 'flex';
+            
+            // Hide all content sections inside secondaryColumn
+            const contentSections = document.querySelectorAll('#secondaryColumn .sidebar-content');
+            contentSections.forEach(content => {
+                if (content) content.style.display = 'none';
+            });
+            
+            // Show the mockups content
+            const mockupsContent = document.getElementById('mockupsContent');
+            if (mockupsContent) {
+                mockupsContent.style.display = 'block';
+                
+                // Load mockups via AJAX
+                loadMockups();
+            }
+            
+            // If the sidebar is collapsed, uncollapse it
+            if (secondaryColumn.classList.contains('collapsed')) {
+                const toggleButton = secondaryColumn.querySelector('button');
+                toggleSidebar('secondaryColumn', toggleButton);
+            }
+        });
+    }
+    
+    // Updated click handlers for dynamic mockup apply buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('apply-mockup-btn')) {
+            e.preventDefault();
+            
+            const mockupItem = e.target.closest('.mockup-item');
+            const mockupId = mockupItem.dataset.mockupId;
+            const mockupName = mockupItem.querySelector('.mockup-name').textContent;
+            const mockupUrl = mockupItem.querySelector('img').src;
+            
+            applyMockupOverlay(mockupId, mockupUrl, mockupName);
+        }
+    });
+});
         </script>  
   </head>
 
@@ -1667,65 +1776,10 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
 <div class="sidebar-content" id="mockupsContent" style="display: none;">
     <h4 class="ms-auto me-auto">Mockups</h4>
     <div class="mockups-grid">
-        <div class="mockup-item" data-mockup-id="1">
-            <img <img src="{% static 'images/shirt-mask.png' %}" > >
-            <div class="mockup-info">
-                <span class="mockup-name">T-Shirt Design</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
-            </div>
-        </div>
-        <div class="mockup-item" data-mockup-id="2">
-            <img src="{% static "images/cushion-mask.png" %}" alt="Hoodie Mockup">
-            <div class="mockup-info">
-                <span class="mockup-name">Cushion Design</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
-            </div>
-        </div>
-        <div class="mockup-item" data-mockup-id="3">
-            <img src="{% static "images/leggings-mask.png" %}" alt="Hat Mockup">
-            <div class="mockup-info">
-                <span class="mockup-name">legging Design</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
-            </div>
-        </div>
-        <div class="mockup-item" data-mockup-id="4">
-            <img src="{% static "images/kids-t-mask.png" %}" alt="Hat Mockup">
-           
-            <div class="mockup-info">
-                <span class="mockup-name">kids t Design</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
-            </div>
-        </div>
-        <div class="mockup-item" data-mockup-id="5">
-            <img src="{% static "images/kaftan-mask.png" %}" alt="Hat Mockup">
-           
-            <div class="mockup-info">
-                <span class="mockup-name">kafton Design</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
-            </div>
-        </div>
-        <div class="mockup-item" data-mockup-id="6">
-            <img src="{% static "images/bottle-mask.png" %}" alt="Hat Mockup">
-           
-            <div class="mockup-info">
-                <span class="mockup-name">bottle Design</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
-            </div>
-        </div>
-        <div class="mockup-item" data-mockup-id="7">
-            <img src="{% static "images/dress-mask.png" %}" alt="Hat Mockup">
-           
-            <div class="mockup-info">
-                <span class="mockup-name">dress Design</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
-            </div>
-        </div>
-        <div class="mockup-item" data-mockup-id="8">
-            <img src="{% static "images/girls-hoody-mask.png" %}" alt="Hat Mockup">
-           
-            <div class="mockup-info">
-                <span class="mockup-name">Hoodie</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
+        <!-- Mockups will be loaded here via AJAX -->
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading mockups...</span>
             </div>
         </div>
     </div>

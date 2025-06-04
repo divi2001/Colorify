@@ -259,7 +259,7 @@
                                 <td>{{ subscription.start_date|date:"M d, Y" }}</td>
                                 <td>{{ subscription.end_date|date:"M d, Y" }}</td>
                                 <td>
-                                    {% if subscription.is_active %}
+                                    {% if subscription.active %}
                                     <span class="badge bg-success">Active</span>
                                     {% else %}
                                     <span class="badge bg-danger">Inactive</span>
