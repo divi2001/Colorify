@@ -144,7 +144,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'colorify',
+        'NAME': 'colorify3',
         'USER': 'root',
         'PASSWORD': 'tanuj1221',
         'HOST': '127.0.0.1',

@@ -321,13 +321,14 @@ class Palette(models.Model):
         choices=TYPE_CHOICES,
         default='TR'
     )
-    # Add this field to the model if you want to store the count
     favorites_count = models.PositiveIntegerField(default=0)
+    
+    # NEW FIELD - Store the original image colors as JSON
+    source_image_colors = models.JSONField(null=True, blank=True, help_text="RGB colors from the original image")
 
     def __str__(self):
         return self.name
 
-    # Rename this method to avoid conflict
     def count_favorites(self):
         return self.palette_favorites.count()
 
@@ -341,7 +342,6 @@ class Palette(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-    
 class Color(models.Model):
     name = models.CharField(max_length=50, blank=True)
     palette = models.ForeignKey(Palette, on_delete=models.CASCADE, related_name='colors')

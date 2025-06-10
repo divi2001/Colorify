@@ -39,10 +39,7 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsAuthenticated])
 def create_favorite_palette(request):
     """
-    Handles creation of favorite palettes with flexible color input formats.
-    Accepts both:
-    - Array format: [[r,g,b], [r,g,b], ...]
-    - Object format: [{"red": r, "green": g, "blue": b}, ...]
+    Handles creation of favorite palettes with source image colors.
     """
     logger.info("create_favorite_palette: Request received from user %s", request.user.username)
     
@@ -58,63 +55,45 @@ def create_favorite_palette(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        if not isinstance(data['colors'], list):
-            logger.error("Colors field is not an array: %s", type(data['colors']))
-            return Response(
-                {"error": "'colors' must be an array"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Transform colors to consistent format
+        # Transform colors to consistent format (your existing logic)
         normalized_colors = []
         for idx, color in enumerate(data['colors']):
             try:
-                # Handle object format: {"red": r, "green": g, "blue": b}
                 if isinstance(color, dict):
-                    logger.debug("Processing color %d as object: %s", idx, color)
                     r = int(color.get('red', 0))
                     g = int(color.get('green', 0))
                     b = int(color.get('blue', 0))
                     normalized_colors.append([r, g, b])
-                
-                # Handle array format: [r, g, b]
                 elif isinstance(color, list) and len(color) >= 3:
-                    logger.debug("Processing color %d as array: %s", idx, color)
                     r = int(color[0])
                     g = int(color[1])
                     b = int(color[2])
                     normalized_colors.append([r, g, b])
-                
                 else:
-                    logger.error("Invalid color format at index %d: %s", idx, color)
                     return Response(
                         {"error": f"Color {idx} must be either [r,g,b] array or {{red,green,blue}} object"},
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
-                # Validate RGB range
                 if not all(0 <= val <= 255 for val in [r, g, b]):
-                    logger.error("RGB values out of range (0-255) in color %d: %s", idx, [r, g, b])
                     return Response(
                         {"error": f"RGB values must be 0-255 in color {idx}"},
                         status=status.HTTP_400_BAD_REQUEST
                     )
                     
             except (ValueError, TypeError) as e:
-                logger.error("Invalid color values in color %d (%s): %s", idx, color, str(e))
                 return Response(
                     {"error": f"Invalid color values in color {idx}: {str(e)}"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
-        logger.debug("Normalized colors: %s", normalized_colors)
+        # Get source image colors from request
+        source_image_colors = data.get('source_image_colors', [])
+        logger.info("Received %d source image colors", len(source_image_colors))
         
         # Create the palette
         palette_name = data.get('name', f"Favorite Palette {now().strftime('%Y-%m-%d')}")
         palette_type = data.get('type', 'TR')
-        
-        logger.info("Creating palette '%s' (type: %s) with %d colors for user %s",
-                   palette_name, palette_type, len(normalized_colors), request.user.username)
         
         palette = Palette.objects.create(
             name=palette_name,
@@ -125,9 +104,10 @@ def create_favorite_palette(request):
             base_color_b=normalized_colors[0][2] if normalized_colors else 255,
             num_colors=len(normalized_colors),
             type=palette_type,
+            source_image_colors=source_image_colors  # Store the source colors
         )
         
-        # Create color records
+        # Create color records (your existing logic)
         for color in normalized_colors:
             Color.objects.create(
                 palette=palette,
@@ -142,7 +122,6 @@ def create_favorite_palette(request):
             palette=palette
         )
         
-        # Update favorites count
         palette.update_favorites_count()
         
         response_data = {
@@ -153,7 +132,8 @@ def create_favorite_palette(request):
             'message': 'Palette successfully saved to favorites'
         }
         
-        logger.info("Successfully created favorite palette %d", palette.id)
+        logger.info("Successfully created favorite palette %d with %d source colors", 
+                   palette.id, len(source_image_colors))
         return Response(response_data, status=status.HTTP_201_CREATED)
         
     except Exception as e:
@@ -162,7 +142,6 @@ def create_favorite_palette(request):
             {"error": "An unexpected error occurred"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def remove_favorite_palette(request, palette_id):
@@ -190,6 +169,7 @@ def get_favorites(request):
             'name': palette.name,
             'type': palette.type,
             'favorites_count': palette.favorites_count,
+            'source_image_colors': palette.source_image_colors,  # ADD THIS LINE
             'colors': list(colors)
         })
     
