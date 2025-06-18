@@ -138,26 +138,30 @@ class PreventConcurrentLoginsMiddleware:
     def get_user_subscription(self, user):
         """Get user subscription and max sessions limit."""
         try:
-            # Import here to avoid circular imports
             from apps.subscription_module.models import SubscriptionPlan, UserSubscription
-            from django.core.exceptions import ObjectDoesNotExist
             
-            # Try to get existing subscription
-            try:
-                subscription = user.subscription
-                if subscription and subscription.plan:
-                    # Check if subscription is active
-                    if subscription.is_active():
-                        return subscription, subscription.plan.max_devices
-                    else:
-                        # If subscription has expired, renew it with default plan
-                        return self.create_or_renew_subscription(user)
-                else:
-                    # If subscription exists but has no plan, update it
-                    return self.create_or_renew_subscription(user, subscription)
-            except (AttributeError, ObjectDoesNotExist):
+            # Get all subscriptions for user (should only be one)
+            subscriptions = UserSubscription.objects.filter(user=user)
+            
+            if not subscriptions.exists():
                 # If no subscription exists, create one
                 return self.create_or_renew_subscription(user)
+            
+            # If multiple exist (shouldn't happen after cleanup), use the most recent
+            subscription = subscriptions.latest('id')
+            
+            if subscriptions.count() > 1:
+                logger.warning(f"User {user.id} has multiple subscriptions - using most recent")
+            
+            if subscription.plan:
+                if subscription.is_active():
+                    return subscription, subscription.plan.max_devices
+                else:
+                    # If subscription has expired, renew it
+                    return self.create_or_renew_subscription(user, subscription)
+            else:
+                # If subscription exists but has no plan, update it
+                return self.create_or_renew_subscription(user, subscription)
             
         except Exception as e:
             logger.error(f"Error in get_user_subscription: {str(e)}", exc_info=True)
@@ -167,7 +171,6 @@ class PreventConcurrentLoginsMiddleware:
     def create_or_renew_subscription(self, user, existing_subscription=None):
         """Create a new subscription or renew an existing one with the default plan."""
         try:
-            # Import here to avoid circular imports
             from apps.subscription_module.models import SubscriptionPlan, UserSubscription
             
             # Get the default plan
@@ -190,14 +193,16 @@ class PreventConcurrentLoginsMiddleware:
                     existing_subscription.save()
                     subscription = existing_subscription
                 else:
-                    # Create new subscription
-                    subscription = UserSubscription.objects.create(
+                    # CORRECTED: Proper use of update_or_create
+                    subscription, created = UserSubscription.objects.update_or_create(
                         user=user,
-                        plan=default_plan,
-                        start_date=start_date,
-                        end_date=end_date,
-                        active=True,
-                        devices_used_count=0  # Start with 0
+                        defaults={
+                            'plan': default_plan,
+                            'start_date': start_date,
+                            'end_date': end_date,
+                            'active': True,
+                            'devices_used_count': 0
+                        }
                     )
                 
                 logger.info(f"Created/renewed subscription for user {user.id} with plan {default_plan.name}")

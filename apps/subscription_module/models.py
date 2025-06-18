@@ -4,6 +4,8 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django.utils import timezone
 import uuid
+import random
+import string
 
 
 class SubscriptionPlan(models.Model):
@@ -136,6 +138,15 @@ class UserSubscription(models.Model):
             self.save(update_fields=['devices_used_count'])
             return True
         return False
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user'],
+                name='unique_user_subscription'
+            )
+        ]
+    
 
 class Device(models.Model):
     user = models.ForeignKey(
@@ -165,6 +176,93 @@ class Device(models.Model):
                 subscription.devices_used_count = models.F('devices_used_count') - 1
                 subscription.save(update_fields=['devices_used_count'])
         super().delete(*args, **kwargs)
+
+class ReferralCode(models.Model):
+    CODE_LENGTH = 8  # You can adjust this as needed
+    
+    code = models.CharField(max_length=20, unique=True)
+    discount_percentage = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        help_text="Discount percentage (1-100)"
+    )
+    expiration_date = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text="Optional expiration date for the code"
+    )
+    max_uses = models.PositiveIntegerField(
+        default=1,
+        help_text="Maximum number of times this code can be used"
+    )
+    current_uses = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of times this code has been used"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this code is currently valid"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_referral_codes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    applicable_plans = models.ManyToManyField(
+        SubscriptionPlan,
+        blank=True,
+        help_text="Plans this code applies to (leave empty for all plans)"
+    )
+
+    def __str__(self):
+        return f"{self.code} ({self.discount_percentage}% off)"
+    
+    @classmethod
+    def generate_random_code(cls, length=CODE_LENGTH):
+        """Generate a random alphanumeric code"""
+        characters = string.ascii_uppercase + string.digits
+        return ''.join(random.choice(characters) for _ in range(length))
+    
+    def is_valid(self):
+        """Check if the referral code is still valid"""
+        now = timezone.now()
+        expired = self.expiration_date and self.expiration_date < now
+        return (
+            self.is_active and 
+            not expired and 
+            self.current_uses < self.max_uses
+        )
+    
+    def apply_discount(self, original_price):
+        """Apply the discount to a price"""
+        if not self.is_valid():
+            raise ValueError("Referral code is not valid")
+        
+        discount_amount = (original_price * self.discount_percentage) / 100
+        return original_price - discount_amount
+    
+    def use_code(self):
+        """Increment the usage count"""
+        if not self.is_valid():
+            raise ValueError("Referral code is not valid")
+        
+        self.current_uses += 1
+        if self.current_uses >= self.max_uses:
+            self.is_active = False
+        self.save()
+    
+    def save(self, *args, **kwargs):
+        if not self.code:
+            # Generate a unique code if one isn't provided
+            self.code = self.generate_random_code()
+            while ReferralCode.objects.filter(code=self.code).exists():
+                self.code = self.generate_random_code()
+        super().save(*args, **kwargs)
+
+
+
 
 class PaymentTransaction(models.Model):
     PAYMENT_STATUS_CHOICES = [
@@ -206,7 +304,15 @@ class PaymentTransaction(models.Model):
     
     class Meta:
         ordering = ['-created_at']
-        
+
+    referral_code = models.ForeignKey(
+        ReferralCode,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transactions'
+    )
+
     def __str__(self):
         return f"{self.user.username} - {self.transaction_id} - {self.status}"
     
@@ -214,6 +320,10 @@ class PaymentTransaction(models.Model):
         self.status = 'completed'
         self.payment_gateway_reference = payment_reference
         self.save()
+        
+        # Use the referral code if applicable
+        if self.referral_code and self.referral_code.is_valid():
+            self.referral_code.use_code()
         
         if self.transaction_type in ['subscription', 'renewal']:
             start_date = timezone.now()
@@ -356,6 +466,7 @@ class BaseColor(models.Model):
         return f"{self.name} ({self.red}, {self.green}, {self.blue})"
 
 class PaletteFavorite(models.Model):
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorite_palettes')
     palette = models.ForeignKey(Palette, on_delete=models.CASCADE, related_name='palette_favorites')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -371,3 +482,4 @@ class PaletteFavorite(models.Model):
         palette = self.palette
         super().delete(*args, **kwargs)
         palette.update_favorites_count()
+

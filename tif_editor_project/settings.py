@@ -259,7 +259,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'colorify',
         'USER': 'root',
-        'PASSWORD': 'tanuj1221',
+        'PASSWORD': '1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
