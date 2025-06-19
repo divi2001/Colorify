@@ -32,6 +32,31 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
 "></script>
 
     <style>
+      .zoom-container {
+  width: 100%;
+  height: 500px; /* Adjust as needed */
+  overflow: auto;
+  border: 1px solid #ddd;
+  position: relative;
+}
+
+.zoom-wrapper {
+  transform-origin: top left;
+  transition: transform 0.1s ease;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.canvas-container {
+  position: relative;
+  /* Add a minimum size to ensure scrollability when zoomed */
+  min-width: 1000px;
+  min-height: 1000px;
+}
+
+
+
+
 /* Palette Generator Styles */
 .color-cursor {
   position: absolute;
@@ -1575,7 +1600,7 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
           <li>
             <a href="#" id="paletteGeneratorButton">
               <i class="bi bi-eyedropper mx-1"></i>
-              <span class="textSpan">Palette Generator</span>
+              <span class="textSpan">Color Picker</span>
             </a>
           </li>
           <li>
@@ -1618,7 +1643,7 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
             <hr />
             <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
               {% if layers|length == 1 %}
-              {% for i in "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789" %}
+              {% for i in "0123456789" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="trending_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                       <div class="d-flex align-items-center justify-content-between w-100">
@@ -1762,7 +1787,7 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
     </div>
 <!-- Palette Generator Content -->
 <div class="sidebar-content" id="paletteGeneratorContent" style="display: none;">
-  <h4 class="ms-auto me-auto">Palette Generator</h4>
+  <h4 class="ms-auto me-auto">Color Picker</h4>
   <hr />
   
   <!-- Controls -->
@@ -1849,7 +1874,7 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
       <hr />
       <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
           {% if layers|length == 1 %}
-              {% for i in "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789" %}
+              {% for i in "0123456789" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="ss_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                       <div class="d-flex align-items-center justify-content-between w-100">
@@ -1947,7 +1972,7 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       {% if layers|length == 1 %}
-          {% for i in "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789" %}
+          {% for i in "0123456789" %}
               <div class="layer-toggle-item d-flex flex-column gap-2">
                   <div id="aw_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                   <div class="d-flex align-items-center justify-content-between w-100">
@@ -2125,37 +2150,36 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
         >
           <i class="bi bi-caret-right-fill ms-auto"></i>
         </button>
-        <div class="sidebar-content1 m-4">
-          <h4 class="ms-auto me-auto mb-3">Layers</h4>
+<div class="sidebar-content1 m-4">
+  <h4 class="ms-auto me-auto mb-3">Layers</h4>
 
-          <div class="layer-toggles mt-4">
-            {% for layer in layers %}
-            <div class="layer-toggle-item">
-              <img
-                id="thumbnail_{{ forloop.counter }}"
-                class="thumbnail"
-                src=""
-                alt="Layer Thumbnail"
-              />
-              <span class="layer-name">{{ layer.name }}</span>
-              <input
-                type="checkbox"
-                id="toggleLayer{{ forloop.counter }}"
-                checked
-                onchange="toggleLayer({{ forloop.counter }})"
-              />
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-      <div id="contextMenu" class="cp_light">
-        <div
-          id="layerNameDisplay"
-          style="font-weight: bold; margin-bottom: 5px"
-        ></div>
-        <div class="option" onclick="showLayerInfo()">Edit</div>
-      </div>
+  <div class="layer-controls mt-4">
+    <div class="control-buttons">
+      <button 
+        id="editLayerBtn" 
+        class="btn btn-primary me-2"
+        onclick="editLayer(1)"
+      >
+        Edit
+      </button>
+      <button 
+        id="resetLayerBtn" 
+        class="btn btn-secondary"
+        onclick="resetLayer(1)"
+      >
+        Reset
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="contextMenu" class="cp_light" style="display: none;">
+  <div
+    id="layerNameDisplay"
+    style="font-weight: bold; margin-bottom: 5px"
+  ></div>
+  <div class="option" onclick="showLayerInfo()">Edit</div>
+</div>
       <!-- Color Picker Modal -->
       <div
         class="modal fade"
@@ -2178,11 +2202,11 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
                   type="range"
                   id="color-count-slider"
                   min="1"
-                  max="15"
-                  value="15"
+                  max="50"
+                  value="50"
                   oninput="updateColorCountDisplay()"
                 />
-                <span id="color-count-display">15</span>
+                <span id="color-count-display">50</span>
               </div>
             </div>
             <div class="modal-body">
@@ -2190,13 +2214,13 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
                 class="color-picker-container pickr-container"
                 id="color-pickers"
               ></div>
-              <button
+              {% comment %} <button
                 id="generatePallateColorsBtn"
                 class="btn btn-warning mt-2"
                 onclick="generatePallateColors()"
               >
                 Generate New Colors
-              </button>
+              </button> {% endcomment %}
             </div>
             <div class="modal-footer">
               <button
@@ -2259,7 +2283,12 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
       </div>
     </div>
     
-
+    <!-- Fullscreen Toggle Button -->
+    <button type="button" class="btn shadow-lg" id="fullscreenToggle" title="Toggle Fullscreen (F11)">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 3V9M3 3H9M3 3L9 9M21 3V9M21 3H15M21 3L15 9M3 21V15M3 21H9M3 21L9 15M21 21V15M21 21H15M21 21L15 15" stroke="#3C4CD1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
    
     </div>
   </div>
@@ -2354,6 +2383,79 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
       </button>
 
   </div>
+
+<script>
+// Fullscreen toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const fullscreenBtn = document.getElementById('fullscreenToggle');
+    let isFullscreen = false;
+
+    // Check if already in fullscreen mode
+    function updateFullscreenState() {
+        isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || 
+                         document.mozFullScreenElement || document.msFullscreenElement);
+        
+        // Update button icon based on state
+        const svg = fullscreenBtn.querySelector('svg');
+        if (isFullscreen) {
+            // Exit fullscreen icon (compress)
+            svg.innerHTML = '<path d="M8 3V5M8 3H6M8 3L6 5M16 3V5M16 3H18M16 3L18 5M8 21V19M8 21H6M8 21L6 19M16 21V19M16 21H18M16 21L18 19" stroke="#3C4CD1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+            fullscreenBtn.title = "Exit Fullscreen (F11)";
+        } else {
+            // Enter fullscreen icon (expand)
+            svg.innerHTML = '<path d="M3 3V9M3 3H9M3 3L9 9M21 3V9M21 3H15M21 3L15 9M3 21V15M3 21H9M3 21L9 15M21 21V15M21 21H15M21 21L15 15" stroke="#3C4CD1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+            fullscreenBtn.title = "Toggle Fullscreen (F11)";
+        }
+    }
+
+    // Toggle fullscreen function
+    function toggleFullscreen() {
+        if (!isFullscreen) {
+            // Enter fullscreen
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen();
+            } else if (document.documentElement.mozRequestFullScreen) {
+                document.documentElement.mozRequestFullScreen();
+            } else if (document.documentElement.msRequestFullscreen) {
+                document.documentElement.msRequestFullscreen();
+            }
+        } else {
+            // Exit fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+    }
+
+    // Event listeners
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+    // Listen for fullscreen changes
+    document.addEventListener('fullscreenchange', updateFullscreenState);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenState);
+    document.addEventListener('mozfullscreenchange', updateFullscreenState);
+    document.addEventListener('MSFullscreenChange', updateFullscreenState);
+
+    // Listen for F11 key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F11') {
+            e.preventDefault();
+            toggleFullscreen();
+        }
+    });
+
+    // Initialize state
+    updateFullscreenState();
+});
+</script>
 </footer>
 
 <style>
@@ -2457,16 +2559,18 @@ document.getElementById('fileInput').onchange = function() {
         const secondaryColumn = document.getElementById('secondaryColumn');
         const navButtons = document.querySelectorAll('.mostLeftUl li a');
         const inspirationButton = document.getElementById('inspirationButton');
-        const contents = {
-            trendingContent: document.getElementById('trendingContent'),
-            inspirationContent: document.getElementById('inspirationContent'),
-            ssCollectionContent: document.getElementById('ssCollectionContent'),
-            awCollectionContent: document.getElementById('awCollectionContent'),
-            baseColorContent: document.getElementById('baseColorContent'),
-            effectsContent: document.getElementById('effectsContent'),
-            paletteGeneratorContent: document.getElementById('paletteGeneratorContent') ,
-
-        };
+    const contents = {
+        trendingContent: document.getElementById('trendingContent'),
+        inspirationContent: document.getElementById('inspirationContent'),
+        ssCollectionContent: document.getElementById('ssCollectionContent'),
+        awCollectionContent: document.getElementById('awCollectionContent'),
+        baseColorContent: document.getElementById('baseColorContent'),
+        effectsContent: document.getElementById('effectsContent'),
+        favCollectionContent: document.getElementById('favCollectionContent'),
+        mockupsContent: document.getElementById('mockupsContent'),
+        harmonyContent: document.getElementById('harmonyContent'),
+        paletteGeneratorContent: document.getElementById('paletteGeneratorContent')
+    };
     
         // Function to show content
         function showContent(contentId) {
@@ -2501,52 +2605,62 @@ document.getElementById('fileInput').onchange = function() {
         generateBaseColors();
     
         // Add click handlers for all navigation buttons
-        navButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                setActiveButton(this);
+    navButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            setActiveButton(this);
+            
+            // Updated contentMap to include ALL menu items
+            const contentMap = {
+                'trendingButton': 'trendingContent',
+                'inspirationButton': 'inspirationContent',
+                'effectsButton': 'effectsContent',
+                'ssCollectionButton': 'ssCollectionContent',
+                'awCollectionButton': 'awCollectionContent',
+                'baseColorButton': 'baseColorContent',
+                'favoriteButton': 'favCollectionContent',
+                'mockupsButton': 'mockupsContent',
+                'harmonyButton': 'harmonyContent',
+                'paletteGeneratorButton': 'paletteGeneratorContent'
+            };
+
+            const contentId = contentMap[this.id];
+            
+            if (contentId) {
+                secondaryColumn.style.display = 'flex';
+                showContent(contentId);
                 
-                // Handle different sections
-                const contentMap = {
-                    'trendingButton': 'trendingContent',
-                    'inspirationButton': 'inspirationContent',
-                    'effectsButton': 'effectsContent',
-                    'ssCollectionButton': 'ssCollectionContent',
-                    'awCollectionButton': 'awCollectionContent',
-                    'baseColorButton': 'baseColorContent',
-                    'favoriteButton':'favCollectionContent',
-                    'harmonyButton': 'harmonyContent' ,
-                    'paletteGeneratorButton': 'paletteGeneratorContent'  // Add this line
-                };
-    
-                const contentId = contentMap[this.id];
-                
-                if (contentId) {
-                    secondaryColumn.style.display = 'flex';
-                    showContent(contentId);
-                    
-                    // Special handling for base color content
-                    if (this.id === 'baseColorButton') {
-                        const basePalettesSection = document.querySelector('.base-palettes-section');
-                        if (basePalettesSection) {
-                            basePalettesSection.style.display = selectedBaseColor ? 'block' : 'none';
-                        }
+                // Special handling for specific content types
+                if (this.id === 'baseColorButton') {
+                    const basePalettesSection = document.querySelector('.base-palettes-section');
+                    if (basePalettesSection) {
+                        basePalettesSection.style.display = selectedBaseColor ? 'block' : 'none';
                     }
-                                if (this.id === 'paletteGeneratorButton') {
-                initializePaletteGenerator();
-            }
-                } else {
-                    // Hide secondary column for other buttons (favorite, etc.)
-                    secondaryColumn.style.display = 'none';
                 }
                 
-                // If the sidebar is collapsed, uncollapse it
-                if (secondaryColumn.classList.contains('collapsed')) {
-                    const toggleButton = secondaryColumn.querySelector('button');
-                    toggleSidebar('secondaryColumn', toggleButton);
+                // Special handling for palette generator
+                if (this.id === 'paletteGeneratorButton') {
+                    initializePaletteGenerator();
                 }
-            });
+                
+                // Special handling for harmony
+                if (this.id === 'harmonyButton') {
+                    // Initialize harmony functionality if needed
+                    console.log('Harmony section opened');
+                }
+                
+            } else {
+                // If no content is mapped, hide secondary column
+                secondaryColumn.style.display = 'none';
+            }
+            
+            // If the sidebar is collapsed, uncollapse it
+            if (secondaryColumn.classList.contains('collapsed')) {
+                const toggleButton = secondaryColumn.querySelector('button');
+                toggleSidebar('secondaryColumn', toggleButton);
+            }
         });
+    });
     
         // Set initial state
         window.onload = function() {
@@ -3312,20 +3426,26 @@ document.getElementById('inspirationButton').addEventListener('click', function(
 
 
 {% comment %} pallete generator start  {% endcomment %}
+
 let colorCursors = [];
 let cursorCount = 3;
 let generatedPalettes = [];
 let paletteCounter = 0;
+let floatingWindow = null;
+let previewCanvas = null;
 
 // Initialize palette generator
 function initializePaletteGenerator() {
+    // Create floating window
+    createFloatingWindow();
+    
     // Clear any existing cursors
     clearExistingCursors();
     
     // Create initial cursors
     setTimeout(() => {
         createColorCursors();
-    }, 100); // Small delay to ensure canvas is ready
+    }, 100);
     
     // Add event listeners (remove existing listeners first)
     const increaseBtn = document.getElementById('increaseCursors');
@@ -3356,6 +3476,278 @@ function initializePaletteGenerator() {
     document.getElementById('savePalette').addEventListener('click', generatePalette);
 }
 
+// Get canvas dimensions and calculate preview size
+function getCanvasDimensions() {
+    const canvasLayers = document.querySelectorAll('.layer canvas');
+    let sourceCanvas = null;
+    
+    // Find the first visible canvas
+    for (let canvas of canvasLayers) {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+            sourceCanvas = canvas;
+            break;
+        }
+    }
+    
+    if (sourceCanvas) {
+        const canvasWidth = sourceCanvas.width;
+        const canvasHeight = sourceCanvas.height;
+        
+        // Calculate preview dimensions with max 720px constraint
+        const maxSize = 720;
+        let previewWidth, previewHeight;
+        
+        if (canvasWidth >= canvasHeight) {
+            // Width is larger or equal
+            if (canvasWidth > maxSize) {
+                previewWidth = maxSize;
+                previewHeight = Math.round((canvasHeight / canvasWidth) * maxSize);
+            } else {
+                previewWidth = canvasWidth;
+                previewHeight = canvasHeight;
+            }
+        } else {
+            // Height is larger
+            if (canvasHeight > maxSize) {
+                previewHeight = maxSize;
+                previewWidth = Math.round((canvasWidth / canvasHeight) * maxSize);
+            } else {
+                previewWidth = canvasWidth;
+                previewHeight = canvasHeight;
+            }
+        }
+        
+        return {
+            sourceCanvas,
+            previewWidth,
+            previewHeight,
+            originalWidth: canvasWidth,
+            originalHeight: canvasHeight
+        };
+    }
+    
+    // Default dimensions if no canvas found
+    return {
+        sourceCanvas: null,
+        previewWidth: 400,
+        previewHeight: 400,
+        originalWidth: 400,
+        originalHeight: 400
+    };
+}
+
+// Create floating window
+function createFloatingWindow() {
+    if (floatingWindow) {
+        floatingWindow.remove();
+    }
+    
+    const canvasInfo = getCanvasDimensions();
+    const windowWidth = canvasInfo.previewWidth + 40; // Add padding
+    const windowHeight = canvasInfo.previewHeight + 100; // Add space for header and padding
+    
+    floatingWindow = document.createElement('div');
+    floatingWindow.id = 'paletteFloatingWindow';
+    floatingWindow.innerHTML = `
+        <div class="floating-window-header">
+            <span>Color Picker (${canvasInfo.originalWidth}x${canvasInfo.originalHeight})</span>
+            <button class="close-btn" onclick="closeFloatingWindow()">×</button>
+        </div>
+        <div class="floating-window-content">
+            <div class="preview-container" style="width: ${canvasInfo.previewWidth}px; height: ${canvasInfo.previewHeight}px;">
+                <canvas id="previewCanvas" width="${canvasInfo.previewWidth}" height="${canvasInfo.previewHeight}"></canvas>
+                <div id="cursorsContainer"></div>
+            </div>
+        </div>
+    `;
+    
+    // Add styles with dynamic dimensions
+    const style = document.createElement('style');
+    style.textContent = `
+        #paletteFloatingWindow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: ${windowWidth}px;
+            height: ${windowHeight}px;
+            max-width: 90vw;
+            max-height: 90vh;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 10000;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        .floating-window-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+        
+        .close-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .floating-window-content {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100% - 50px);
+            overflow: auto;
+        }
+        
+        .preview-container {
+            position: relative;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+        
+        #previewCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        #cursorsContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .color-cursor {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: move;
+            pointer-events: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 10;
+            transition: transform 0.1s ease;
+        }
+        
+        .color-cursor.dragging {
+            transform: scale(1.2);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+        }
+        
+        /* Responsive adjustments for very large previews */
+        @media (max-width: 800px) {
+            #paletteFloatingWindow {
+                width: 95vw !important;
+                height: 95vh !important;
+            }
+            
+            .preview-container {
+                max-width: calc(95vw - 60px) !important;
+                max-height: calc(95vh - 120px) !important;
+            }
+            
+            #previewCanvas {
+                max-width: 100% !important;
+                max-height: 100% !important;
+                object-fit: contain;
+            }
+        }
+    `;
+    
+    // Remove existing style if any
+    const existingStyle = document.getElementById('paletteFloatingWindowStyle');
+    if (existingStyle) {
+        existingStyle.remove();
+    }
+    
+    style.id = 'paletteFloatingWindowStyle';
+    document.head.appendChild(style);
+    document.body.appendChild(floatingWindow);
+    
+    // Create preview canvas
+    setTimeout(() => {
+        createPreviewCanvas();
+    }, 50);
+}
+
+// Create preview canvas with current design
+function createPreviewCanvas() {
+    previewCanvas = document.getElementById('previewCanvas');
+    if (!previewCanvas) return;
+    
+    const ctx = previewCanvas.getContext('2d');
+    const canvasInfo = getCanvasDimensions();
+    
+    if (canvasInfo.sourceCanvas) {
+        // Clear the canvas first
+        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        
+        // Draw the source canvas onto the preview canvas
+        ctx.drawImage(
+            canvasInfo.sourceCanvas, 
+            0, 0, canvasInfo.originalWidth, canvasInfo.originalHeight,
+            0, 0, previewCanvas.width, previewCanvas.height
+        );
+    } else {
+        // Create a default gradient if no canvas is found
+        const gradient = ctx.createLinearGradient(0, 0, previewCanvas.width, previewCanvas.height);
+        gradient.addColorStop(0, '#ff6b6b');
+        gradient.addColorStop(0.25, '#4ecdc4');
+        gradient.addColorStop(0.5, '#45b7d1');
+        gradient.addColorStop(0.75, '#96ceb4');
+        gradient.addColorStop(1, '#ffeaa7');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+    }
+}
+
+// Close floating window
+function closeFloatingWindow() {
+    if (floatingWindow) {
+        floatingWindow.remove();
+        floatingWindow = null;
+        previewCanvas = null;
+    }
+    
+    // Remove the style as well
+    const style = document.getElementById('paletteFloatingWindowStyle');
+    if (style) {
+        style.remove();
+    }
+    
+    clearExistingCursors();
+}
+
 // Clear existing cursors
 function clearExistingCursors() {
     colorCursors.forEach(cursor => {
@@ -3368,8 +3760,10 @@ function clearExistingCursors() {
 
 // Create initial color cursors
 function createColorCursors() {
+    if (!floatingWindow) return;
+    
     clearExistingCursors();
-    cursorCount = 3; // Reset to 3
+    cursorCount = 3;
     
     for (let i = 0; i < cursorCount; i++) {
         createSingleCursor(i);
@@ -3380,32 +3774,16 @@ function createColorCursors() {
 
 // Create a single cursor
 function createSingleCursor(index) {
-    const canvasLayers = document.querySelectorAll('.layer canvas');
-    if (canvasLayers.length === 0) {
-        console.log('No canvas layers found');
-        return;
-    }
+    if (!floatingWindow) return;
     
-    // Get the first visible canvas layer
-    let targetCanvas = null;
-    for (let canvas of canvasLayers) {
-        const rect = canvas.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-            targetCanvas = canvas;
-            break;
-        }
-    }
-    
-    if (!targetCanvas) {
-        console.log('No visible canvas found');
-        return;
-    }
+    const cursorsContainer = document.getElementById('cursorsContainer');
+    if (!cursorsContainer) return;
     
     const cursor = document.createElement('div');
     cursor.className = 'color-cursor';
     cursor.id = `colorCursor_${index}`;
     
-    // Position cursors in different areas of the canvas
+    // Position cursors in different areas of the preview
     const positions = [
         { x: 0.3, y: 0.3 },   // Top-left area
         { x: 0.7, y: 0.3 },   // Top-right area
@@ -3421,63 +3799,28 @@ function createSingleCursor(index) {
     
     const position = positions[index % positions.length];
     
-    // Get canvas position relative to the zoom wrapper
-    const zoomWrapper = document.getElementById('zoomWrapper');
-    const canvasRect = targetCanvas.getBoundingClientRect();
-    const zoomWrapperRect = zoomWrapper.getBoundingClientRect();
+    // Get actual container dimensions
+    const containerRect = cursorsContainer.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
     
-    // Calculate position relative to zoom wrapper
-    const relativeX = canvasRect.left - zoomWrapperRect.left;
-    const relativeY = canvasRect.top - zoomWrapperRect.top;
-    
-    // Position cursor on canvas
-    const x = relativeX + (canvasRect.width * position.x) - 12;
-    const y = relativeY + (canvasRect.height * position.y) - 12;
+    const x = (containerWidth * position.x) - 12;
+    const y = (containerHeight * position.y) - 12;
     
     cursor.style.left = x + 'px';
     cursor.style.top = y + 'px';
     
-    // Store canvas reference
-    cursor.dataset.targetCanvas = targetCanvas.id;
-    
     // Add drag functionality
     addDragFunctionality(cursor);
     
-    // Append to zoom wrapper so it moves with zoom
-    zoomWrapper.appendChild(cursor);
+    cursorsContainer.appendChild(cursor);
     colorCursors.push(cursor);
     
     // Initial color sampling
     setTimeout(() => updateCursorColor(cursor), 50);
 }
 
-// Get current zoom level from your zoom slider
-function getCurrentZoomLevel() {
-    const zoomSlider = document.getElementById('zoomSlider');
-    if (zoomSlider) {
-        // Convert slider value to actual zoom scale
-        const sliderValue = parseInt(zoomSlider.value);
-        return sliderValue / 100; // Convert percentage to decimal (e.g., 50% = 0.5)
-    }
-    
-    // Fallback: try to get zoom from transform style
-    const zoomWrapper = document.getElementById('zoomWrapper');
-    if (zoomWrapper) {
-        const transform = window.getComputedStyle(zoomWrapper).transform;
-        if (transform && transform !== 'none') {
-            // Extract scale from transform matrix
-            const matrix = transform.match(/matrix\(([^)]+)\)/);
-            if (matrix) {
-                const values = matrix[1].split(',');
-                return parseFloat(values[0]); // scaleX value
-            }
-        }
-    }
-    
-    return 1; // Default zoom level
-}
-
-// Perfect drag functionality - follows mouse exactly
+// Perfect drag functionality for floating window
 function addDragFunctionality(cursor) {
     let isDragging = false;
     let startX, startY, startLeft, startTop;
@@ -3505,23 +3848,22 @@ function addDragFunctionality(cursor) {
     function handleMouseMove(e) {
         if (!isDragging) return;
         
-        const currentZoom = getCurrentZoomLevel();
-        
-        // Calculate movement delta and scale by zoom
-        const deltaX = (e.clientX - startX) / currentZoom;
-        const deltaY = (e.clientY - startY) / currentZoom;
+        // Calculate movement delta
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
         
         // Calculate new position
         let newLeft = startLeft + deltaX;
         let newTop = startTop + deltaY;
         
-        // Get bounds
-        const zoomWrapper = document.getElementById('zoomWrapper');
-        const zoomRect = zoomWrapper.getBoundingClientRect();
-        const maxX = (zoomRect.width / currentZoom) - 24;
-        const maxY = (zoomRect.height / currentZoom) - 24;
+        // Get current container dimensions
+        const cursorsContainer = document.getElementById('cursorsContainer');
+        const containerRect = cursorsContainer.getBoundingClientRect();
         
-        // Apply bounds
+        // Apply bounds (within preview container)
+        const maxX = containerRect.width - 24;
+        const maxY = containerRect.height - 24;
+        
         newLeft = Math.max(0, Math.min(newLeft, maxX));
         newTop = Math.max(0, Math.min(newTop, maxY));
         
@@ -3544,55 +3886,42 @@ function addDragFunctionality(cursor) {
     }
 }
 
-// Update cursor color based on position
+// Update cursor color based on position in preview canvas
 function updateCursorColor(cursor) {
-    const color = sampleColorAtCursor(cursor);
-    cursor.style.backgroundColor = color;
-    cursor.style.borderColor = getContrastBorder(color);
-}
-
-// Sample color at cursor position
-function sampleColorAtCursor(cursor) {
+    if (!previewCanvas) return;
+    
     const rect = cursor.getBoundingClientRect();
-    const cursorCenterX = rect.left + 12;
-    const cursorCenterY = rect.top + 12;
+    const previewRect = previewCanvas.getBoundingClientRect();
     
-    // Check all canvas layers
-    const canvasLayers = document.querySelectorAll('.layer canvas');
+    // Calculate relative position within preview canvas
+    const relativeX = rect.left + 12 - previewRect.left;
+    const relativeY = rect.top + 12 - previewRect.top;
     
-    for (let canvas of canvasLayers) {
-        const canvasRect = canvas.getBoundingClientRect();
-        
-        // Check if cursor is over this canvas
-        if (cursorCenterX >= canvasRect.left && 
-            cursorCenterX <= canvasRect.right && 
-            cursorCenterY >= canvasRect.top && 
-            cursorCenterY <= canvasRect.bottom) {
+    // Convert to canvas coordinates
+    const canvasX = Math.floor((relativeX / previewRect.width) * previewCanvas.width);
+    const canvasY = Math.floor((relativeY / previewRect.height) * previewCanvas.height);
+    
+    // Make sure coordinates are within bounds
+    if (canvasX >= 0 && canvasX < previewCanvas.width && canvasY >= 0 && canvasY < previewCanvas.height) {
+        try {
+            const ctx = previewCanvas.getContext('2d');
+            const imageData = ctx.getImageData(canvasX, canvasY, 1, 1);
+            const [r, g, b, a] = imageData.data;
             
-            try {
-                // Calculate position within canvas
-                const canvasX = Math.floor((cursorCenterX - canvasRect.left) * (canvas.width / canvasRect.width));
-                const canvasY = Math.floor((cursorCenterY - canvasRect.top) * (canvas.height / canvasRect.height));
-                
-                // Make sure coordinates are within bounds
-                if (canvasX >= 0 && canvasX < canvas.width && canvasY >= 0 && canvasY < canvas.height) {
-                    const ctx = canvas.getContext('2d');
-                    const imageData = ctx.getImageData(canvasX, canvasY, 1, 1);
-                    const [r, g, b, a] = imageData.data;
-                    
-                    // If pixel has some opacity, return this color
-                    if (a > 10) {
-                        return rgbToHex(r, g, b);
-                    }
-                }
-            } catch (error) {
-                console.log('Error sampling color:', error);
+            if (a > 10) {
+                const color = rgbToHex(r, g, b);
+                cursor.style.backgroundColor = color;
+                cursor.style.borderColor = getContrastBorder(color);
+                return;
             }
+        } catch (error) {
+            console.log('Error sampling color:', error);
         }
     }
     
     // Default color if no valid color found
-    return '#808080';
+    cursor.style.backgroundColor = '#808080';
+    cursor.style.borderColor = '#ffffff';
 }
 
 // Get contrasting border color
@@ -3677,9 +4006,8 @@ function generatePalette() {
                 colors.push(color);
             }
         } else {
-            // Sample color directly if background color is not set
-            const sampledColor = sampleColorAtCursor(cursor);
-            colors.push(sampledColor);
+            // Use a default color if sampling failed
+            colors.push('#808080');
         }
     });
     
@@ -8512,6 +8840,17 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       }
     }
     
+    // Function to determine if a color is a background color (light/neutral)
+    function isBackgroundColor(color) {
+        const [h, s, l] = rgbToHsl(...color);
+        
+        // Background colors are typically:
+        // 1. High lightness (> 80)
+        // 2. Low saturation (< 20) 
+        // 3. Or very light with any saturation (> 90 lightness)
+        return (l > 80 && s < 20) || l > 90;
+    }
+    
     // Get color family (hue range) for a color
     function getColorFamily(color) {
         const [h, s, l] = rgbToHsl(...color);
@@ -8541,7 +8880,8 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             families[family].push({
                 color: color,
                 originalIndex: index,
-                hsl: rgbToHsl(...color)
+                hsl: rgbToHsl(...color),
+                isBackground: isBackgroundColor(color)
             });
         });
         
@@ -8556,6 +8896,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     // Generate a new color in target family that matches the lightness and saturation of source color
     function generateMatchingColor(sourceColor, targetHueRange) {
         const [sourceH, sourceS, sourceL] = rgbToHsl(...sourceColor);
+        const isSourceBackground = isBackgroundColor(sourceColor);
         
         // Define hue ranges for each color family
         const hueRanges = {
@@ -8588,11 +8929,18 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             newHue = range[0] + Math.random() * (range[1] - range[0]);
         }
         
-        // Keep similar saturation and lightness but add slight variation
-        const newSat = Math.max(5, Math.min(100, sourceS + (Math.random() - 0.5) * 20));
-        const newLight = Math.max(5, Math.min(95, sourceL + (Math.random() - 0.5) * 15));
-        
-        return hslToRgb(newHue, newSat, newLight);
+        // For background colors, maintain their light characteristics
+        if (isSourceBackground) {
+            // Keep background colors light and neutral
+            const newSat = Math.max(0, Math.min(15, sourceS + (Math.random() - 0.5) * 10));
+            const newLight = Math.max(80, Math.min(95, sourceL + (Math.random() - 0.5) * 10));
+            return hslToRgb(newHue, newSat, newLight);
+        } else {
+            // For regular colors, keep similar saturation and lightness but add slight variation
+            const newSat = Math.max(5, Math.min(100, sourceS + (Math.random() - 0.5) * 20));
+            const newLight = Math.max(5, Math.min(95, sourceL + (Math.random() - 0.5) * 15));
+            return hslToRgb(newHue, newSat, newLight);
+        }
     }
     
     // Generate diverse palettes by replacing color families
@@ -8717,6 +9065,49 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       } catch (e) {
         return "Color";
       }
+    }
+    
+    // Apply collection-specific color adjustments with proper background handling
+    function applyCollectionAdjustments(colors, collection) {
+        return colors.map(color => {
+            try {
+                const [h, s, l] = rgbToHsl(...color);
+                const isBackground = isBackgroundColor(color);
+                
+                if (collection === 'ss') {
+                    if (isBackground) {
+                        // For background colors in SS, keep them light and bright
+                        // but add a slight warm or cool tint
+                        const newSat = Math.min(25, s + 10); // Slight increase in saturation
+                        const newLight = Math.max(85, Math.min(95, l + 5)); // Keep very light
+                        return hslToRgb(h, newSat, newLight);
+                    } else {
+                        // For regular colors in SS, make them more vibrant and bright
+                        const newSat = Math.min(100, s * 1.3); // Increase saturation more
+                        const newLight = Math.max(40, Math.min(85, l * 1.6)); // Brighter but not washed out
+                        return hslToRgb(h, newSat, newLight);
+                    }
+                } else if (collection === 'aw') {
+                    if (isBackground) {
+                        // For background colors in AW, make them slightly warmer/earthier
+                        const newSat = Math.min(20, s + 5); // Very slight saturation increase
+                        const newLight = Math.max(75, Math.min(90, l - 5)); // Slightly less bright
+                        return hslToRgb(h, newSat, newLight);
+                    } else {
+                        // For regular colors in AW, make them more muted and earthy
+                        const newSat = Math.max(20, s * 0.8); // Reduce saturation
+                        const newLight = Math.max(25, Math.min(75, l * 0.9)); // Slightly darker
+                        return hslToRgb(h, newSat, newLight);
+                    }
+                } else {
+                    // For trending or other collections, return unchanged
+                    return color;
+                }
+            } catch (e) {
+                // If adjustment fails, return original color
+                return color;
+            }
+        });
     }
     
     // Modified: Function to prepare display colors with one from each color family
@@ -9147,6 +9538,69 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       markPreviewReady(canvas);
     }
     
+    // Function to show full palette modal
+    function showFullPaletteModal(palette, collection, index) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('fullPaletteModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'fullPaletteModal';
+            modal.classList.add('full-palette-modal');
+            
+            const modalContent = document.createElement('div');
+            modalContent.classList.add('full-palette-modal-content');
+            
+            const closeBtn = document.createElement('span');
+            closeBtn.classList.add('close-palette-modal');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = () => modal.style.display = 'none';
+            
+            const title = document.createElement('h2');
+            title.classList.add('palette-modal-title');
+            
+            const colorsContainer = document.createElement('div');
+            colorsContainer.classList.add('all-colors-container');
+            
+            modalContent.appendChild(closeBtn);
+            modalContent.appendChild(title);
+            modalContent.appendChild(colorsContainer);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Close modal when clicking outside
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };
+        }
+        
+        // Update modal content
+        const title = modal.querySelector('.palette-modal-title');
+        const colorsContainer = modal.querySelector('.all-colors-container');
+        
+        title.textContent = `${collection.toUpperCase()} Palette ${index + 1} - All Colors`;
+        colorsContainer.innerHTML = '';
+        
+        // Add all colors to the modal
+        palette.forEach((color, idx) => {
+            const colorDiv = document.createElement('div');
+            colorDiv.classList.add('full-palette-color');
+            colorDiv.style.backgroundColor = `rgb(${color.join(',')})`;
+            
+            const colorInfo = document.createElement('div');
+            colorInfo.classList.add('color-info');
+            const hexValue = rgbToHex(color[0], color[1], color[2]);
+            colorInfo.textContent = `${idx + 1}: ${hexValue}`;
+            
+            colorDiv.appendChild(colorInfo);
+            colorsContainer.appendChild(colorDiv);
+        });
+        
+        // Show modal
+        modal.style.display = 'block';
+    }
+    
     // Add necessary CSS styles for the loading indicators
     if (!document.getElementById('palette-preview-styles')) {
       const styleElement = document.createElement('style');
@@ -9400,30 +9854,8 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 }
             }
             
-            // Apply collection-specific adjustments
-            if (collection === 'ss') {
-                paletteColors = paletteColors.map(color => {
-                    try {
-                        const [h, s, l] = rgbToHsl(...color);
-                        return hslToRgb(h, Math.min(100, s * 1.2), Math.min(100, l * 1.1));
-                    } catch (e) {
-                        // Generate a bright color if adjustment fails
-                        const hue = Math.random() * 360;
-                        return hslToRgb(hue, 80, 65);
-                    }
-                });
-            } else if (collection === 'aw') {
-                paletteColors = paletteColors.map(color => {
-                    try {
-                        const [h, s, l] = rgbToHsl(...color);
-                        return hslToRgb(h, s * 0.9, l * 0.85);
-                    } catch (e) {
-                        // Generate a muted color if adjustment fails
-                        const hue = Math.random() * 360;
-                        return hslToRgb(hue, 60, 45);
-                    }
-                });
-            }
+            // Apply collection-specific adjustments with proper background handling
+            paletteColors = applyCollectionAdjustments(paletteColors, collection);
             
             // Initialize the storage if needed
             window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
@@ -9539,30 +9971,8 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const diversePalettes = generateDiversePalettes(validatedColors);
         let paletteColors = diversePalettes[layerIndex % diversePalettes.length] || [...validatedColors];
         
-        // Apply collection-specific adjustments
-        if (collection === 'ss') {
-            paletteColors = paletteColors.map(color => {
-                try {
-                    const [h, s, l] = rgbToHsl(...color);
-                    return hslToRgb(h, Math.min(100, s * 1.2), Math.min(100, l * 1.1));
-                } catch (e) {
-                    // Generate a new bright color if adjustment fails
-                    const hue = Math.random() * 360;
-                    return hslToRgb(hue, 80, 65);
-                }
-            });
-        } else if (collection === 'aw') {
-            paletteColors = paletteColors.map(color => {
-                try {
-                    const [h, s, l] = rgbToHsl(...color);
-                    return hslToRgb(h, s * 0.9, l * 0.85);
-                } catch (e) {
-                    // Generate a new muted color if adjustment fails
-                    const hue = Math.random() * 360;
-                    return hslToRgb(hue, 60, 45);
-                }
-            });
-        }
+        // Apply collection-specific adjustments with proper background handling
+        paletteColors = applyCollectionAdjustments(paletteColors, collection);
         
         // Store ALL colors in the palette data structure
         window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
@@ -12122,7 +12532,9 @@ function updateColorCountDisplay() {
         });
     }
 
-async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerIndex, oldColorArray, collection = 'trending', paletteIndex, collectionName = null) {
+
+
+    async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerIndex, oldColorArray, collection = 'trending', paletteIndex, collectionName = null) {
   const loadingScreen = document.getElementById('loading-screen');
   loadingScreen.style.display = 'block';
   const colorProcessor = new ColorProcessor();
@@ -14974,24 +15386,27 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
     }
     
     // New function to create background variations
-    function createBackgroundVariations(baseColor, variationType) {
-      const [h, s, l] = rgbToHsl(...baseColor);
+// New function to create background variations
+function createBackgroundVariations(baseColor, variationType) {
+  const [h, s, l] = rgbToHsl(...baseColor);
+  
+  switch (variationType) {
+    case 'dark':
+      // Create dark background (low lightness, maintain some saturation)
+      return hslToRgb(h, Math.max(s * 0.6, 8), Math.max(l * 0.25, 3));
       
-      switch (variationType) {
-        case 'dark':
-          // Create dark background (low lightness, maintain some saturation)
-          return hslToRgb(h, Math.max(s * 0.6, 8), Math.max(l * 0.25, 3));
-          
-        case 'faint':
-          // Create faint background (high lightness, very low saturation)
-          return hslToRgb(h, Math.max(s * 0.2, 3), Math.min(l * 1.7, 92));
-          
-        case 'regular':
-        default:
-          // Keep original color but ensure it's suitable as background
-          return hslToRgb(h, Math.max(s * 0.7, 12), Math.min(Math.max(l * 0.9, 15), 75));
-      }
-    }
+    case 'faint':
+      // Apply SS collection logic - light and bright with slight warm/cool tint
+      const newSat = Math.min(25, s + 10); // Slight increase in saturation
+      const newLight = Math.max(85, Math.min(95, l + 5)); // Keep very light
+      return hslToRgb(h, newSat, newLight);
+      
+    case 'regular':
+    default:
+      // Keep original color but ensure it's suitable as background
+      return hslToRgb(h, Math.max(s * 0.7, 12), Math.min(Math.max(l * 0.9, 15), 75));
+  }
+}
     
     // Harmony generation functions
     function generateMonochromaticPalette(baseColor, imageColors) {
@@ -17006,213 +17421,166 @@ let distinctColorsArrayColorPallet = [];
 // Initialize the adjuster
 const imageAdjuster = new ImageAdjuster();
 
+function editLayer(layerIndex) {
+  // Save current canvas state before showing modal
+  const canvas = document.getElementById(`layer_canvas_${layerIndex}`);
+  if (canvas) {
+    const currentState = canvas.toDataURL();
+    canvas.setAttribute('data-current-state', currentState);
+  }
 
-      function showLayerInfoButton(layerIndex) {
-        // Save current canvas state before showing modal
-        const canvas = document.getElementById(`layer_canvas_${layerIndex + 1}`);
-        if (canvas) {
-            const currentState = canvas.toDataURL();
-            canvas.setAttribute('data-current-state', currentState);
-        }
+  $('#colorPickerModal').modal('show');
+  updateLayersWithNewColorCount(layerIndex);
+}
 
-        $('#colorPickerModal').modal('show');
-        updateLayersWithNewColorCount(layerIndex + 1);
-      }
-      function showLayerInfo() {
-         contextMenu.style.display = 'none';
-         $('#colorPickerModal').modal('show');
-         const layerIndex = contextMenu.dataset.layerIndex; // Assuming contextMenu is defined
+function resetLayer(layerIndex) {
+  // Reset layer to original state using the correct method name
+  if (layerStates && layerStates.resetToOriginal) {
+    layerStates.resetToOriginal(layerIndex);
+  } else {
+    console.error('layerStates.resetToOriginal method not available');
+  }
+}
 
-         updateLayersWithNewColorCount(layerIndex);
-       }
-      document.addEventListener('DOMContentLoaded', function() {
-        const layerColors = {};
-        const loadingScreen = document.getElementById('loading-screen');
-        const totalLayers = {{ layers|length }};
-        let loadedImagesCount = 0;
-        const loader = document.getElementById('loading-screen');
-        function showContextMenu(event, layerIndex, layerName) {
+function showLayerInfoButton(layerIndex) {
+  // Save current canvas state before showing modal
+  const canvas = document.getElementById(`layer_canvas_${layerIndex + 1}`);
+  if (canvas) {
+    const currentState = canvas.toDataURL();
+    canvas.setAttribute('data-current-state', currentState);
+  }
 
-          event.preventDefault();
+  $('#colorPickerModal').modal('show');
+  updateLayersWithNewColorCount(layerIndex + 1);
+}
 
-          // Set the layer name in the context menu
-          layerNameDisplay.innerText = layerName;
+function showLayerInfo() {
+  contextMenu.style.display = 'none';
+  $('#colorPickerModal').modal('show');
+  const layerIndex = contextMenu.dataset.layerIndex;
+  updateLayersWithNewColorCount(layerIndex);
+}
 
-          // Get the clicked thumbnail’s coordinates
-          const thumbnail = event.target.getBoundingClientRect();
-          const toolbarWidth = document.querySelector('.toolbar').offsetWidth;
+document.addEventListener('DOMContentLoaded', function() {
+  const layerColors = {};
+  const loadingScreen = document.getElementById('loading-screen');
+  const totalLayers = {{ layers|length }};
+  let loadedImagesCount = 0;
+  const loader = document.getElementById('loading-screen');
 
-          // Position the context menu aligned to the toolbar, on the left side of the thumbnail
-          contextMenu.style.left = `${thumbnail.left - toolbarWidth - 20}px`; // Adjust as needed
-          contextMenu.style.top = `${thumbnail.top + window.scrollY}px`;
-          contextMenu.style.display = 'block';
-          contextMenu.dataset.layerIndex = layerIndex;
+  // Remove context menu functionality since we're using buttons now
+  document.addEventListener('click', function(event) {
+    if (contextMenu.style.display === 'block' && !contextMenu.contains(event.target)) {
+      contextMenu.style.display = 'none';
+    }
+  });
 
-          // Temporarily disable pointer events to avoid immediate hiding
-          setTimeout(() => {
-            contextMenu.style.pointerEvents = 'auto';
-          }, 0);
-        }
+  function checkIfAllImagesLoaded() {
+    if (loadedImagesCount === totalLayers) {
+      loadingScreen.style.display = 'none';
+      createColorButtons();
+    }
+  }
 
-        // Hide the context menu on clicking outside
-        document.addEventListener('click', function(event) {
-          if (contextMenu.style.display === 'block' && !contextMenu.contains(event.target) && !event.target.classList.contains('thumbnail')) {
-            contextMenu.style.display = 'none';
-          }
-        });
-        function checkIfAllImagesLoaded() {
-            if (loadedImagesCount === totalLayers) {
-                loadingScreen.style.display = 'none';
-                createColorButtons();
-            }
-        }
+  function isColorInArray(color, array) {
+    return array.some(existingColor =>
+      existingColor[0] === color[0] &&
+      existingColor[1] === color[1] &&
+      existingColor[2] === color[2]
+    );
+  }
 
-      
-        function isColorInArray(color, array) {
-          return array.some(existingColor =>
-              existingColor[0] === color[0] &&
-              existingColor[1] === color[1] &&
-              existingColor[2] === color[2]
-          );
-        }
-        let distinctColorsArray = [];
-        let singleLayerDistinctColorsArray = [];
-        let distinctColorsArrayColorPallet = [];
+  let distinctColorsArray = [];
+  let singleLayerDistinctColorsArray = [];
+  let distinctColorsArrayColorPallet = [];
 
-        {% for layer in layers %}
-        let img{{ forloop.counter }} = new Image();
-        img{{ forloop.counter }}.src = "{{ layer.path }}";
-        let canvas{{ forloop.counter }} = document.getElementById('layer_canvas_{{ forloop.counter }}');
-        let ctx{{ forloop.counter }} = canvas{{ forloop.counter }}.getContext('2d', { willReadFrequently: true });
-        let latestImageData{{ forloop.counter }} = null;
-        img{{ forloop.counter }}.onload = function() {
-          canvas{{ forloop.counter }}.width = img{{ forloop.counter }}.width;
-          canvas{{ forloop.counter }}.height = img{{ forloop.counter }}.height;
-          ctx{{ forloop.counter }}.drawImage(img{{ forloop.counter }}, 0, 0);
-            layerStates.saveOriginalState({{ forloop.counter }});
-            {% comment %} latestImageData{{ forloop.counter }} = ctx{{ forloop.counter }}.getImageData(0, 0, canvas{{ forloop.counter }}.width, canvas{{ forloop.counter }}.height); {% endcomment %}
-            const imageData{{ forloop.counter }} = ctx{{ forloop.counter }}.getImageData(0, 0, canvas{{ forloop.counter }}.width, canvas{{ forloop.counter }}.height);
+  {% for layer in layers %}
+  let img{{ forloop.counter }} = new Image();
+  img{{ forloop.counter }}.src = "{{ layer.path }}";
+  let canvas{{ forloop.counter }} = document.getElementById('layer_canvas_{{ forloop.counter }}');
+  let ctx{{ forloop.counter }} = canvas{{ forloop.counter }}.getContext('2d', { willReadFrequently: true });
+  let latestImageData{{ forloop.counter }} = null;
 
-            // Add distinct colors to the set (ensures no duplicates)
-            let colorCount = 0;
-            let distinctColorTolarance = 0;
-            
-            if(totalLayers === 1) {
-                // For single layer, get more colors with less tolerance
-                distinctColorTolarance = 100; // Lower tolerance to detect more color variations
-                colorCount = 20;  // Get more colors for single layer
-            } else if(totalLayers > 5) {
-                distinctColorTolarance = 180;
-                colorCount = 7;
-            } else {
-                distinctColorTolarance = 190;
-                colorCount = 7;
-            }
-            
-            const analysis = analyzeImageLayer(ctx{{ forloop.counter }});
-            let { avgLightness, hueTolerance, lightnessTolerance } = analysis;
-            hueTolerance = hueTolerance*100;
-            if(lightnessTolerance<0.5) lightnessTolerance=0.7;
-            
-            // Now this should return more colors for single layer
-            let distinctColors{{ forloop.counter }} = getDistinctColors(imageData{{ forloop.counter }}, 30, 50);
-            console.log(distinctColors{{ forloop.counter }})
-            //console.info(distinctColors{{forloop.counter}});
-            
+  img{{ forloop.counter }}.onload = function() {
+    canvas{{ forloop.counter }}.width = img{{ forloop.counter }}.width;
+    canvas{{ forloop.counter }}.height = img{{ forloop.counter }}.height;
+    ctx{{ forloop.counter }}.drawImage(img{{ forloop.counter }}, 0, 0);
+    layerStates.saveOriginalState({{ forloop.counter }});
 
-            distinctColors{{ forloop.counter }}.forEach((color, index) => {
-              if (!isColorInArray(color, distinctColorsArray)) {
-                // Remove the index == 0 condition to allow more colors
-                // if(index == 0){  // Remove this condition
-                  distinctColorsArrayColorPallet.push(color);
-                // }  // Remove this
-                distinctColorsArray.push(color);
-              }
-            });
+    const imageData{{ forloop.counter }} = ctx{{ forloop.counter }}.getImageData(0, 0, canvas{{ forloop.counter }}.width, canvas{{ forloop.counter }}.height);
 
+    let colorCount = 0;
+    let distinctColorTolarance = 0;
     
+    if(totalLayers === 1) {
+      distinctColorTolarance = 100;
+      colorCount = 20;
+    } else if(totalLayers > 5) {
+      distinctColorTolarance = 180;
+      colorCount = 7;
+    } else {
+      distinctColorTolarance = 190;
+      colorCount = 7;
+    }
+    
+    const analysis = analyzeImageLayer(ctx{{ forloop.counter }});
+    let { avgLightness, hueTolerance, lightnessTolerance } = analysis;
+    hueTolerance = hueTolerance*100;
+    if(lightnessTolerance<0.5) lightnessTolerance=0.7;
+    
+    let distinctColors{{ forloop.counter }} = getDistinctColors(imageData{{ forloop.counter }}, 30, 50);
+    console.log(distinctColors{{ forloop.counter }})
 
+    distinctColors{{ forloop.counter }}.forEach((color, index) => {
+      if (!isColorInArray(color, distinctColorsArray)) {
+        distinctColorsArrayColorPallet.push(color);
+        distinctColorsArray.push(color);
+      }
+    });
 
-            // Create a thumbnail
-            const thumbnailCanvas = document.createElement('canvas');
-            const thumbnailSize = 30;
-            thumbnailCanvas.width = thumbnailSize;
-            thumbnailCanvas.height = thumbnailSize;
-            const thumbnailCtx = thumbnailCanvas.getContext('2d');
-            thumbnailCtx.drawImage(img{{ forloop.counter }}, 0, 0, thumbnailSize, thumbnailSize);
-            document.getElementById('thumbnail_{{ forloop.counter }}').src = thumbnailCanvas.toDataURL();
+    // Increment the loaded image counter and check if all images are loaded
+    loadedImagesCount++;
+    checkIfAllImagesLoaded();
+  };
 
-            // Increment the loaded image counter and check if all images are loaded
-            loadedImagesCount++;
-            checkIfAllImagesLoaded();
-          };
-          img{{ forloop.counter }}.onerror = function() {
-              //console.error(`Failed to load image {{ forloop.counter }}`);
-              loadedImagesCount++;
-              checkIfAllImagesLoaded();
-          };
+  img{{ forloop.counter }}.onerror = function() {
+    loadedImagesCount++;
+    checkIfAllImagesLoaded();
+  };
 
-
-
-          let layerName{{ forloop.counter }} = "{{ layer.name }}"; // Store the layer name
-          let thumbnail{{ forloop.counter }} = document.getElementById('thumbnail_{{ forloop.counter }}');
-          let layerNameElement{{ forloop.counter }} = document.querySelector(`#toggleLayer{{ forloop.counter }}`).nextElementSibling;
-          if (thumbnail{{ forloop.counter }}) {
-            thumbnail{{ forloop.counter }}.addEventListener('click', function(event) {
-              showContextMenu(event, {{ forloop.counter }}, layerName{{ forloop.counter }});
-            });
-          }
-
-          if (layerNameElement{{ forloop.counter }}) {
-            layerNameElement{{ forloop.counter }}.addEventListener('click', function(event) {
-              showContextMenu(event, {{ forloop.counter }}, layerName{{ forloop.counter }});
-            });
-          }
-          loader.style.display = 'block';
-          
-          setTimeout(() => {
-            const buttons = document.querySelectorAll('#image-color-pickers button');
-            const rgbColors = generateUniqueRGBColorArray(distinctColorsArrayColorPallet.length+1);
-            layerColors[{{ forloop.counter }}] = {
-                targetColors: distinctColorsArrayColorPallet,
-                newColors: rgbColors
-            };
-            localStorage.setItem('distinctColorsArrayColorPallet', JSON.stringify(distinctColorsArrayColorPallet));
-            const layerIndex = {{ forloop.counter }};
-            const totalLayers = {{ layers|length }};
-            
-            // For single layer mode, we need to handle differently
-            if (totalLayers === 1) {
-                // Generate multiple palettes for single layer
-                for (let i = 0; i < 10; i++) {
-            
-                    displayColorPalette(i, distinctColorsArrayColorPallet, 'trending', distinctColorsArrayColorPallet.length+1, totalLayers);
-                    displayColorPalette(i, distinctColorsArrayColorPallet, 'ss', distinctColorsArrayColorPallet.length+1, totalLayers);
-                    displayColorPalette(i, distinctColorsArrayColorPallet, 'aw', distinctColorsArrayColorPallet.length+1, totalLayers);
-                }
-            } else {
-                // For multi-layer mode
-                displayColorPalette(layerIndex, rgbColors, 'trending', distinctColorsArrayColorPallet.length+1, totalLayers);
-                displayColorPalette(layerIndex, rgbColors, 'ss', distinctColorsArrayColorPallet.length+1, totalLayers);
-                displayColorPalette(layerIndex, rgbColors, 'aw', distinctColorsArrayColorPallet.length+1, totalLayers);
-            }
-        
-            const layerCanvas = document.getElementById(`layer_canvas_${layerIndex}`);
-            const layerCtx = layerCanvas.getContext('2d', { willReadFrequently: true });
-        
-
-            
-            // Helper function to set up palette buttons consistently
-
-        }, 1000); // 1-second delay
-          {% endfor %}
-      });
+  loader.style.display = 'block';
   
+  setTimeout(() => {
+    const buttons = document.querySelectorAll('#image-color-pickers button');
+    const rgbColors = generateUniqueRGBColorArray(distinctColorsArrayColorPallet.length+1);
+    layerColors[{{ forloop.counter }}] = {
+      targetColors: distinctColorsArrayColorPallet,
+      newColors: rgbColors
+    };
+    localStorage.setItem('distinctColorsArrayColorPallet', JSON.stringify(distinctColorsArrayColorPallet));
+    const layerIndex = {{ forloop.counter }};
+    const totalLayers = {{ layers|length }};
+    
+    if (totalLayers === 1) {
+      for (let i = 0; i < 10; i++) {
+        displayColorPalette(i, distinctColorsArrayColorPallet, 'trending', distinctColorsArrayColorPallet.length+1, totalLayers);
+        displayColorPalette(i, distinctColorsArrayColorPallet, 'ss', distinctColorsArrayColorPallet.length+1, totalLayers);
+        displayColorPalette(i, distinctColorsArrayColorPallet, 'aw', distinctColorsArrayColorPallet.length+1, totalLayers);
+      }
+    } else {
+      displayColorPalette(layerIndex, rgbColors, 'trending', distinctColorsArrayColorPallet.length+1, totalLayers);
+      displayColorPalette(layerIndex, rgbColors, 'ss', distinctColorsArrayColorPallet.length+1, totalLayers);
+      displayColorPalette(layerIndex, rgbColors, 'aw', distinctColorsArrayColorPallet.length+1, totalLayers);
+    }
 
+    const layerCanvas = document.getElementById(`layer_canvas_${layerIndex}`);
+    const layerCtx = layerCanvas.getContext('2d', { willReadFrequently: true });
+  }, 1000);
+  {% endfor %}
+});
 
-
-
-      function getDominantColor(imageData) {
+// Rest of your existing functions remain the same...
+function getDominantColor(imageData) {
   const data = imageData.data;
   const colorCounts = {};
   const allColors = new Map();
@@ -18216,118 +18584,233 @@ function generateUniqueRGBColorPalettes(count, totalLayers) {
     return palettes;
 }
 
-function exportTiff() {
-  return new Promise((resolve, reject) => {
-      const loadingScreen = document.getElementById('loading-screen');
-      loadingScreen.style.display = 'block';
-      
-      const formData = new FormData();
-      const layers = [];
-      
-      // Get all layer canvases in correct order
-      const layerCanvases = Array.from(document.querySelectorAll('[id^="layer_canvas_"]'))
-          .sort((a, b) => {
-              const indexA = parseInt(a.id.split('_').pop());
-              const indexB = parseInt(b.id.split('_').pop());
-              return indexA - indexB;
-          });
-      
-      // Collect all layer data matching the read format
-      layerCanvases.forEach((canvas) => {
-          // Get the actual positions from the canvas or its wrapper
-          const wrapper = canvas.closest('.layer-wrapper') || canvas.parentElement;
-          const position_top = parseInt(wrapper.style.top) || 0;
-          const position_left = parseInt(wrapper.style.left) || 0;
-          
-          // Get original dimensions from data attributes
-          const original_width = parseInt(canvas.getAttribute('data-original-width') || 0);
-          const original_height = parseInt(canvas.getAttribute('data-original-height') || 0);
+function showFormatSelectionDialog() {
+    return new Promise((resolve, reject) => {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        `;
 
-          const layerData = {
-              name: canvas.getAttribute('data-layer-name') || canvas.id,
-              position_top: position_top,
-              position_left: position_left,
-              width: canvas.width,
-              height: canvas.height,
-              original_width: original_width,
-              original_height: original_height,
-              imageData: canvas.toDataURL('image/png', 1.0)
-          };
-          
-          console.log(`Exporting Layer: ${layerData.name}, Position: (${layerData.position_left}, ${layerData.position_top}), Size: ${layerData.width}x${layerData.height}, Original Size: ${layerData.original_width}x${layerData.original_height}`);
-          layers.push(layerData);
-      });
-      
-      formData.append('layers_data', JSON.stringify(layers));
-      
-      // Send data to server
-      fetch('export_tiff/', {
-          method: 'POST',
-          headers: {
-              'X-CSRFToken': getCookie('csrftoken')
-          },
-          body: formData
-      })
-      .then(response => {
-          if (!response.ok) {
-              return response.text().then(text => {
-                  try {
-                      const json = JSON.parse(text);
-                      throw new Error(json.error || 'Export failed');
-                  } catch (e) {
-                      throw new Error('Export failed: ' + text);
-                  }
-              });
-          }
-          return response.blob();
-      })
-      .then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'exported.tif';
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          a.remove();
-          resolve();
-      })
-      .catch(error => {
-          console.error('Export failed:', error);
-          reject(error);
-      })
-      .finally(() => {
-          loadingScreen.style.display = 'none';
-      });
-  });
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 300px;
+            max-width: 400px;
+        `;
+
+        modal.innerHTML = `
+            <h3 style="margin-bottom: 20px; color: #333;">Select Export Format</h3>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin: 10px 0; cursor: pointer; padding: 10px; border: 2px solid #ddd; border-radius: 5px; transition: all 0.3s;">
+                    <input type="radio" name="exportFormat" value="tiff" checked style="margin-right: 10px;">
+                    <strong>TIFF</strong> - High quality, supports layers
+                </label>
+                <label style="display: block; margin: 10px 0; cursor: pointer; padding: 10px; border: 2px solid #ddd; border-radius: 5px; transition: all 0.3s;">
+                    <input type="radio" name="exportFormat" value="png" style="margin-right: 10px;">
+                    <strong>PNG</strong> - Good quality, supports transparency
+                </label>
+                <label style="display: block; margin: 10px 0; cursor: pointer; padding: 10px; border: 2px solid #ddd; border-radius: 5px; transition: all 0.3s;">
+                    <input type="radio" name="exportFormat" value="jpg" style="margin-right: 10px;">
+                    <strong>JPG</strong> - Smaller file size, good for photos
+                </label>
+                <label style="display: block; margin: 10px 0; cursor: pointer; padding: 10px; border: 2px solid #ddd; border-radius: 5px; transition: all 0.3s;">
+                    <input type="radio" name="exportFormat" value="webp" style="margin-right: 10px;">
+                    <strong>WebP</strong> - Modern format, excellent compression
+                </label>
+            </div>
+            <div>
+                <button id="exportConfirm" style="background: #28a745; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 5px; cursor: pointer;">Export</button>
+                <button id="exportCancel" style="background: #6c757d; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 5px; cursor: pointer;">Cancel</button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Add hover effects
+        const labels = modal.querySelectorAll('label');
+        labels.forEach(label => {
+            label.addEventListener('mouseenter', () => {
+                label.style.borderColor = '#007bff';
+                label.style.backgroundColor = '#f8f9fa';
+            });
+            label.addEventListener('mouseleave', () => {
+                if (!label.querySelector('input').checked) {
+                    label.style.borderColor = '#ddd';
+                    label.style.backgroundColor = 'white';
+                }
+            });
+            label.addEventListener('click', () => {
+                labels.forEach(l => {
+                    l.style.borderColor = '#ddd';
+                    l.style.backgroundColor = 'white';
+                });
+                label.style.borderColor = '#007bff';
+                label.style.backgroundColor = '#e3f2fd';
+            });
+        });
+
+        // Set initial selected style
+        const selectedLabel = modal.querySelector('input[checked]').closest('label');
+        selectedLabel.style.borderColor = '#007bff';
+        selectedLabel.style.backgroundColor = '#e3f2fd';
+
+        // Handle buttons
+        modal.querySelector('#exportConfirm').addEventListener('click', () => {
+            const selectedFormat = modal.querySelector('input[name="exportFormat"]:checked').value;
+            document.body.removeChild(overlay);
+            resolve(selectedFormat);
+        });
+
+        modal.querySelector('#exportCancel').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            reject(new Error('Export cancelled'));
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                reject(new Error('Export cancelled'));
+            }
+        });
+    });
 }
 
-// Event listener setup
-document.addEventListener('DOMContentLoaded', function() {
-  const exportButton = document.querySelector('.btn.btn-success4') || document.getElementById('exportTiffButton');
-  
-  if (exportButton) {
-      exportButton.addEventListener('click', function() {
-          const loadingScreen = document.getElementById('loading-screen');
-          if (loadingScreen) {
-              loadingScreen.style.display = 'block';
-          }
+function exportFile(format = 'tiff') {
+    return new Promise((resolve, reject) => {
+        const loadingScreen = document.getElementById('loading-screen');
+        loadingScreen.style.display = 'block';
+        
+        const formData = new FormData();
+        const layers = [];
+        
+        // Get all layer canvases in correct order
+        const layerCanvases = Array.from(document.querySelectorAll('[id^="layer_canvas_"]'))
+            .sort((a, b) => {
+                const indexA = parseInt(a.id.split('_').pop());
+                const indexB = parseInt(b.id.split('_').pop());
+                return indexA - indexB;
+            });
+        
+        // Collect all layer data matching the read format
+        layerCanvases.forEach((canvas) => {
+            // Get the actual positions from the canvas or its wrapper
+            const wrapper = canvas.closest('.layer-wrapper') || canvas.parentElement;
+            const position_top = parseInt(wrapper.style.top) || 0;
+            const position_left = parseInt(wrapper.style.left) || 0;
+            
+            // Get original dimensions from data attributes
+            const original_width = parseInt(canvas.getAttribute('data-original-width') || 0);
+            const original_height = parseInt(canvas.getAttribute('data-original-height') || 0);
 
-          exportTiff()
-              .then(() => {
-                  console.log('Export completed successfully');
-              })
-              .catch(error => {
-                  console.error('Export failed:', error);
-                  alert('Export failed: ' + error.message);
-              })
-              .finally(() => {
-                  if (loadingScreen) {
-                      loadingScreen.style.display = 'none';
-                  }
-              });
-      });
-  }
+            const layerData = {
+                name: canvas.getAttribute('data-layer-name') || canvas.id,
+                position_top: position_top,
+                position_left: position_left,
+                width: canvas.width,
+                height: canvas.height,
+                original_width: original_width,
+                original_height: original_height,
+                imageData: canvas.toDataURL('image/png', 1.0)
+            };
+            
+            console.log(`Exporting Layer: ${layerData.name}, Position: (${layerData.position_left}, ${layerData.position_top}), Size: ${layerData.width}x${layerData.height}, Original Size: ${layerData.original_width}x${layerData.original_height}`);
+            layers.push(layerData);
+        });
+        
+        formData.append('layers_data', JSON.stringify(layers));
+        formData.append('export_format', format);
+        
+        // Send data to server
+        fetch('export_file/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    try {
+                        const json = JSON.parse(text);
+                        throw new Error(json.error || 'Export failed');
+                    } catch (e) {
+                        throw new Error('Export failed: ' + text);
+                    }
+                });
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Set appropriate file extension based on format
+            const extensions = {
+                'tiff': 'tif',
+                'png': 'png',
+                'jpg': 'jpg',
+                'webp': 'webp'
+            };
+            
+            a.download = `exported.${extensions[format] || 'tif'}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            resolve();
+        })
+        .catch(error => {
+            console.error('Export failed:', error);
+            reject(error);
+        })
+        .finally(() => {
+            loadingScreen.style.display = 'none';
+        });
+    });
+}
+
+// Updated event listener setup
+document.addEventListener('DOMContentLoaded', function() {
+    const exportButton = document.querySelector('.btn.btn-success4') || document.getElementById('exportTiffButton');
+    
+    if (exportButton) {
+        exportButton.addEventListener('click', function() {
+            // Show format selection dialog first
+            showFormatSelectionDialog()
+                .then(selectedFormat => {
+                    console.log(`Selected format: ${selectedFormat}`);
+                    return exportFile(selectedFormat);
+                })
+                .then(() => {
+                    console.log('Export completed successfully');
+                })
+                .catch(error => {
+                    if (error.message !== 'Export cancelled') {
+                        console.error('Export failed:', error);
+                        alert('Export failed: ' + error.message);
+                    }
+                });
+        });
+    }
 });
 
 // Helper function to get CSRF token
