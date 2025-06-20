@@ -8840,6 +8840,47 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       }
     }
     
+    // NEW: Function to generate hue-shifted palettes for first 5 palettes
+    function generateHueShiftedPalettes(originalColors, collection) {
+        const hueShiftedPalettes = [];
+        
+        // Define hue shifts for first 5 palettes
+        const hueShifts = [
+            60,   // Palette 0: +60 degrees (more yellow/green)
+            120,  // Palette 1: +120 degrees (complementary)
+            180,  // Palette 2: +180 degrees (opposite)
+            240,  // Palette 3: +240 degrees (triadic)
+            300   // Palette 4: +300 degrees (triadic)
+        ];
+        
+        for (let i = 0; i < 5; i++) {
+            const hueShift = hueShifts[i];
+            const shiftedPalette = originalColors.map(color => {
+                const [h, s, l] = rgbToHsl(...color);
+                let newHue = (h + hueShift) % 360;
+                let newSat = s;
+                let newLight = l;
+                
+                // Apply collection-specific adjustments
+                if (collection === 'ss') {
+                    // SS: Brighter, more vibrant
+                    newSat = Math.min(100, s * 1.2);
+                    newLight = Math.min(90, Math.max(40, l * 1.1));
+                } else if (collection === 'aw') {
+                    // AW: More muted, darker
+                    newSat = Math.max(20, s * 0.8);
+                    newLight = Math.min(80, Math.max(25, l * 0.9));
+                }
+                
+                return hslToRgb(newHue, newSat, newLight);
+            });
+            
+            hueShiftedPalettes.push(shiftedPalette);
+        }
+        
+        return hueShiftedPalettes;
+    }
+    
     // Function to determine if a color is a background color (light/neutral)
     function isBackgroundColor(color) {
         const [h, s, l] = rgbToHsl(...color);
@@ -9079,12 +9120,12 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                         // For background colors in SS, keep them light and bright
                         // but add a slight warm or cool tint
                         const newSat = Math.min(25, s + 10); // Slight increase in saturation
-                        const newLight = Math.max(85, Math.min(95, l + 5)); // Keep very light
+                        const newLight = Math.max(115, Math.min(95, l + 5)); // Keep very light
                         return hslToRgb(h, newSat, newLight);
                     } else {
                         // For regular colors in SS, make them more vibrant and bright
-                        const newSat = Math.min(100, s * 1.3); // Increase saturation more
-                        const newLight = Math.max(40, Math.min(85, l * 1.6)); // Brighter but not washed out
+                        const newSat = Math.min(100, s * 1.6); // Increase saturation more
+                        const newLight = Math.max(40, Math.min(85, l * 1.8)); // Brighter but not washed out
                         return hslToRgb(h, newSat, newLight);
                     }
                 } else if (collection === 'aw') {
@@ -9403,7 +9444,10 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         // Draw original image to temp canvas at high resolution
         tempCtx.drawImage(originalCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
         
-        // Now get the temp canvas data for processing
+        // FIXED: Always use color replacement method for previews, regardless of palette type
+        // The hue shifting should only happen during actual processing, not in previews
+        
+        // Get the temp canvas data for processing
         const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
         
         // Find original colors from the image
@@ -9433,7 +9477,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             return;
         }
         
-        // Create color mappings
+        // Create color mappings using the palette colors (which are the shifted/diverse colors)
         const colorMappings = [];
         for (let i = 0; i < Math.min(originalColors.length, paletteColors.length); i++) {
             colorMappings.push({
@@ -9446,7 +9490,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const colorProcessor = new ColorProcessor();
         const imageUrl = tempCanvas.toDataURL();
         
-        // Process the preview at high resolution
+        // Process the preview at high resolution using color replacement
         const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
             imageUrl,
             colorMappings
@@ -9794,8 +9838,16 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     
     // Main processing logic for single layer
     if (totalLayers === 1) {
-        // Generate diverse palettes using color family replacement
+        // NEW: Generate special palettes for first 5 (hue-shifted) and regular for the rest
+        let allPalettes = [];
+        
+        // First 5 palettes: Use hue shifting
+        const hueShiftedPalettes = generateHueShiftedPalettes(validatedColors, collection);
+        allPalettes = [...hueShiftedPalettes];
+        
+        // Remaining 5 palettes: Use family replacement as before
         const diversePalettes = generateDiversePalettes(validatedColors);
+        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 5)];
         
         // Initialize preview cache if needed
         if (!window.palettePreviewCache) {
@@ -9834,8 +9886,8 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             
             paletteContainer.innerHTML = '';
             
-            // Get palette colors from our diverse palettes
-            let paletteColors = diversePalettes[i] || diversePalettes[0];
+            // Get palette colors from our mixed palettes (hue-shifted for first 5, diverse for rest)
+            let paletteColors = allPalettes[i] || allPalettes[0];
             
             // Verify that all colors are valid
             paletteColors = paletteColors.filter(color => 
@@ -9854,14 +9906,20 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 }
             }
             
-            // Apply collection-specific adjustments with proper background handling
-            paletteColors = applyCollectionAdjustments(paletteColors, collection);
-            
             // Initialize the storage if needed
             window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
             
             // Store ALL colors in the palette data structure
             window[`${collection}PaletteColors`][i] = [...paletteColors];
+            
+            // NEW: Mark hue-shifted palettes with special flag
+            if (i < 5) {
+                // Mark this as a hue-shifted palette
+                if (!window[`${collection}PaletteHueShifted`]) {
+                    window[`${collection}PaletteHueShifted`] = {};
+                }
+                window[`${collection}PaletteHueShifted`][i] = true;
+            }
             
             // Create container for the palette that includes preview
             const clickableContainer = document.createElement('div');
@@ -9967,12 +10025,23 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const paletteContainer = document.getElementById(`${prefix}colorPalette_${layerIndex}`);
         if (!paletteContainer) return;
         
-        // Use family replacement for multi-layer palettes
-        const diversePalettes = generateDiversePalettes(validatedColors);
-        let paletteColors = diversePalettes[layerIndex % diversePalettes.length] || [...validatedColors];
-        
-        // Apply collection-specific adjustments with proper background handling
-        paletteColors = applyCollectionAdjustments(paletteColors, collection);
+        // For multi-layer, check if this should be hue-shifted or diverse
+        let paletteColors;
+        if (layerIndex < 5) {
+            // Use hue shifting for first 5 layers
+            const hueShiftedPalettes = generateHueShiftedPalettes(validatedColors, collection);
+            paletteColors = hueShiftedPalettes[layerIndex] || [...validatedColors];
+            
+            // Mark this as hue-shifted
+            if (!window[`${collection}PaletteHueShifted`]) {
+                window[`${collection}PaletteHueShifted`] = {};
+            }
+            window[`${collection}PaletteHueShifted`][layerIndex] = true;
+        } else {
+            // Use family replacement for layers 5+
+            const diversePalettes = generateDiversePalettes(validatedColors);
+            paletteColors = diversePalettes[layerIndex % diversePalettes.length] || [...validatedColors];
+        }
         
         // Store ALL colors in the palette data structure
         window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
@@ -10168,74 +10237,6 @@ function showFullPaletteModal(palette, collection, paletteIndex) {
   modal.style.display = 'block';
 }
 
-// Modal function for showing all palette colors
-function showFullPaletteModal(palette, collection, paletteIndex) {
-  // Create and append modal elements if they don't exist
-  let modal = document.getElementById('full-palette-modal');
-  
-  if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'full-palette-modal';
-      modal.classList.add('full-palette-modal');
-      
-      const modalContent = document.createElement('div');
-      modalContent.classList.add('full-palette-modal-content');
-      
-      const closeBtn = document.createElement('span');
-      closeBtn.classList.add('close-palette-modal');
-      closeBtn.innerHTML = '&times;';
-      
-      const modalTitle = document.createElement('h3');
-      modalTitle.classList.add('palette-modal-title');
-      
-      const colorsContainer = document.createElement('div');
-      colorsContainer.classList.add('all-colors-container');
-      
-      modalContent.appendChild(closeBtn);
-      modalContent.appendChild(modalTitle);
-      modalContent.appendChild(colorsContainer);
-      modal.appendChild(modalContent);
-      
-      document.body.appendChild(modal);
-      
-      // Add event listener to close button
-      closeBtn.addEventListener('click', function() {
-          modal.style.display = 'none';
-      });
-      
-      // Close modal when clicking outside content
-      window.addEventListener('click', function(event) {
-          if (event.target === modal) {
-              modal.style.display = 'none';
-          }
-      });
-  }
-  
-  // Update modal content with current palette
-  const modalTitle = modal.querySelector('.palette-modal-title');
-  const colorsContainer = modal.querySelector('.all-colors-container');
-  
-  modalTitle.textContent = `Full Palette (${collection.toUpperCase()} #${paletteIndex+1})`;
-  colorsContainer.innerHTML = '';
-  
-  // Add all colors to the modal
-  palette.forEach((color, index) => {
-      const colorBox = document.createElement('div');
-      colorBox.classList.add('full-palette-color');
-      colorBox.style.backgroundColor = `rgb(${color.join(',')})`;
-      
-      // Add color information
-      const colorInfo = document.createElement('div');
-      colorInfo.classList.add('color-info');
-      colorInfo.textContent = `#${index+1}: RGB(${color.join(',')})`;
-      colorBox.appendChild(colorInfo);
-      
-      colorsContainer.appendChild(colorBox);
-  });
-  
-  // Show the modal
-  modal.style.display = 'block';
-}
 
 
 async function processPreviewQueue() {
@@ -12534,7 +12535,8 @@ function updateColorCountDisplay() {
 
 
 
-    async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerIndex, oldColorArray, collection = 'trending', paletteIndex, collectionName = null) {
+
+async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerIndex, oldColorArray, collection = 'trending', paletteIndex, collectionName = null) {
   const loadingScreen = document.getElementById('loading-screen');
   loadingScreen.style.display = 'block';
   const colorProcessor = new ColorProcessor();
@@ -12543,6 +12545,7 @@ function updateColorCountDisplay() {
       // Special handling for arrays passed instead of collection name or favorites
       let fullPalette;
       let actualCollection = collectionName || collection;
+      let isHueShifted = false; // NEW: Track if this is a hue-shifted palette
       
       // NEW: Check if this is a favorite palette request
       if (typeof paletteIndex === 'string' && paletteIndex.startsWith('fav_')) {
@@ -12596,6 +12599,12 @@ function updateColorCountDisplay() {
                   window[`${actualCollection}PaletteColors`] = {};
               }
               window[`${actualCollection}PaletteColors`][paletteIndex] = fullPalette;
+              
+              // NEW: Check if this is hue-shifted
+              if (window[`${actualCollection}PaletteHueShifted`] && 
+                  window[`${actualCollection}PaletteHueShifted`][paletteIndex]) {
+                  isHueShifted = true;
+              }
           } else {
               // If no explicit collection name, check if this palette exists in any collection
               // Priority: If we know which collection to use, don't search others
@@ -12618,6 +12627,12 @@ function updateColorCountDisplay() {
                               fullPalette = storedPalette;
                               actualCollection = collName;
                               foundFullPalette = true;
+                              
+                              // NEW: Check if this is hue-shifted
+                              if (window[`${collName}PaletteHueShifted`] && 
+                                  window[`${collName}PaletteHueShifted`][paletteIndex]) {
+                                  isHueShifted = true;
+                              }
                               break;
                           }
                       }
@@ -12636,6 +12651,12 @@ function updateColorCountDisplay() {
           
           fullPalette = window[`${actualCollection}PaletteColors`][paletteIndex];
           
+          // NEW: Check if this is hue-shifted
+          if (window[`${actualCollection}PaletteHueShifted`] && 
+              window[`${actualCollection}PaletteHueShifted`][paletteIndex]) {
+              isHueShifted = true;
+          }
+          
           if (!fullPalette || fullPalette.length === 0) {
               console.error(`No palette found for ${actualCollection}[${paletteIndex}]`);
               loadingScreen.style.display = 'none';
@@ -12644,165 +12665,24 @@ function updateColorCountDisplay() {
       }
       
       console.log(`Using full palette with ${fullPalette.length} colors from ${actualCollection}:`);
+      console.log(`Is hue-shifted palette: ${isHueShifted}`);
   
-      // Now use the full palette for processing
-      if (totalLayers === 1) {
-          // Single layer optimized processing
-          const layer = 1;
-          const layerCanvas = document.getElementById(`layer_canvas_${layer}`);
-          if (!layerCanvas) {
-              console.error("Layer canvas not found");
-              loadingScreen.style.display = 'none';
-              return;
-          }
+      // NEW: Apply hue shifting method for special palettes
+      if (isHueShifted) {
+          console.log("Applying hue shifting method");
           
-          // Cache DOM elements and computed values
-          const colorButtons = document.querySelectorAll('.color-picker');
-          const unlockedButtons = Array.from(colorButtons).filter(button => button.dataset.locked !== 'true');
+          // Get hue shift amount based on palette index
+          const hueShifts = [60, 120, 180, 240, 300];
+          const hueShift = hueShifts[paletteIndex % hueShifts.length];
           
-          if (unlockedButtons.length === 0) {
-              console.log('All colors are locked');
-              loadingScreen.style.display = 'none';
-              return;
-          }
-          
-          // Save current state before processing
-          if (typeof layerStates !== 'undefined' && layerStates.saveEditedState) {
-              layerStates.saveEditedState(layer);
-          }
-          
-          // IMPORTANT CHANGE: Always start with the original image
-          // Load the original image state instead of working with the current canvas
-          const ctx = layerCanvas.getContext('2d', { willReadFrequently: true });
-          
-          // First, restore the original image
-          let originalImageData;
-          
-          if (typeof layerStates !== 'undefined' && layerStates.hasOriginalState && layerStates.hasOriginalState(layer)) {
-              // Load original image from layer states
-              originalImageData = layerStates.getOriginalState(layer);
-              const originalImg = new Image();
-              await new Promise(resolve => {
-                  originalImg.onload = () => {
-                      ctx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
-                      ctx.drawImage(originalImg, 0, 0);
-                      resolve();
-                  };
-                  originalImg.src = originalImageData;
-              });
-          }
-          
-          // Now get the current image data after restoring the original
-          const imageDataUrl = layerCanvas.toDataURL();
-          
-          // Create array of color mappings to process
-          const colorMappings = [];
-          
-          // IMPORTANT: We need to get the original colors from the original image
-          // Analyze the original image to find its colors
-          const imageData = ctx.getImageData(0, 0, layerCanvas.width, layerCanvas.height);
-          const originalColors = await getDistinctColors(imageData, 30, 50); // Adjust parameters as needed
-          
-          // KEY CHANGE: Track which buttons are locked and their original colors
-          const lockedIndexes = new Set();
-          Array.from(colorButtons).forEach((button, idx) => {
-              if (button.dataset.locked === 'true') {
-                  lockedIndexes.add(idx);
-              }
-          });
-          
-          // Create mappings only for unlocked buttons
-          let paletteColorIndex = 0;
-          for (let i = 0; i < Math.min(colorButtons.length, originalColors.length); i++) {
-              const button = colorButtons[i];
-              const originalColor = originalColors[i];
-              
-              if (lockedIndexes.has(i)) {
-                  // For locked colors, map the original color to itself (no change)
-                  colorMappings.push({
-                      originalColor,
-                      targetColor: originalColor, // Same color so no change happens
-                      button
-                  });
-              } else {
-                  // For unlocked colors, use the next color from the palette
-                  const targetColor = fullPalette[paletteColorIndex % fullPalette.length];
-                  paletteColorIndex++;
-                  
-                  if (!targetColor) {
-                      console.error(`Target color not found at index ${paletteColorIndex-1}`);
-                      continue;
-                  }
-              
-                  colorMappings.push({
-                      originalColor,
-                      targetColor,
-                      button
-                  });
-              }
-          }
-          
-          if (colorMappings.length === 0) {
-              console.error("No valid color mappings to apply");
-              loadingScreen.style.display = 'none';
-              return;
-          }
-          
-          // Process all colors in one go
-          const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
-              imageDataUrl,
-              colorMappings
-          );
-          
-          // Load the processed image back to canvas once
-          const resultImg = new Image();
-          await new Promise(resolve => {
-              resultImg.onload = () => {
-                  ctx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
-                  ctx.drawImage(resultImg, 0, 0);
-                  
-                  // FIXED: Only update colors for unlocked buttons
-                  colorMappings.forEach(mapping => {
-                      const buttonIndex = Array.from(colorButtons).indexOf(mapping.button);
-                      // Only update if the button is not locked
-                      if (!lockedIndexes.has(buttonIndex)) {
-                          mapping.button.style.backgroundColor = `rgb(${mapping.targetColor.join(',')})`;
-                      }
-                  });
-                  
-                  resolve();
-              };
-              resultImg.src = processedImageUrl;
-          });
-          
-          // Update footer once - with safety check
-          if (fullPalette[0] && typeof updateFooterColorButton === 'function') {
-              updateFooterColorButton(layer, fullPalette[0]);
-          }
-          
-      } else {
-          // Optimized multi-layer processing with original image restoration
-          const colorButtons = document.querySelectorAll('.color-picker');
-          const unlockedLayers = [];
-          const colorMappingsPerLayer = new Map();
-          
-          // Prepare all color mappings first to minimize DOM access
-          for (let layer = 1; layer <= totalLayers; layer++) {
-              const colorButton = document.querySelector(`.color-picker[data-layer-index="${layer-1}"]`);
-              if (!colorButton) {
-                  console.log(`No color button found for layer ${layer}`);
-                  continue;
-              }
-              
-              if (colorButton.dataset.locked === 'true') {
-                  console.log(`Layer ${layer} is locked, skipping processing`);
-                  continue;
-              }
-              
+          if (totalLayers === 1) {
+              // Single layer hue shifting
+              const layer = 1;
               const layerCanvas = document.getElementById(`layer_canvas_${layer}`);
               if (!layerCanvas) {
-                  console.log(`Canvas not found for layer ${layer}`);
-                  continue;
+                  console.error("Layer canvas not found");
+                  loadingScreen.style.display = 'none';
+                  return;
               }
               
               // Save current state before processing
@@ -12810,45 +12690,307 @@ function updateColorCountDisplay() {
                   layerStates.saveEditedState(layer);
               }
               
-              // For multi-layer, we'll handle the original image restoration inside the processing loop
-              unlockedLayers.push({
-                  layer,
-                  canvas: layerCanvas,
-                  button: colorButton
-              });
+              // IMPORTANT: Always start with the original image
+              const ctx = layerCanvas.getContext('2d', { willReadFrequently: true });
               
-              // Get target color (cycle through the full palette)
-              const targetColorIndex = (layer - 1) % fullPalette.length;
-              const targetColor = fullPalette[targetColorIndex];
-              
-              if (!targetColor) {
-                  console.error(`Target color not found at index ${targetColorIndex} for layer ${layer}`);
-                  continue;
+              // First, restore the original image
+              if (typeof layerStates !== 'undefined' && layerStates.hasOriginalState && layerStates.hasOriginalState(layer)) {
+                  const originalImageData = layerStates.getOriginalState(layer);
+                  const originalImg = new Image();
+                  await new Promise(resolve => {
+                      originalImg.onload = () => {
+                          ctx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
+                          ctx.drawImage(originalImg, 0, 0);
+                          resolve();
+                      };
+                      originalImg.src = originalImageData;
+                  });
               }
               
-              // We'll determine the original color during processing
-              colorMappingsPerLayer.set(layer, {
-                  targetColor
-              });
-          }
-          
-          if (unlockedLayers.length === 0) {
-              console.log('No unlocked layers to process');
-              loadingScreen.style.display = 'none';
-              return;
-          }
-          
-          // Process all layers in parallel
-          const layerPromises = unlockedLayers.map(async ({ layer, canvas, button }) => {
-              const layerCtx = canvas.getContext('2d', { willReadFrequently: true });
-              const mapping = colorMappingsPerLayer.get(layer);
+              // Apply hue shift to the entire image
+              const imageData = ctx.getImageData(0, 0, layerCanvas.width, layerCanvas.height);
+              const data = imageData.data;
               
-              if (!mapping) {
-                  console.error(`No color mapping found for layer ${layer}`);
+              // Convert RGB to HSL helper function
+              function rgbToHsl(r, g, b) {
+                  r /= 255; g /= 255; b /= 255;
+                  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                  let h, s, l = (max + min) / 2;
+                  
+                  if (max === min) {
+                      h = s = 0;
+                  } else {
+                      const d = max - min;
+                      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                      switch (max) {
+                          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                          case g: h = (b - r) / d + 2; break;
+                          case b: h = (r - g) / d + 4; break;
+                      }
+                      h /= 6;
+                  }
+                  return [h * 360, s * 100, l * 100];
+              }
+              
+              // Convert HSL to RGB helper function
+              function hslToRgb(h, s, l) {
+                  h /= 360; s /= 100; l /= 100;
+                  let r, g, b;
+                  
+                  if (s === 0) {
+                      r = g = b = l;
+                  } else {
+                      const hue2rgb = (p, q, t) => {
+                          if (t < 0) t += 1;
+                          if (t > 1) t -= 1;
+                          if (t < 1/6) return p + (q - p) * 6 * t;
+                          if (t < 1/2) return q;
+                          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                          return p;
+                      };
+                      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                      const p = 2 * l - q;
+                      r = hue2rgb(p, q, h + 1/3);
+                      g = hue2rgb(p, q, h);
+                      b = hue2rgb(p, q, h - 1/3);
+                  }
+                  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+              }
+              
+              // Apply hue shift to every pixel
+              for (let i = 0; i < data.length; i += 4) {
+                  const r = data[i];
+                  const g = data[i + 1];
+                  const b = data[i + 2];
+                  const alpha = data[i + 3];
+                  
+                  // Skip transparent pixels
+                  if (alpha === 0) continue;
+                  
+                  const [h, s, l] = rgbToHsl(r, g, b);
+                  let newHue = (h + hueShift) % 360;
+                  let newSat = s;
+                  let newLight = l;
+                  
+                  // Apply collection-specific adjustments
+                  if (actualCollection === 'ss') {
+                      newSat = Math.min(100, s * 1.2);
+                      newLight = Math.min(90, Math.max(40, l * 1.1));
+                  } else if (actualCollection === 'aw') {
+                      newSat = Math.max(20, s * 0.8);
+                      newLight = Math.min(80, Math.max(25, l * 0.9));
+                  }
+                  
+                  const [newR, newG, newB] = hslToRgb(newHue, newSat, newLight);
+                  
+                  data[i] = newR;
+                  data[i + 1] = newG;
+                  data[i + 2] = newB;
+              }
+              
+              // Put the modified image data back
+              ctx.putImageData(imageData, 0, 0);
+              
+              // Update color buttons with representative colors from the shifted palette
+              const colorButtons = document.querySelectorAll('.color-picker');
+              fullPalette.slice(0, colorButtons.length).forEach((color, idx) => {
+                  if (colorButtons[idx] && colorButtons[idx].dataset.locked !== 'true') {
+                      colorButtons[idx].style.backgroundColor = `rgb(${color.join(',')})`;
+                  }
+              });
+              
+              // Update footer with safety check
+              if (fullPalette[0] && typeof updateFooterColorButton === 'function') {
+                  updateFooterColorButton(layer, fullPalette[0]);
+              }
+              
+          } else {
+              // Multi-layer hue shifting
+              const colorButtons = document.querySelectorAll('.color-picker');
+              const unlockedLayers = [];
+              
+              // Prepare all layers for hue shifting
+              for (let layer = 1; layer <= totalLayers; layer++) {
+                  const colorButton = document.querySelector(`.color-picker[data-layer-index="${layer-1}"]`);
+                  if (!colorButton || colorButton.dataset.locked === 'true') {
+                      console.log(`Layer ${layer} is locked or button not found, skipping`);
+                      continue;
+                  }
+                  
+                  const layerCanvas = document.getElementById(`layer_canvas_${layer}`);
+                  if (!layerCanvas) {
+                      console.log(`Canvas not found for layer ${layer}`);
+                      continue;
+                  }
+                  
+                  // Save current state before processing
+                  if (typeof layerStates !== 'undefined' && layerStates.saveEditedState) {
+                      layerStates.saveEditedState(layer);
+                  }
+                  
+                  unlockedLayers.push({ layer, canvas: layerCanvas, button: colorButton });
+              }
+              
+              if (unlockedLayers.length === 0) {
+                  console.log('No unlocked layers to process');
+                  loadingScreen.style.display = 'none';
                   return;
               }
               
-              // IMPORTANT: Always start with the original image
+              // Process all layers in parallel with hue shifting
+              const layerPromises = unlockedLayers.map(async ({ layer, canvas, button }) => {
+                  const layerCtx = canvas.getContext('2d', { willReadFrequently: true });
+                  
+                  // IMPORTANT: Always start with the original image
+                  if (typeof layerStates !== 'undefined' && layerStates.hasOriginalState && layerStates.hasOriginalState(layer)) {
+                      const originalImageData = layerStates.getOriginalState(layer);
+                      const originalImg = new Image();
+                      await new Promise(resolve => {
+                          originalImg.onload = () => {
+                              layerCtx.clearRect(0, 0, canvas.width, canvas.height);
+                              layerCtx.drawImage(originalImg, 0, 0);
+                              resolve();
+                          };
+                          originalImg.src = originalImageData;
+                      });
+                  }
+                  
+                  // Apply hue shift to this layer
+                  const imageData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+                  const data = imageData.data;
+                  
+                  // Convert RGB to HSL helper function
+                  function rgbToHsl(r, g, b) {
+                      r /= 255; g /= 255; b /= 255;
+                      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                      let h, s, l = (max + min) / 2;
+                      
+                      if (max === min) {
+                          h = s = 0;
+                      } else {
+                          const d = max - min;
+                          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                          switch (max) {
+                              case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                              case g: h = (b - r) / d + 2; break;
+                              case b: h = (r - g) / d + 4; break;
+                          }
+                          h /= 6;
+                      }
+                      return [h * 360, s * 100, l * 100];
+                  }
+                  
+                  // Convert HSL to RGB helper function
+                  function hslToRgb(h, s, l) {
+                      h /= 360; s /= 100; l /= 100;
+                      let r, g, b;
+                      
+                      if (s === 0) {
+                          r = g = b = l;
+                      } else {
+                          const hue2rgb = (p, q, t) => {
+                              if (t < 0) t += 1;
+                              if (t > 1) t -= 1;
+                              if (t < 1/6) return p + (q - p) * 6 * t;
+                              if (t < 1/2) return q;
+                              if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                              return p;
+                          };
+                          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                          const p = 2 * l - q;
+                          r = hue2rgb(p, q, h + 1/3);
+                          g = hue2rgb(p, q, h);
+                          b = hue2rgb(p, q, h - 1/3);
+                      }
+                      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+                  }
+                  
+                  // Apply hue shift to every pixel in this layer
+                  for (let i = 0; i < data.length; i += 4) {
+                      const r = data[i];
+                      const g = data[i + 1];
+                      const b = data[i + 2];
+                      const alpha = data[i + 3];
+                      
+                      // Skip transparent pixels
+                      if (alpha === 0) continue;
+                      
+                      const [h, s, l] = rgbToHsl(r, g, b);
+                      let newHue = (h + hueShift) % 360;
+                      let newSat = s;
+                      let newLight = l;
+                      
+                      // Apply collection-specific adjustments
+                      if (actualCollection === 'ss') {
+                          newSat = Math.min(100, s * 1.2);
+                          newLight = Math.min(90, Math.max(40, l * 1.1));
+                      } else if (actualCollection === 'aw') {
+                          newSat = Math.max(20, s * 0.8);
+                          newLight = Math.min(80, Math.max(25, l * 0.9));
+                      }
+                      
+                      const [newR, newG, newB] = hslToRgb(newHue, newSat, newLight);
+                      
+                      data[i] = newR;
+                      data[i + 1] = newG;
+                      data[i + 2] = newB;
+                  }
+                  
+                  // Put the modified image data back
+                  layerCtx.putImageData(imageData, 0, 0);
+                  
+                  // Update button color with representative color from the palette
+                  const targetColorIndex = (layer - 1) % fullPalette.length;
+                  const targetColor = fullPalette[targetColorIndex];
+                  if (targetColor) {
+                      button.style.backgroundColor = `rgb(${targetColor.join(',')})`;
+                      
+                      // Update footer with safety check
+                      if (typeof updateFooterColorButton === 'function') {
+                          updateFooterColorButton(layer, targetColor);
+                      }
+                  }
+              });
+              
+              // Wait for all layers to complete
+              await Promise.all(layerPromises);
+          }
+          
+      } else {
+          // Original color replacement method for regular palettes (index 5+)
+          console.log("Applying color replacement method");
+          
+          // Now use the full palette for processing
+          if (totalLayers === 1) {
+              // Single layer optimized processing
+              const layer = 1;
+              const layerCanvas = document.getElementById(`layer_canvas_${layer}`);
+              if (!layerCanvas) {
+                  console.error("Layer canvas not found");
+                  loadingScreen.style.display = 'none';
+                  return;
+              }
+              
+              // Cache DOM elements and computed values
+              const colorButtons = document.querySelectorAll('.color-picker');
+              const unlockedButtons = Array.from(colorButtons).filter(button => button.dataset.locked !== 'true');
+              
+              if (unlockedButtons.length === 0) {
+                  console.log('All colors are locked');
+                  loadingScreen.style.display = 'none';
+                  return;
+              }
+              
+              // Save current state before processing
+              if (typeof layerStates !== 'undefined' && layerStates.saveEditedState) {
+                  layerStates.saveEditedState(layer);
+              }
+              
+              // IMPORTANT CHANGE: Always start with the original image
+              // Load the original image state instead of working with the current canvas
+              const ctx = layerCanvas.getContext('2d', { willReadFrequently: true });
+              
+              // First, restore the original image
               let originalImageData;
               
               if (typeof layerStates !== 'undefined' && layerStates.hasOriginalState && layerStates.hasOriginalState(layer)) {
@@ -12857,8 +12999,8 @@ function updateColorCountDisplay() {
                   const originalImg = new Image();
                   await new Promise(resolve => {
                       originalImg.onload = () => {
-                          layerCtx.clearRect(0, 0, canvas.width, canvas.height);
-                          layerCtx.drawImage(originalImg, 0, 0);
+                          ctx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
+                          ctx.drawImage(originalImg, 0, 0);
                           resolve();
                       };
                       originalImg.src = originalImageData;
@@ -12866,52 +13008,226 @@ function updateColorCountDisplay() {
               }
               
               // Now get the current image data after restoring the original
-              const imageDataUrl = canvas.toDataURL();
+              const imageDataUrl = layerCanvas.toDataURL();
               
-              // Analyze the original image data to find its dominant color
-              const imageData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+              // Create array of color mappings to process
+              const colorMappings = [];
+              
+              // IMPORTANT: We need to get the original colors from the original image
+              // Analyze the original image to find its colors
+              const imageData = ctx.getImageData(0, 0, layerCanvas.width, layerCanvas.height);
               const originalColors = await getDistinctColors(imageData, 30, 50); // Adjust parameters as needed
               
-              if (originalColors.length === 0) {
-                  console.error(`No original colors found for layer ${layer}`);
+              // KEY CHANGE: Track which buttons are locked and their original colors
+              const lockedIndexes = new Set();
+              Array.from(colorButtons).forEach((button, idx) => {
+                  if (button.dataset.locked === 'true') {
+                      lockedIndexes.add(idx);
+                  }
+              });
+              
+              // Create mappings only for unlocked buttons
+              let paletteColorIndex = 0;
+              for (let i = 0; i < Math.min(colorButtons.length, originalColors.length); i++) {
+                  const button = colorButtons[i];
+                  const originalColor = originalColors[i];
+                  
+                  if (lockedIndexes.has(i)) {
+                      // For locked colors, map the original color to itself (no change)
+                      colorMappings.push({
+                          originalColor,
+                          targetColor: originalColor, // Same color so no change happens
+                          button
+                      });
+                  } else {
+                      // For unlocked colors, use the next color from the palette
+                      const targetColor = fullPalette[paletteColorIndex % fullPalette.length];
+                      paletteColorIndex++;
+                      
+                      if (!targetColor) {
+                          console.error(`Target color not found at index ${paletteColorIndex-1}`);
+                          continue;
+                      }
+                  
+                      colorMappings.push({
+                          originalColor,
+                          targetColor,
+                          button
+                      });
+                  }
+              }
+              
+              if (colorMappings.length === 0) {
+                  console.error("No valid color mappings to apply");
+                  loadingScreen.style.display = 'none';
                   return;
               }
               
-              // Use the first original color
-              const originalColor = originalColors[0];
-              mapping.originalColor = originalColor;
-              
-              // Now process with the original color and target color
-              const processedImageUrl = await colorProcessor.applyColorMapping(
+              // Process all colors in one go
+              const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
                   imageDataUrl,
-                  await colorProcessor.getColorMapping(imageDataUrl),
-                  mapping.targetColor,
-                  mapping.originalColor
+                  colorMappings
               );
               
-              // Load the processed image back to canvas
+              // Load the processed image back to canvas once
               const resultImg = new Image();
               await new Promise(resolve => {
                   resultImg.onload = () => {
-                      layerCtx.clearRect(0, 0, canvas.width, canvas.height);
-                      layerCtx.drawImage(resultImg, 0, 0);
+                      ctx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
+                      ctx.drawImage(resultImg, 0, 0);
                       
-                      // Update button color
-                      button.style.backgroundColor = `rgb(${mapping.targetColor.join(',')})`;
-                      
-                      // Update footer with safety check
-                      if (typeof updateFooterColorButton === 'function') {
-                          updateFooterColorButton(layer, mapping.targetColor);
-                      }
+                      // FIXED: Only update colors for unlocked buttons
+                      colorMappings.forEach(mapping => {
+                          const buttonIndex = Array.from(colorButtons).indexOf(mapping.button);
+                          // Only update if the button is not locked
+                          if (!lockedIndexes.has(buttonIndex)) {
+                              mapping.button.style.backgroundColor = `rgb(${mapping.targetColor.join(',')})`;
+                          }
+                      });
                       
                       resolve();
                   };
                   resultImg.src = processedImageUrl;
               });
-          });
-          
-          // Wait for all layers to complete
-          await Promise.all(layerPromises);
+              
+              // Update footer once - with safety check
+              if (fullPalette[0] && typeof updateFooterColorButton === 'function') {
+                  updateFooterColorButton(layer, fullPalette[0]);
+              }
+              
+          } else {
+              // Optimized multi-layer processing with original image restoration
+              const colorButtons = document.querySelectorAll('.color-picker');
+              const unlockedLayers = [];
+              const colorMappingsPerLayer = new Map();
+              
+              // Prepare all color mappings first to minimize DOM access
+              for (let layer = 1; layer <= totalLayers; layer++) {
+                  const colorButton = document.querySelector(`.color-picker[data-layer-index="${layer-1}"]`);
+                  if (!colorButton) {
+                      console.log(`No color button found for layer ${layer}`);
+                      continue;
+                  }
+                  
+                  if (colorButton.dataset.locked === 'true') {
+                      console.log(`Layer ${layer} is locked, skipping processing`);
+                      continue;
+                  }
+                  
+                  const layerCanvas = document.getElementById(`layer_canvas_${layer}`);
+                  if (!layerCanvas) {
+                      console.log(`Canvas not found for layer ${layer}`);
+                      continue;
+                  }
+                  
+                  // Save current state before processing
+                  if (typeof layerStates !== 'undefined' && layerStates.saveEditedState) {
+                      layerStates.saveEditedState(layer);
+                  }
+                  
+                  // For multi-layer, we'll handle the original image restoration inside the processing loop
+                  unlockedLayers.push({
+                      layer,
+                      canvas: layerCanvas,
+                      button: colorButton
+                  });
+                  
+                  // Get target color (cycle through the full palette)
+                  const targetColorIndex = (layer - 1) % fullPalette.length;
+                  const targetColor = fullPalette[targetColorIndex];
+                  
+                  if (!targetColor) {
+                      console.error(`Target color not found at index ${targetColorIndex} for layer ${layer}`);
+                      continue;
+                  }
+                  
+                  // We'll determine the original color during processing
+                  colorMappingsPerLayer.set(layer, {
+                      targetColor
+                  });
+              }
+              
+              if (unlockedLayers.length === 0) {
+                  console.log('No unlocked layers to process');
+                  loadingScreen.style.display = 'none';
+                  return;
+              }
+              
+              // Process all layers in parallel
+              const layerPromises = unlockedLayers.map(async ({ layer, canvas, button }) => {
+                  const layerCtx = canvas.getContext('2d', { willReadFrequently: true });
+                  const mapping = colorMappingsPerLayer.get(layer);
+                  
+                  if (!mapping) {
+                      console.error(`No color mapping found for layer ${layer}`);
+                      return;
+                  }
+                  
+                  // IMPORTANT: Always start with the original image
+                  let originalImageData;
+                  
+                  if (typeof layerStates !== 'undefined' && layerStates.hasOriginalState && layerStates.hasOriginalState(layer)) {
+                      // Load original image from layer states
+                      originalImageData = layerStates.getOriginalState(layer);
+                      const originalImg = new Image();
+                      await new Promise(resolve => {
+                          originalImg.onload = () => {
+                              layerCtx.clearRect(0, 0, canvas.width, canvas.height);
+                              layerCtx.drawImage(originalImg, 0, 0);
+                              resolve();
+                          };
+                          originalImg.src = originalImageData;
+                      });
+                  }
+                  
+                  // Now get the current image data after restoring the original
+                  const imageDataUrl = canvas.toDataURL();
+                  
+                  // Analyze the original image data to find its dominant color
+                  const imageData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+                  const originalColors = await getDistinctColors(imageData, 30, 50); // Adjust parameters as needed
+                  
+                  if (originalColors.length === 0) {
+                      console.error(`No original colors found for layer ${layer}`);
+                      return;
+                  }
+                  
+                  // Use the first original color
+                  const originalColor = originalColors[0];
+                  mapping.originalColor = originalColor;
+                  
+                  // Now process with the original color and target color
+                  const processedImageUrl = await colorProcessor.applyColorMapping(
+                      imageDataUrl,
+                      await colorProcessor.getColorMapping(imageDataUrl),
+                      mapping.targetColor,
+                      mapping.originalColor
+                  );
+                  
+                  // Load the processed image back to canvas
+                  const resultImg = new Image();
+                  await new Promise(resolve => {
+                      resultImg.onload = () => {
+                          layerCtx.clearRect(0, 0, canvas.width, canvas.height);
+                          layerCtx.drawImage(resultImg, 0, 0);
+                          
+                          // Update button color
+                          button.style.backgroundColor = `rgb(${mapping.targetColor.join(',')})`;
+                          
+                          // Update footer with safety check
+                          if (typeof updateFooterColorButton === 'function') {
+                              updateFooterColorButton(layer, mapping.targetColor);
+                          }
+                          
+                          resolve();
+                      };
+                      resultImg.src = processedImageUrl;
+                  });
+              });
+              
+              // Wait for all layers to complete
+              await Promise.all(layerPromises);
+          }
       }
   } catch (error) {
       console.error("Error while processing pallet:", error);
@@ -15204,7 +15520,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         if (validColors.length === 0 && layerCtx && layerCanvas) {
           try {
             const imageData = layerCtx.getImageData(0, 0, layerCanvas.width, layerCanvas.height);
-            const extractedColors = await analyzer.getDistinctColors(imageData, 30, 0);
+            const extractedColors = await analyzer.getDistinctColors(imageData, 30, 50);
             
             if (Array.isArray(extractedColors) && extractedColors.length > 0) {
               validColors = extractedColors.filter(color =>
