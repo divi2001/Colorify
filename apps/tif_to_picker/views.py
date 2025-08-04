@@ -168,6 +168,8 @@ def get_palettes_for_layers(request, total_layers):
         "generate_more": palettes_needed > 0,
         "palettes_needed": palettes_needed
     })
+
+
 class InspirationView(View):
     def get(self, request):
         pdfs = InspirationPDF.objects.all().order_by('-created_at')
@@ -399,13 +401,21 @@ def upload_tiff(request, user_id=None, project_id=None):
 import traceback
 @csrf_exempt
 
-def export_tiff(request):
+
+def export_file(request):
     if request.method == 'POST':
         try:
             layers_data = json.loads(request.POST.get('layers_data', '[]'))
-            output_path = os.path.join('media', 'exported_tiff', f'output_{datetime.now().strftime("%Y%m%d_%H%M%S")}.tif')
+            export_format = request.POST.get('export_format', 'tiff').lower()
             
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            # Validate format
+            if export_format not in ['tiff', 'png', 'jpg', 'webp']:
+                return JsonResponse({'error': 'Unsupported export format'}, status=400)
+            
+            # Create output directory
+            output_dir = os.path.join('media', 'exported_files')
+            os.makedirs(output_dir, exist_ok=True)
+            
             processed_layers = []
             
             # Find canvas dimensions based on all layers
@@ -461,7 +471,6 @@ def export_tiff(request):
                         dpi = (dpi_x, dpi_y)
                     
                     # Check if we should use the original physical dimensions from the first file
-                    # This is a workaround to handle the specific TIFF with 36.5333" × 58.0000" dimensions
                     if 'original_physical_width_inches' in layer_data and 'original_physical_height_inches' in layer_data:
                         orig_physical_width = float(layer_data['original_physical_width_inches'])
                         orig_physical_height = float(layer_data['original_physical_height_inches'])
@@ -547,7 +556,6 @@ def export_tiff(request):
                     continue
 
             # Determine the physical dimensions for the entire document
-            # Check if we have original physical dimensions from the first TIFF
             if len(original_physical_dimensions) > 0:
                 # Get the maximum physical dimensions from all layers
                 max_physical_width = max(dim[0] for dim in original_physical_dimensions.values())
@@ -591,63 +599,104 @@ def export_tiff(request):
                     layer['image']
                 )
             
-            composite_array = np.array(composite_image)
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
-            composite_metadata = {
-                'Name': 'Composite View',
-                'Width': max_width,
-                'Height': max_height,
-                'LayerCount': len(processed_layers),
-                'LayerNames': [layer['metadata']['Name'] for layer in processed_layers],
-                'IsComposite': True,
-                'DPI': document_dpi,
-                'PhysicalWidthInches': document_physical_width,
-                'PhysicalHeightInches': document_physical_height
-            }
-            
-            # Write multi-page TIFF with high quality settings
-            with tifffile.TiffWriter(output_path) as tif:
-                # Write composite as first page with the document DPI
-                tif.write(
-                    composite_array,
-                    photometric='rgb',
-                    planarconfig='contig',
-                    metadata=composite_metadata,
-                    compression='adobe_deflate',  # Better compression
-                    compressionargs={'level': 9},  # Maximum compression level
-                    resolutionunit='INCH',
-                    resolution=document_dpi,  # Use the document DPI
-                    description='Composite View'
-                )
+            # Handle different export formats
+            if export_format == 'tiff':
+                output_path = os.path.join(output_dir, f'output_{timestamp}.tif')
                 
-                # Write individual layers with consistent DPI values
-                for layer in processed_layers:
-                    layer_full = np.zeros((max_height, max_width, 4), dtype=np.uint8)
-                    h, w = layer['data'].shape[:2]
-                    top = layer['metadata']['TopPosition']
-                    left = layer['metadata']['LeftPosition']
-                    layer_full[top:top+h, left:left+w] = layer['data']
-                    
-                    # Update the layer metadata to use the document DPI
-                    layer['metadata']['DPI'] = document_dpi
-                    
-                    # Use the document DPI for all layers to ensure consistency
+                composite_array = np.array(composite_image)
+                
+                composite_metadata = {
+                    'Name': 'Composite View',
+                    'Width': max_width,
+                    'Height': max_height,
+                    'LayerCount': len(processed_layers),
+                    'LayerNames': [layer['metadata']['Name'] for layer in processed_layers],
+                    'IsComposite': True,
+                    'DPI': document_dpi,
+                    'PhysicalWidthInches': document_physical_width,
+                    'PhysicalHeightInches': document_physical_height
+                }
+                
+                # Write multi-page TIFF with high quality settings
+                with tifffile.TiffWriter(output_path) as tif:
+                    # Write composite as first page with the document DPI
                     tif.write(
-                        layer_full,
+                        composite_array,
                         photometric='rgb',
                         planarconfig='contig',
-                        metadata=layer['metadata'],
-                        compression='adobe_deflate',  # Better compression
-                        compressionargs={'level': 9},  # Maximum compression level
+                        metadata=composite_metadata,
+                        compression='adobe_deflate',
+                        compressionargs={'level': 9},
                         resolutionunit='INCH',
-                        resolution=document_dpi,  # Use the document DPI
-                        description=layer['metadata']['Name']
+                        resolution=document_dpi,
+                        description='Composite View'
                     )
+                    
+                    # Write individual layers with consistent DPI values
+                    for layer in processed_layers:
+                        layer_full = np.zeros((max_height, max_width, 4), dtype=np.uint8)
+                        h, w = layer['data'].shape[:2]
+                        top = layer['metadata']['TopPosition']
+                        left = layer['metadata']['LeftPosition']
+                        layer_full[top:top+h, left:left+w] = layer['data']
+                        
+                        # Update the layer metadata to use the document DPI
+                        layer['metadata']['DPI'] = document_dpi
+                        
+                        # Use the document DPI for all layers to ensure consistency
+                        tif.write(
+                            layer_full,
+                            photometric='rgb',
+                            planarconfig='contig',
+                            metadata=layer['metadata'],
+                            compression='adobe_deflate',
+                            compressionargs={'level': 9},
+                            resolutionunit='INCH',
+                            resolution=document_dpi,
+                            description=layer['metadata']['Name']
+                        )
+                
+                content_type = 'image/tiff'
+                
+            else:
+                # For other formats (PNG, JPG, WebP), export composite only
+                file_extensions = {
+                    'png': 'png',
+                    'jpg': 'jpg', 
+                    'webp': 'webp'
+                }
+                
+                output_path = os.path.join(output_dir, f'output_{timestamp}.{file_extensions[export_format]}')
+                
+                # Convert to appropriate mode for different formats
+                if export_format == 'jpg':
+                    # JPG doesn't support transparency, convert to RGB with white background
+                    background = Image.new('RGB', composite_image.size, (255, 255, 255))
+                    background.paste(composite_image, mask=composite_image.split()[-1])  # Use alpha channel as mask
+                    composite_image = background
+                    save_kwargs = {'quality': 95, 'optimize': True}
+                elif export_format == 'png':
+                    save_kwargs = {'optimize': True}
+                elif export_format == 'webp':
+                    save_kwargs = {'quality': 95, 'method': 6}  # method=6 for best compression
+                
+                # Save with DPI information
+                composite_image.save(output_path, dpi=document_dpi, **save_kwargs)
+                
+                content_types = {
+                    'png': 'image/png',
+                    'jpg': 'image/jpeg',
+                    'webp': 'image/webp'
+                }
+                content_type = content_types[export_format]
 
             # Read the file and send it as a response
             with open(output_path, 'rb') as f:
-                response = HttpResponse(f.read(), content_type='image/tiff')
-                response['Content-Disposition'] = f'attachment; filename="exported_{datetime.now().strftime("%Y%m%d_%H%M%S")}.tif"'
+                response = HttpResponse(f.read(), content_type=content_type)
+                response['Content-Disposition'] = f'attachment; filename="exported_{timestamp}.{file_extensions.get(export_format, "tif")}"'
                 return response
 
         except Exception as e:
@@ -657,7 +706,6 @@ def export_tiff(request):
             return JsonResponse({'error': error_msg}, status=500)
             
     return JsonResponse({'error': 'Invalid request method'}, status=400)
-
 
 
 def get_layer_image(layer):
@@ -791,7 +839,7 @@ def is_color_fill_layer(layer):
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
 
-def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=3500, optimize=True, model_path="resnet50_model_scripted.pt"):
+def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=4000, optimize=True, model_path="resnet50_model_scripted.pt"):
     """
     Extract and compress layers from image files, with optional ML labeling.
     
