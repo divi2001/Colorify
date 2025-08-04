@@ -22,6 +22,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css"
     />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
@@ -83,54 +85,33 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
         width: {{width}}px;
         height: {{height}}px;
       }
+      .loader {
+        width: 120px;
+        height: 22px;
+        border-radius: 20px;
+        color: #514b82;
+        border: 2px solid;
+        position: relative;
+      }
+      .loader::before {
+        content: "";
+        position: absolute;
+        margin: 2px;
+        inset: 0 100% 0 0;
+        border-radius: inherit;
+        background: currentColor;
+        animation: l6 2s infinite;
+      }
+      @keyframes l6 {
+          100% {inset:0}
+      }
         </style>
   </head>
 
   <body>
     <div id="loading-screen">
-      <div class="spinner"></div>
+      <div class="loader"></div>
     </div>
-    <!-- Header -->
-    <header
-      class="text-dark p-2 px-3 d-flex align-items-center justify-content-between ms-auto me-auto"
-    >
-      <!-- Left: Icon -->
-      <div class="header-logo">
-        <i class="bi bi-palette"></i>
-      </div>
-
-      <!-- Center: Search Bar -->
-      {% comment %}
-      <div class="flex-grow-1 mx-3">
-        <input type="text" class="form-control" placeholder="Search" />
-      </div>
-      {% endcomment %}
-
-      <!-- Right: Profile Picture with Dropdown -->
-      <div class="dropdown">
-        <a
-          href="#"
-          class="d-flex align-items-center text-dark text-decoration-none"
-          id="profileDropdown"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-        >
-          <i class="bi bi-person-bounding-box"></i>
-          <span class="ms-2">{{ user.username }}</span>
-          <i class="bi bi-caret-down-fill ms-1"></i>
-        </a>
-        <ul
-          class="dropdown-menu dropdown-menu-end text-small shadow"
-          aria-labelledby="profileDropdown"
-        >
-          <li><a class="dropdown-item" href="#">Profile</a></li>
-          <li><a class="dropdown-item" href="#">Settings</a></li>
-          <li><hr class="dropdown-divider" /></li>
-          <li><a class="dropdown-item" href="#">Logout</a></li>
-        </ul>
-      </div>
-    </header>
-
 
     <!-- Main Content Area  -->
     <main class="d-flex">
@@ -138,7 +119,7 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
       <div
         id="leftMostColumn"
         class="sidebar d-flex flex-column"
-        style="flex: 0 0 150px"
+        style="flex: 0 0 12%"
       >
         <button
           class="btn btn-primary btn-sm m-2 d-flex align-items-center"
@@ -146,6 +127,10 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
         >
           <i class="bi bi-caret-left-fill ms-auto"></i>
         </button>
+        <div class="header-logo" style="margin:0 auto;" >
+          <i class="bi bi-palette"></i>
+          Colorify
+        </div>
         <ul class="mostLeftUl">
           <li>
             <a href="#" id="inspirationButton">
@@ -183,12 +168,12 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
               <span class="textSpan">Color Picker</span>
             </a>
           </li>
-          {% comment %} <li>
+          <li>
             <a href="#" id="baseColorButton">
               <i class="bi bi-palette mx-1"></i>
               <span class="textSpan">Base Color</span>
             </a>
-          </li> {% endcomment %}
+          </li>
           <li>
             <a href="#" id="ssCollectionButton">
               <i class="bi bi-collection mx-1"></i>
@@ -201,18 +186,52 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
               <span class="textSpan">AW Collection</span>
             </a>
           </li>
-          <li>
-            <a href="#" id="mockupsButton">
-              <i class="bi bi-brush-fill mx-1"></i>
-              <span class="textSpan">mockups</span>
-            </a>
-          </li>
+         <li>
+          <a href="#" id="mockupsButton">
+            <i class="bi bi-brush-fill mx-1"></i>
+            <span class="textSpan">mockups</span>
+          </a>
+        </li>
+        <li>
+          <a 
+            href="#"
+            class="block text-sm text-gray-700 hover:bg-gray-100"
+            role="menuitem"
+            tabindex="-1"
+          >
+            <i class="bi bi-person-circle mx-1"></i>
+            Your Profile
+          </a>
+        </li>
+        <li>
+          <a
+            href="#"
+            class="block text-sm text-gray-700 hover:bg-gray-100"
+            role="menuitem"
+            tabindex="-1"
+          >
+            <i class="bi bi-gear-fill mx-1"></i>
+            Settings
+          </a>
+        </li>
+        <li>
+          <a
+            href="#"
+            class="block text-sm text-gray-700 hover:bg-gray-100"
+            role="menuitem"
+            tabindex="-1"
+          >
+            <i class="bi bi-box-arrow-right mx-1"></i>
+            Sign out
+          </a>
+        </li>
+
         </ul>
       </div>
 
 
-        <div id="secondaryColumn" class="sidebar d-flex flex-column" style="flex: 0 0 310px">
-          <button class="btn-sm m-2 d-flex align-items-center nav-btn" onclick="toggleSidebar('secondaryColumn', this)" style="border: none; background: #fff">
+        <div id="secondaryColumn" class="sidebar d-flex flex-column" style="flex: 0 0 20% ;>
+          <button class="btn-sm m-2 d-flex align-items-center nav-btn"  style="border: none; background: #fff">
               <i class="bi bi-caret-left-fill ms-auto"></i>
           </button>
           
@@ -223,27 +242,18 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
             <hr />
             <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
               {% if layers|length == 1 %}
-              {% for i in "01234567890123456789012345" %}
+              {% for i in "0123456789" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="trending_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
-                      <div class="d-flex align-items-center justify-content-between w-100">
-                          <button id="shufflePalette_{{ forloop.counter0 }}" class="btn btn-sm btn-primary">
-                              <i class="bi bi-shuffle"></i>
-                          </button>
                           <button type="button" 
                                   id="trending_fav_btn_{{ forloop.counter0 }}" 
                                   class="btn favorite-btn {% if is_favorite %}active{% endif %}"
                                   data-palette-type="TR"
                                   data-colors-id="{{ forloop.counter0 }}"
                                   onclick="toggleFavorite(this, 'trending')">
-                              <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                              <i class="bi {% if is_favorite %}bi-star-fill{% else %}bi-star{% endif %}"></i>
                               <span class="fav-count">{{ favorites_count|default:0 }}</span>
                           </button>
-                          <!-- Fix: Ensure button ID matches what our JS will look for -->
-                          <button type="button" id="applyButton_{{ forloop.counter0 }}" class="btn btn-success">
-                              <i class="bi bi-magic"></i>
-                          </button>
-                      </div>
                   </div>
               {% endfor %}
           {% else %}
@@ -252,21 +262,17 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
                         <div class="layer-toggle-item d-flex flex-column gap-2">
                             <div id="trending_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
                             <div class="d-flex align-items-center justify-content-between w-100">
-                                <button id="shufflePalette_{{ forloop.counter }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-shuffle"></i>
-                                </button>
+                              
                                 <button type="button" 
                                         id="trending_fav_btn_{{ forloop.counter }}" 
                                         class="btn favorite-btn"
                                         data-palette-type="TR"
                                         data-colors-id="{{ forloop.counter }}"
                                         onclick="toggleFavorite(this, 'trending')">
-                                    <i class="bi bi-heart"></i>
+                                    <i class="bi bi-star"></i>
                                     <span class="fav-count">0</span>
                                 </button>
-                                <button type="button" id="applyButton_{{ forloop.counter }}" class="btn btn-success">
-                                    <i class="bi bi-magic"></i>
-                                </button>
+                               
                             </div>
                         </div>
                     {% endfor %}
@@ -285,7 +291,6 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
       <div class="sidebar-content" id="effectsContent" style="display: none;">
         <h4 class="ms-auto me-auto">Effects</h4>
         <div class="effects-grid">
-            <!-- Basic Effects -->
             <div class="effect-item" data-effect="grayscale">
                 <div class="effect-preview">
                     <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Grayscale">
@@ -364,191 +369,8 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
                     <div class="effect-name">Saturation</div>
                 </div>
             </div>
-            
-            <!-- Advanced Effects -->
-            <div class="effect-item" data-effect="invert">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Invert">
-                    <div class="effect-name">Invert</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="hue-rotate">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Hue Rotate">
-                    <div class="effect-name">Hue Rotate</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="solarize">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Solarize">
-                    <div class="effect-name">Solarize</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="emboss">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Emboss">
-                    <div class="effect-name">Emboss</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="edge-detect">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Edge Detect">
-                    <div class="effect-name">Edge Detect</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="oil-painting">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Oil Painting">
-                    <div class="effect-name">Oil Painting</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="pixelate">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Pixelate">
-                    <div class="effect-name">Pixelate</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="cross-hatch">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Cross Hatch">
-                    <div class="effect-name">Cross Hatch</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="pencil-sketch">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Pencil Sketch">
-                    <div class="effect-name">Pencil Sketch</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="watercolor">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Watercolor">
-                    <div class="effect-name">Watercolor</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="thermal">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Thermal">
-                    <div class="effect-name">Thermal</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="x-ray">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="X-Ray">
-                    <div class="effect-name">X-Ray</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="neon">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Neon">
-                    <div class="effect-name">Neon</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="mosaic">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Mosaic">
-                    <div class="effect-name">Mosaic</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="frosted-glass">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Frosted Glass">
-                    <div class="effect-name">Frosted Glass</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="chrome">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Chrome">
-                    <div class="effect-name">Chrome</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="plasma">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Plasma">
-                    <div class="effect-name">Plasma</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="infrared">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Infrared">
-                    <div class="effect-name">Infrared</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="polaroid">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Polaroid">
-                    <div class="effect-name">Polaroid</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="film-grain">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Film Grain">
-                    <div class="effect-name">Film Grain</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="halftone">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Halftone">
-                    <div class="effect-name">Halftone</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="pop-art">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Pop Art">
-                    <div class="effect-name">Pop Art</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="mirror">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Mirror">
-                    <div class="effect-name">Mirror</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="kaleidoscope">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Kaleidoscope">
-                    <div class="effect-name">Kaleidoscope</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="ripple">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Ripple">
-                    <div class="effect-name">Ripple</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="swirl">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Swirl">
-                    <div class="effect-name">Swirl</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="fisheye">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Fisheye">
-                    <div class="effect-name">Fisheye</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="retro">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Retro">
-                    <div class="effect-name">Retro</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="cyberpunk">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Cyberpunk">
-                    <div class="effect-name">Cyberpunk</div>
-                </div>
-            </div>
-            <div class="effect-item" data-effect="glitch">
-                <div class="effect-preview">
-                    <img src="https://i.pinimg.com/1200x/91/a1/8d/91a18dfb5479bda15a1bade67619a943.jpg" alt="Glitch">
-                    <div class="effect-name">Glitch</div>
-                </div>
-            </div>
         </div>
     </div>
-
 
 <div class="sidebar-content" id="paletteGeneratorContent" style="display: none;">
   <h4 class="ms-auto me-auto">Color Picker</h4>
@@ -638,25 +460,21 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
       <hr />
       <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
           {% if layers|length == 1 %}
-              {% for i in "01234567890123456789012345" %}
+              {% for i in "0123456789" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="ss_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                       <div class="d-flex align-items-center justify-content-between w-100">
-                          <button id="ss_shufflePalette_{{ forloop.counter0 }}" class="btn btn-sm btn-primary">
-                              <i class="bi bi-shuffle"></i>
-                          </button>
+                         
                           <button type="button" 
                                   id="ss_fav_btn_{{ forloop.counter0 }}" 
                                   class="btn favorite-btn"
                                   data-palette-type="SS"
                                   data-colors-id="{{ forloop.counter0 }}"
                                   onclick="toggleFavorite(this, 'ss')">
-                              <i class="bi bi-heart"></i>
+                              <i class="bi bi-star"></i>
                               <span class="fav-count">0</span>
                           </button>
-                          <button type="button" id="ss_applyButton_{{ forloop.counter }}" class="btn btn-success">
-                              <i class="bi bi-magic"></i>
-                          </button>
+                          
                       </div>
                   </div>
               {% endfor %}
@@ -665,20 +483,14 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="ss_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
                       <div class="d-flex align-items-center justify-content-between w-100">
-                          <button id="ss_shufflePalette_{{ forloop.counter }}" class="btn btn-sm btn-primary">
-                              <i class="bi bi-shuffle"></i>
-                          </button>
                           <button type="button" 
                                   id="ss_fav_btn_{{ forloop.counter }}" 
                                   class="btn favorite-btn"
                                   data-palette-type="SS"
                                   data-colors-id="{{ forloop.counter }}"
                                   onclick="toggleFavorite(this, 'ss')">
-                              <i class="bi bi-heart"></i>
+                              <i class="bi bi-star"></i>
                               <span class="fav-count">0</span>
-                          </button>
-                          <button type="button" id="ss_applyButton_{{ forloop.counter }}" class="btn btn-success">
-                              <i class="bi bi-magic"></i>
                           </button>
                       </div>
                   </div>
@@ -698,16 +510,9 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
     <div class="layer-toggle-item d-flex flex-column gap-2">
         <div id="fav_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
         <div class="d-flex align-items-center justify-content-between w-100">
-          <button id="fav_shufflePalette_{{ forloop.counter }}" class="btn btn-sm btn-primary">
-            <i class="bi bi-shuffle"></i>
-        </button>
-        
         <button type="button" id="" class="btn">
-          <i class="bi bi-heart"></i>
+          <i class="bi bi-star"></i>
       </button>
-        <button type="button" id="ss_applyButton_{{ forloop.counter }}" class="btn btn-success">
-            <i class="bi bi-magic"></i>
-        </button>
         </div>
     </div>
     {% endfor %}
@@ -736,24 +541,18 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       {% if layers|length == 1 %}
-          {% for i in "01234567890123456789012345" %}
+          {% for i in "0123456789" %}
               <div class="layer-toggle-item d-flex flex-column gap-2">
                   <div id="aw_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                   <div class="d-flex align-items-center justify-content-between w-100">
-                      <button id="aw_shufflePalette_{{ forloop.counter0 }}" class="btn btn-sm btn-primary">
-                          <i class="bi bi-shuffle"></i>
-                      </button>
                       <button type="button" 
                               id="aw_fav_btn_{{ forloop.counter0 }}" 
                               class="btn favorite-btn"
                               data-palette-type="AW"
                               data-colors-id="{{ forloop.counter0 }}"
                               onclick="toggleFavorite(this, 'aw')">
-                          <i class="bi bi-heart"></i>
+                          <i class="bi bi-star"></i>
                           <span class="fav-count">0</span>
-                      </button>
-                      <button type="button" id="aw_applyButton_{{ forloop.counter }}" class="btn btn-success">
-                          <i class="bi bi-magic"></i>
                       </button>
                   </div>
               </div>
@@ -763,20 +562,14 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
               <div class="layer-toggle-item d-flex flex-column gap-2">
                   <div id="aw_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
                   <div class="d-flex align-items-center justify-content-between w-100">
-                      <button id="aw_shufflePalette_{{ forloop.counter }}" class="btn btn-sm btn-primary">
-                          <i class="bi bi-shuffle"></i>
-                      </button>
                       <button type="button" 
                               id="aw_fav_btn_{{ forloop.counter }}" 
                               class="btn favorite-btn"
                               data-palette-type="AW"
                               data-colors-id="{{ forloop.counter }}"
                               onclick="toggleFavorite(this, 'aw')">
-                          <i class="bi bi-heart"></i>
+                          <i class="bi bi-star"></i>
                           <span class="fav-count">0</span>
-                      </button>
-                      <button type="button" id="aw_applyButton_{{ forloop.counter }}" class="btn btn-success">
-                          <i class="bi bi-magic"></i>
                       </button>
                   </div>
               </div>
@@ -901,49 +694,11 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
         </div>
       </div>
 
-      <!-- Right Sidebar -->
-      <div
-        id="rightSidebar"
-        class="sidebar1 d-flex flex-column toolbar scrollable-toolbar"
-        style="flex: 0 0 250px"
-      >
-        <button
-          class="btn-sm m-2 d-flex align-items-center"
-          onclick="toggleSidebar('rightSidebar', this)"
-          style="border: none; background: #fff"
-        >
-          <i class="bi bi-caret-right-fill ms-auto"></i>
-        </button>
-<div class="sidebar-content1 m-4">
-  <h4 class="ms-auto me-auto mb-3">Layers</h4>
+     
+       
 
-  <div class="layer-controls mt-4">
-    <div class="control-buttons">
-      <button 
-        id="editLayerBtn" 
-        class="btn btn-primary me-2"
-        onclick="editLayer(1)"
-      >
-        Edit
-      </button>
-      <button 
-        id="resetLayerBtn" 
-        class="btn btn-secondary"
-        onclick="resetLayer(1)"
-      >
-        Reset
-      </button>
-    </div>
-  </div>
-</div>
 
-<div id="contextMenu" class="cp_light" style="display: none;">
-  <div
-    id="layerNameDisplay"
-    style="font-weight: bold; margin-bottom: 5px"
-  ></div>
-  <div class="option" onclick="showLayerInfo()">Edit</div>
-</div>
+
       <!-- Color Picker Modal -->
       <div
         class="modal fade"
@@ -1147,6 +902,23 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
       </button>
 
   </div>
+  <div class="control-buttons">
+  <button 
+    id="editLayerBtn" 
+    class="rounded-2 btn btn-success4 bg-linear-blue"
+    onclick="editLayer(1)"
+  >
+    <i style="font-size: 18px; color: #ffffff" class="fa fa-edit"></i> 
+  </button>
+  <button 
+    id="resetLayerBtn" 
+    class="rounded-2 btn btn-success4 bg-linear-blue"
+    onclick="resetLayer(1)"
+  >
+  <i style="font-size: 18px; color: #ffffff;" class="fa fa-refresh"></i>
+  </button>
+</div>
+
 
 <script>
 // Fullscreen toggle functionality
@@ -1762,7 +1534,6 @@ function applyEffectToLayers(effect) {
       }
 
       switch(effect) {
-          // Basic Effects
           case 'grayscale':
               applyGrayscale(ctx, canvas.width, canvas.height);
               break;
@@ -1802,114 +1573,21 @@ function applyEffectToLayers(effect) {
           case 'saturation':
               applySaturation(ctx, canvas.width, canvas.height, 1.5);
               break;
-              
-          // Advanced Effects
-          case 'invert':
-              applyInvert(ctx, canvas.width, canvas.height);
-              break;
-          case 'hue-rotate':
-              applyHueRotate(ctx, canvas.width, canvas.height, 90);
-              break;
-          case 'solarize':
-              applySolarize(ctx, canvas.width, canvas.height);
-              break;
-          case 'emboss':
-              applyEmboss(ctx, canvas.width, canvas.height);
-              break;
-          case 'edge-detect':
-              applyEdgeDetect(ctx, canvas.width, canvas.height);
-              break;
-          case 'oil-painting':
-              applyOilPainting(ctx, canvas.width, canvas.height);
-              break;
-          case 'pixelate':
-              applyPixelate(ctx, canvas.width, canvas.height, 8);
-              break;
-          case 'cross-hatch':
-              applyCrossHatch(ctx, canvas.width, canvas.height);
-              break;
-          case 'pencil-sketch':
-              applyPencilSketch(ctx, canvas.width, canvas.height);
-              break;
-          case 'watercolor':
-              applyWatercolor(ctx, canvas.width, canvas.height);
-              break;
-          case 'thermal':
-              applyThermal(ctx, canvas.width, canvas.height);
-              break;
-          case 'x-ray':
-              applyXRay(ctx, canvas.width, canvas.height);
-              break;
-          case 'neon':
-              applyNeon(ctx, canvas.width, canvas.height);
-              break;
-          case 'mosaic':
-              applyMosaic(ctx, canvas.width, canvas.height, 10);
-              break;
-          case 'frosted-glass':
-              applyFrostedGlass(ctx, canvas.width, canvas.height);
-              break;
-          case 'chrome':
-              applyChrome(ctx, canvas.width, canvas.height);
-              break;
-          case 'plasma':
-              applyPlasma(ctx, canvas.width, canvas.height);
-              break;
-          case 'infrared':
-              applyInfrared(ctx, canvas.width, canvas.height);
-              break;
-          case 'polaroid':
-              applyPolaroid(ctx, canvas.width, canvas.height);
-              break;
-          case 'film-grain':
-              applyFilmGrain(ctx, canvas.width, canvas.height);
-              break;
-          case 'halftone':
-              applyHalftone(ctx, canvas.width, canvas.height);
-              break;
-          case 'pop-art':
-              applyPopArt(ctx, canvas.width, canvas.height);
-              break;
-          case 'mirror':
-              applyMirror(ctx, canvas.width, canvas.height);
-              break;
-          case 'kaleidoscope':
-              applyKaleidoscope(ctx, canvas.width, canvas.height);
-              break;
-          case 'ripple':
-              applyRipple(ctx, canvas.width, canvas.height);
-              break;
-          case 'swirl':
-              applySwirl(ctx, canvas.width, canvas.height);
-              break;
-          case 'fisheye':
-              applyFisheye(ctx, canvas.width, canvas.height);
-              break;
-          case 'retro':
-              applyRetro(ctx, canvas.width, canvas.height);
-              break;
-          case 'cyberpunk':
-              applyCyberpunk(ctx, canvas.width, canvas.height);
-              break;
-          case 'glitch':
-              applyGlitch(ctx, canvas.width, canvas.height);
-              break;
       }
 
       layerStates.saveEditedState(layer);
   }
 }
 
-// Original functions (keeping existing ones)
 function applyGrayscale(ctx, width, height) {
   const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
   
   for (let i = 0; i < data.length; i += 4) {
       const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      data[i] = avg;
-      data[i + 1] = avg;
-      data[i + 2] = avg;
+      data[i] = avg;     // Red
+      data[i + 1] = avg; // Green
+      data[i + 2] = avg; // Blue
   }
   
   ctx.putImageData(imageData, 0, 0);
@@ -2041,6 +1719,7 @@ function applyColorize(ctx, width, height, color) {
   const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
   
+  // Convert hex color to RGB
   const r = parseInt(color.substr(1,2), 16);
   const g = parseInt(color.substr(3,2), 16);
   const b = parseInt(color.substr(5,2), 16);
@@ -2059,6 +1738,7 @@ function applyDuotone(ctx, width, height, color1, color2) {
   const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
   
+  // Convert hex colors to RGB
   const r1 = parseInt(color1.substr(1,2), 16);
   const g1 = parseInt(color1.substr(3,2), 16);
   const b1 = parseInt(color1.substr(5,2), 16);
@@ -2138,784 +1818,6 @@ function applySaturation(ctx, width, height, factor) {
       data[i] = avg + (data[i] - avg) * factor;
       data[i + 1] = avg + (data[i + 1] - avg) * factor;
       data[i + 2] = avg + (data[i + 2] - avg) * factor;
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-// NEW EFFECTS
-
-function applyInvert(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      data[i] = 255 - data[i];
-      data[i + 1] = 255 - data[i + 1];
-      data[i + 2] = 255 - data[i + 2];
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyHueRotate(ctx, width, height, degrees) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const radians = degrees * Math.PI / 180;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const r = data[i] / 255;
-      const g = data[i + 1] / 255;
-      const b = data[i + 2] / 255;
-      
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const delta = max - min;
-      
-      if (delta === 0) continue;
-      
-      let h = 0;
-      if (max === r) h = ((g - b) / delta) % 6;
-      else if (max === g) h = (b - r) / delta + 2;
-      else h = (r - g) / delta + 4;
-      
-      h = (h * 60 + degrees) % 360;
-      if (h < 0) h += 360;
-      
-      const s = max === 0 ? 0 : delta / max;
-      const v = max;
-      
-      const c = v * s;
-      const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-      const m = v - c;
-      
-      let rNew, gNew, bNew;
-      
-      if (h < 60) { rNew = c; gNew = x; bNew = 0; }
-      else if (h < 120) { rNew = x; gNew = c; bNew = 0; }
-      else if (h < 180) { rNew = 0; gNew = c; bNew = x; }
-      else if (h < 240) { rNew = 0; gNew = x; bNew = c; }
-      else if (h < 300) { rNew = x; gNew = 0; bNew = c; }
-      else { rNew = c; gNew = 0; bNew = x; }
-      
-      data[i] = (rNew + m) * 255;
-      data[i + 1] = (gNew + m) * 255;
-      data[i + 2] = (bNew + m) * 255;
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applySolarize(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      for (let j = 0; j < 3; j++) {
-          data[i + j] = data[i + j] > 128 ? 255 - data[i + j] : data[i + j];
-      }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyEmboss(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const kernel = [
-      [-2, -1, 0],
-      [-1, 1, 1],
-      [0, 1, 2]
-  ];
-  
-  const result = new Uint8ClampedArray(data.length);
-  
-  for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-          for (let c = 0; c < 3; c++) {
-              let sum = 128;
-              for (let ky = -1; ky <= 1; ky++) {
-                  for (let kx = -1; kx <= 1; kx++) {
-                      const idx = ((y + ky) * width + (x + kx)) * 4 + c;
-                      sum += data[idx] * kernel[ky + 1][kx + 1];
-                  }
-              }
-              result[(y * width + x) * 4 + c] = Math.min(255, Math.max(0, sum));
-          }
-          result[(y * width + x) * 4 + 3] = data[(y * width + x) * 4 + 3];
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyEdgeDetect(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const kernel = [
-      [-1, -1, -1],
-      [-1, 8, -1],
-      [-1, -1, -1]
-  ];
-  
-  const result = new Uint8ClampedArray(data.length);
-  
-  for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-          for (let c = 0; c < 3; c++) {
-              let sum = 0;
-              for (let ky = -1; ky <= 1; ky++) {
-                  for (let kx = -1; kx <= 1; kx++) {
-                      const idx = ((y + ky) * width + (x + kx)) * 4 + c;
-                      sum += data[idx] * kernel[ky + 1][kx + 1];
-                  }
-              }
-              result[(y * width + x) * 4 + c] = Math.min(255, Math.max(0, Math.abs(sum)));
-          }
-          result[(y * width + x) * 4 + 3] = data[(y * width + x) * 4 + 3];
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyOilPainting(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const result = new Uint8ClampedArray(data.length);
-  const radius = 3;
-  
-  for (let y = radius; y < height - radius; y++) {
-      for (let x = radius; x < width - radius; x++) {
-          const buckets = Array(256).fill().map(() => ({count: 0, r: 0, g: 0, b: 0}));
-          
-          for (let dy = -radius; dy <= radius; dy++) {
-              for (let dx = -radius; dx <= radius; dx++) {
-                  const idx = ((y + dy) * width + (x + dx)) * 4;
-                  const intensity = Math.floor((data[idx] + data[idx + 1] + data[idx + 2]) / 3);
-                  
-                  buckets[intensity].count++;
-                  buckets[intensity].r += data[idx];
-                  buckets[intensity].g += data[idx + 1];
-                  buckets[intensity].b += data[idx + 2];
-              }
-          }
-          
-          let maxCount = 0;
-          let maxBucket = null;
-          
-          for (let bucket of buckets) {
-              if (bucket.count > maxCount) {
-                  maxCount = bucket.count;
-                  maxBucket = bucket;
-              }
-          }
-          
-          const resultIdx = (y * width + x) * 4;
-          if (maxBucket && maxBucket.count > 0) {
-              result[resultIdx] = maxBucket.r / maxBucket.count;
-              result[resultIdx + 1] = maxBucket.g / maxBucket.count;
-              result[resultIdx + 2] = maxBucket.b / maxBucket.count;
-              result[resultIdx + 3] = data[resultIdx + 3];
-          }
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyPixelate(ctx, width, height, blockSize) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let y = 0; y < height; y += blockSize) {
-      for (let x = 0; x < width; x += blockSize) {
-          let r = 0, g = 0, b = 0, count = 0;
-          
-          for (let dy = 0; dy < blockSize && y + dy < height; dy++) {
-              for (let dx = 0; dx < blockSize && x + dx < width; dx++) {
-                  const idx = ((y + dy) * width + (x + dx)) * 4;
-                  r += data[idx];
-                  g += data[idx + 1];
-                  b += data[idx + 2];
-                  count++;
-              }
-          }
-          
-          r /= count;
-          g /= count;
-          b /= count;
-          
-          for (let dy = 0; dy < blockSize && y + dy < height; dy++) {
-              for (let dx = 0; dx < blockSize && x + dx < width; dx++) {
-                  const idx = ((y + dy) * width + (x + dx)) * 4;
-                  data[idx] = r;
-                  data[idx + 1] = g;
-                  data[idx + 2] = b;
-              }
-          }
-      }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyCrossHatch(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-          const idx = (y * width + x) * 4;
-          const avg = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-          
-          const pattern = (x % 8 < 4) ^ (y % 8 < 4) ? 255 : 0;
-          const result = avg < 128 ? pattern : 255;
-          
-          data[idx] = result;
-          data[idx + 1] = result;
-          data[idx + 2] = result;
-      }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyPencilSketch(ctx, width, height) {
-  applyGrayscale(ctx, width, height);
-  applyInvert(ctx, width, height);
-  applyBlur(ctx, width, height);
-  applyInvert(ctx, width, height);
-  
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const value = Math.min(255, data[i] * 2);
-      data[i] = value;
-      data[i + 1] = value;
-      data[i + 2] = value;
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyWatercolor(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const noise = Math.random() * 30 - 15;
-      data[i] = Math.min(255, Math.max(0, data[i] + noise));
-      data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + noise));
-      data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise));
-  }
-  
-  applyBlur(ctx, width, height);
-  applySaturation(ctx, width, height, 1.3);
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyThermal(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      
-      if (avg < 85) {
-          data[i] = 0;
-          data[i + 1] = 0;
-          data[i + 2] = avg * 3;
-      } else if (avg < 170) {
-          data[i] = (avg - 85) * 3;
-          data[i + 1] = 0;
-          data[i + 2] = 255 - (avg - 85) * 3;
-      } else {
-          data[i] = 255;
-          data[i + 1] = (avg - 170) * 3;
-          data[i + 2] = 0;
-      }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyXRay(ctx, width, height) {
-  applyInvert(ctx, width, height);
-  applyGrayscale(ctx, width, height);
-  applyContrast(ctx, width, height, 2);
-  
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      data[i] = Math.min(255, data[i] * 0.8 + 50);
-      data[i + 1] = Math.min(255, data[i + 1] * 0.8 + 50);
-      data[i + 2] = data[i + 2];
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyNeon(ctx, width, height) {
-  applyEdgeDetect(ctx, width, height);
-  
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      if (avg > 100) {
-          data[i] = 255;
-          data[i + 1] = avg;
-          data[i + 2] = 255;
-      } else {
-          data[i] = 0;
-          data[i + 1] = 0;
-          data[i + 2] = 0;
-      }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyMosaic(ctx, width, height, tileSize) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let y = 0; y < height; y += tileSize) {
-      for (let x = 0; x < width; x += tileSize) {
-          let r = 0, g = 0, b = 0, count = 0;
-          
-          for (let dy = 0; dy < tileSize && y + dy < height; dy++) {
-              for (let dx = 0; dx < tileSize && x + dx < width; dx++) {
-                  const idx = ((y + dy) * width + (x + dx)) * 4;
-                  r += data[idx];
-                  g += data[idx + 1];
-                  b += data[idx + 2];
-                  count++;
-              }
-          }
-          
-          r = Math.floor(r / count);
-          g = Math.floor(g / count);
-          b = Math.floor(b / count);
-          
-          for (let dy = 0; dy < tileSize && y + dy < height; dy++) {
-              for (let dx = 0; dx < tileSize && x + dx < width; dx++) {
-                  const idx = ((y + dy) * width + (x + dx)) * 4;
-                  const borderDistance = Math.min(dx, dy, tileSize - dx - 1, tileSize - dy - 1);
-                  const intensity = borderDistance > 0 ? 1 : 0.3;
-                  
-                  data[idx] = r * intensity;
-                  data[idx + 1] = g * intensity;
-                  data[idx + 2] = b * intensity;
-              }
-          }
-      }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyFrostedGlass(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const result = new Uint8ClampedArray(data.length);
-  
-  for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-          const offsetX = Math.floor(Math.random() * 10 - 5);
-          const offsetY = Math.floor(Math.random() * 10 - 5);
-          
-          const srcX = Math.max(0, Math.min(width - 1, x + offsetX));
-          const srcY = Math.max(0, Math.min(height - 1, y + offsetY));
-          
-          const srcIdx = (srcY * width + srcX) * 4;
-          const destIdx = (y * width + x) * 4;
-          
-          result[destIdx] = data[srcIdx];
-          result[destIdx + 1] = data[srcIdx + 1];
-          result[destIdx + 2] = data[srcIdx + 2];
-          result[destIdx + 3] = data[srcIdx + 3];
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyChrome(ctx, width, height) {
-  applyGrayscale(ctx, width, height);
-  applyContrast(ctx, width, height, 2);
-  
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const avg = data[i];
-      data[i] = Math.min(255, avg * 1.2 + 30);
-      data[i + 1] = Math.min(255, avg * 1.1 + 20);
-      data[i + 2] = Math.min(255, avg * 1.0 + 10);
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyPlasma(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-          const idx = (y * width + x) * 4;
-          
-          const value1 = Math.sin(x / 16.0);
-          const value2 = Math.sin(y / 8.0);
-          const value3 = Math.sin((x + y) / 16.0);
-          const value4 = Math.sin(Math.sqrt(x * x + y * y) / 8.0);
-          
-          const plasma = (value1 + value2 + value3 + value4) / 4;
-          
-          data[idx] = Math.floor((Math.sin(plasma * Math.PI) + 1) * 127.5);
-          data[idx + 1] = Math.floor((Math.sin(plasma * Math.PI + 2 * Math.PI / 3) + 1) * 127.5);
-          data[idx + 2] = Math.floor((Math.sin(plasma * Math.PI + 4 * Math.PI / 3) + 1) * 127.5);
-      }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyInfrared(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      
-      data[i] = 255 - r;
-      data[i + 1] = 255 - g;
-      data[i + 2] = b;
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyPolaroid(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      data[i] = Math.min(255, data[i] * 1.1 + 20);
-      data[i + 1] = Math.min(255, data[i + 1] * 1.0 + 10);
-      data[i + 2] = Math.min(255, data[i + 2] * 0.9 + 5);
-  }
-  
-  applyVignette(ctx, width, height);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyFilmGrain(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const grain = (Math.random() - 0.5) * 50;
-      data[i] = Math.min(255, Math.max(0, data[i] + grain));
-      data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + grain));
-      data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + grain));
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyHalftone(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let y = 0; y < height; y += 4) {
-      for (let x = 0; x < width; x += 4) {
-          let r = 0, g = 0, b = 0, count = 0;
-          
-          for (let dy = 0; dy < 4 && y + dy < height; dy++) {
-              for (let dx = 0; dx < 4 && x + dx < width; dx++) {
-                  const idx = ((y + dy) * width + (x + dx)) * 4;
-                  r += data[idx];
-                  g += data[idx + 1];
-                  b += data[idx + 2];
-                  count++;
-              }
-          }
-          
-          r /= count;
-          g /= count;
-          b /= count;
-          
-          const avg = (r + g + b) / 3;
-          const dotSize = Math.floor(avg / 64);
-          
-          for (let dy = 0; dy < 4 && y + dy < height; dy++) {
-              for (let dx = 0; dx < 4 && x + dx < width; dx++) {
-                  const idx = ((y + dy) * width + (x + dx)) * 4;
-                  const distance = Math.sqrt(Math.pow(dx - 1.5, 2) + Math.pow(dy - 1.5, 2));
-                  const value = distance <= dotSize ? 0 : 255;
-                  
-                  data[idx] = value;
-                  data[idx + 1] = value;
-                  data[idx + 2] = value;
-              }
-          }
-      }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyPopArt(ctx, width, height) {
-  applyPosterize(ctx, width, height, 4);
-  applySaturation(ctx, width, height, 2);
-  applyContrast(ctx, width, height, 1.5);
-  
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      data[i] = Math.min(255, data[i] * 1.2);
-      data[i + 1] = Math.min(255, data[i + 1] * 0.8);
-      data[i + 2] = Math.min(255, data[i + 2] * 1.1);
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyMirror(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const result = new Uint8ClampedArray(data.length);
-  
-  for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-          const srcIdx = (y * width + (width - 1 - x)) * 4;
-          const destIdx = (y * width + x) * 4;
-          
-          result[destIdx] = data[srcIdx];
-          result[destIdx + 1] = data[srcIdx + 1];
-          result[destIdx + 2] = data[srcIdx + 2];
-          result[destIdx + 3] = data[srcIdx + 3];
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyKaleidoscope(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const result = new Uint8ClampedArray(data.length);
-  const centerX = width / 2;
-  const centerY = height / 2;
-  
-  for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-          const dx = x - centerX;
-          const dy = y - centerY;
-          const angle = Math.atan2(dy, dx);
-          const radius = Math.sqrt(dx * dx + dy * dy);
-          
-          const newAngle = (angle * 6) % (Math.PI / 3);
-          const newX = Math.floor(centerX + radius * Math.cos(newAngle));
-          const newY = Math.floor(centerY + radius * Math.sin(newAngle));
-          
-          if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
-              const srcIdx = (newY * width + newX) * 4;
-              const destIdx = (y * width + x) * 4;
-              
-              result[destIdx] = data[srcIdx];
-              result[destIdx + 1] = data[srcIdx + 1];
-              result[destIdx + 2] = data[srcIdx + 2];
-              result[destIdx + 3] = data[srcIdx + 3];
-          }
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyRipple(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const result = new Uint8ClampedArray(data.length);
-  const amplitude = 10;
-  const frequency = 0.05;
-  
-  for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-          const offsetX = Math.sin(y * frequency) * amplitude;
-          const offsetY = Math.sin(x * frequency) * amplitude;
-          
-          const srcX = Math.floor(x + offsetX);
-          const srcY = Math.floor(y + offsetY);
-          
-          if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
-              const srcIdx = (srcY * width + srcX) * 4;
-              const destIdx = (y * width + x) * 4;
-              
-              result[destIdx] = data[srcIdx];
-              result[destIdx + 1] = data[srcIdx + 1];
-              result[destIdx + 2] = data[srcIdx + 2];
-              result[destIdx + 3] = data[srcIdx + 3];
-          }
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applySwirl(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const result = new Uint8ClampedArray(data.length);
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const maxRadius = Math.min(centerX, centerY);
-  const strength = 0.01;
-  
-  for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-          const dx = x - centerX;
-          const dy = y - centerY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const angle = Math.atan2(dy, dx);
-          
-          if (distance < maxRadius) {
-              const factor = 1 - (distance / maxRadius);
-              const swirlAngle = angle + (factor * factor * strength * distance);
-              
-              const srcX = Math.floor(centerX + distance * Math.cos(swirlAngle));
-              const srcY = Math.floor(centerY + distance * Math.sin(swirlAngle));
-              
-              if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
-                  const srcIdx = (srcY * width + srcX) * 4;
-                  const destIdx = (y * width + x) * 4;
-                  
-                  result[destIdx] = data[srcIdx];
-                  result[destIdx + 1] = data[srcIdx + 1];
-                  result[destIdx + 2] = data[srcIdx + 2];
-                  result[destIdx + 3] = data[srcIdx + 3];
-              }
-          } else {
-              const srcIdx = (y * width + x) * 4;
-              result[srcIdx] = data[srcIdx];
-              result[srcIdx + 1] = data[srcIdx + 1];
-              result[srcIdx + 2] = data[srcIdx + 2];
-              result[srcIdx + 3] = data[srcIdx + 3];
-          }
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyFisheye(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  const result = new Uint8ClampedArray(data.length);
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const radius = Math.min(centerX, centerY);
-  
-  for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-          const dx = (x - centerX) / radius;
-          const dy = (y - centerY) / radius;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          
-          if (distance <= 1) {
-              const factor = Math.sqrt(1 - distance * distance);
-              const srcX = Math.floor(centerX + dx / factor * radius);
-              const srcY = Math.floor(centerY + dy / factor * radius);
-              
-              if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
-                  const srcIdx = (srcY * width + srcX) * 4;
-                  const destIdx = (y * width + x) * 4;
-                  
-                  result[destIdx] = data[srcIdx];
-                  result[destIdx + 1] = data[srcIdx + 1];
-                  result[destIdx + 2] = data[srcIdx + 2];
-                  result[destIdx + 3] = data[srcIdx + 3];
-              }
-          }
-      }
-  }
-  
-  imageData.data.set(result);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyRetro(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      data[i] = Math.min(255, data[i] * 1.1 + 30);
-      data[i + 1] = Math.min(255, data[i + 1] * 0.9 + 10);
-      data[i + 2] = Math.min(255, data[i + 2] * 0.7 + 20);
-  }
-  
-  applyVignette(ctx, width, height);
-  applyFilmGrain(ctx, width, height);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyCyberpunk(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-      const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      
-      data[i] = avg > 128 ? 255 : avg * 0.5;
-      data[i + 1] = avg > 64 ? Math.min(255, avg * 1.5) : 0;
-      data[i + 2] = avg > 192 ? 255 : avg > 128 ? Math.min(255, avg * 2) : avg * 0.3;
-  }
-  
-  applyContrast(ctx, width, height, 1.5);
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function applyGlitch(ctx, width, height) {
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  
-  for (let i = 0; i < 20; i++) {
-      const y = Math.floor(Math.random() * height);
-      const glitchHeight = Math.floor(Math.random() * 10) + 1;
-      const offset = Math.floor(Math.random() * 20) - 10;
-      
-      for (let row = y; row < Math.min(y + glitchHeight, height); row++) {
-          for (let x = 0; x < width; x++) {
-              const srcX = Math.max(0, Math.min(width - 1, x + offset));
-              const srcIdx = (row * width + srcX) * 4;
-              const destIdx = (row * width + x) * 4;
-              
-              if (Math.random() > 0.5) {
-                  data[destIdx] = Math.min(255, data[srcIdx] + Math.random() * 100);
-                  data[destIdx + 1] = data[srcIdx + 1];
-                  data[destIdx + 2] = data[srcIdx + 2];
-              }
-          }
-      }
   }
   
   ctx.putImageData(imageData, 0, 0);
@@ -3676,15 +2578,11 @@ function displayGeneratedPalette(palette) {
             `).join('')}
         </div>
         <div class="palette-actions">
-            <button class="btn btn-sm btn-primary" onclick="shuffleGeneratedPalette(${palette.id})" title="Shuffle colors">
-                <i class="bi bi-shuffle"></i>
-            </button>
+           
             <button class="btn btn-sm btn-outline-danger" onclick="deleteGeneratedPalette(${palette.id})" title="Delete palette">
                 <i class="bi bi-trash"></i>
             </button>
-            <button class="btn btn-sm btn-success" onclick="applyGeneratedPalette(${palette.id})" title="Apply to design">
-                <i class="bi bi-magic"></i>
-            </button>
+          
             <button class="btn btn-sm btn-info" onclick="copyPaletteColors(${palette.id})" title="Copy colors">
                 <i class="bi bi-clipboard"></i>
             </button>
@@ -4367,6 +3265,7 @@ async function generatePreview(previewCanvas, paletteColors, paletteIndex) {
         }
 
 
+
 function generateBaseColorPalettes(baseColor, backgroundColorIndex = 0) {
   // Conversion utilities remain the same
   function rgbToHex(r, g, b) {
@@ -5007,7 +3906,7 @@ function generateBaseColorPalettes(baseColor, backgroundColorIndex = 0) {
       }
       
       // Ensure colors are sufficiently different from each other
-      for (let attempt = 0; attempt < 25; attempt++) {
+      for (let attempt = 0; attempt < 10; attempt++) {
         let tooSimilar = false;
         
         // Check each pair of colors
@@ -8377,7 +7276,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       // generate completely random ones with good distribution
       if (validColors.length === 0) {
         validColors = [];
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 9; i++) {
           const hue = i * 40; // Spread across color wheel
           validColors.push(hslToRgb(hue, 70 + Math.random() * 25, 45 + Math.random() * 30));
         }
@@ -8496,10 +7395,9 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 
                 // Apply collection-specific adjustments
                 if (collection === 'ss') {
-                    // SS: Much brighter, more vibrant for spring/summer
-                    newSat = Math.min(140, s * 1.8); // Increase saturation more
-                    newLight = Math.min(95, Math.max(50, l * 1.4)); // Significantly increase brightness
-                
+                    // SS: Brighter, more vibrant
+                    newSat = Math.min(100, s * 1.2);
+                    newLight = Math.min(90, Math.max(40, l * 1.1));
                 } else if (collection === 'aw') {
                     // AW: More muted, darker
                     newSat = Math.max(20, s * 0.8);
@@ -8619,8 +7517,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
     
     // Generate diverse palettes by replacing color families
-    // Generate diverse palettes by replacing color families
-    function generateDiversePalettes(baseColors, collection) {  // Added collection parameter
+    function generateDiversePalettes(baseColors) {
         const palettes = [];
         
         // Group base colors by families
@@ -8639,41 +7536,21 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             const usedTargetFamilies = new Set();
             
             // For each original family, assign a new target family
-            // For each original family, assign a new target family with better randomization
             availableFamilyNames.forEach((originalFamily, index) => {
                 let targetFamily;
                 let attempts = 0;
                 
-                // Create more variation by using different strategies for different palette indices
-                const strategy = i % 4; // 4 different mapping strategies
-                
+                // Try to find an unused target family
                 do {
-                    if (strategy === 0) {
-                        // Strategy 0: Sequential with offset
-                        targetFamily = allFamilies[(index + i * 2) % allFamilies.length];
-                    } else if (strategy === 1) {
-                        // Strategy 1: Reverse sequential
-                        targetFamily = allFamilies[(allFamilies.length - 1 - index + i) % allFamilies.length];
-                    } else if (strategy === 2) {
-                        // Strategy 2: Prime number offset for more randomness
-                        const primeOffset = [7, 11, 13, 17, 19, 23];
-                        const offset = primeOffset[i % primeOffset.length];
-                        targetFamily = allFamilies[(index + offset) % allFamilies.length];
+                    if (attempts < 5) {
+                        // First few attempts: try to use different families
+                        targetFamily = allFamilies[(index + i * 3) % allFamilies.length];
                     } else {
-                        // Strategy 3: More random but still deterministic
-                        const seed = i * 37 + index * 41; // Use palette index and position as seed
-                        targetFamily = allFamilies[seed % allFamilies.length];
+                        // Later attempts: allow some repetition but add randomness
+                        targetFamily = allFamilies[Math.floor(Math.random() * allFamilies.length)];
                     }
                     attempts++;
-                } while (usedTargetFamilies.has(targetFamily) && attempts < 15);
-                
-                // If still conflicting after many attempts, just add randomness
-                if (usedTargetFamilies.has(targetFamily)) {
-                    const availableTargets = allFamilies.filter(f => !usedTargetFamilies.has(f));
-                    if (availableTargets.length > 0) {
-                        targetFamily = availableTargets[(i + index) % availableTargets.length];
-                    }
-                }
+                } while (usedTargetFamilies.has(targetFamily) && attempts < 10);
                 
                 familyMapping[originalFamily] = targetFamily;
                 usedTargetFamilies.add(targetFamily);
@@ -8689,9 +7566,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 newPalette.push(newColor);
             });
             
-            // IMPORTANT: Apply collection adjustments to the generated palette
-            const adjustedPalette = applyCollectionAdjustments(newPalette, collection);
-            palettes.push(adjustedPalette);
+            palettes.push(newPalette);
         }
         
         return palettes;
@@ -8765,51 +7640,48 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       }
     }
     
-
-  // Apply collection-specific color adjustments with proper background handling
-  function applyCollectionAdjustments(colors, collection) {
-      return colors.map(color => {
-          try {
-              const [h, s, l] = rgbToHsl(...color);
-              const isBackground = isBackgroundColor(color);
-              
-              // Apply collection-specific adjustments
-              if (collection === 'ss') {
-                  // SS: Much brighter, more vibrant for spring/summer
-                  if (isBackground) {
-                      // For background colors in SS, keep them light but add slight warmth
-                      const newSat = Math.min(25, Math.max(5, s + 10)); // Slight saturation increase
-                      const newLight = Math.min(95, Math.max(85, l + 5)); // Keep very bright
-                      return hslToRgb(h, newSat, newLight);
-                  } else {
-                      // For regular colors in SS, make them much more vibrant and bright
-                      const newSat = Math.min(100, Math.max(50, s * 1.5)); // Increase saturation significantly
-                      const newLight = Math.min(85, Math.max(45, l * 1.2)); // Increase brightness
-                      return hslToRgb(h, newSat, newLight);
-                  }
-
-              } else if (collection === 'aw') {
-                  if (isBackground) {
-                      // For background colors in AW, make them slightly warmer/earthier
-                      const newSat = Math.min(20, s + 5); // Very slight saturation increase
-                      const newLight = Math.max(75, Math.min(90, l - 5)); // Slightly less bright
-                      return hslToRgb(h, newSat, newLight);
-                  } else {
-                      // For regular colors in AW, make them more muted and earthy
-                      const newSat = Math.max(20, s * 0.8); // Reduce saturation
-                      const newLight = Math.max(25, Math.min(75, l * 0.9)); // Slightly darker
-                      return hslToRgb(h, newSat, newLight);
-                  }
-              } else {
-                  // For trending or other collections, return unchanged
-                  return color;
-              }
-          } catch (e) {
-              // If adjustment fails, return original color
-              return color;
-          }
-      });
-  }
+    // Apply collection-specific color adjustments with proper background handling
+    function applyCollectionAdjustments(colors, collection) {
+        return colors.map(color => {
+            try {
+                const [h, s, l] = rgbToHsl(...color);
+                const isBackground = isBackgroundColor(color);
+                
+                if (collection === 'ss') {
+                    if (isBackground) {
+                        // For background colors in SS, keep them light and bright
+                        // but add a slight warm or cool tint
+                        const newSat = Math.min(25, s + 10); // Slight increase in saturation
+                        const newLight = Math.max(115, Math.min(95, l + 5)); // Keep very light
+                        return hslToRgb(h, newSat, newLight);
+                    } else {
+                        // For regular colors in SS, make them more vibrant and bright
+                        const newSat = Math.min(100, s * 1.6); // Increase saturation more
+                        const newLight = Math.max(40, Math.min(85, l * 1.8)); // Brighter but not washed out
+                        return hslToRgb(h, newSat, newLight);
+                    }
+                } else if (collection === 'aw') {
+                    if (isBackground) {
+                        // For background colors in AW, make them slightly warmer/earthier
+                        const newSat = Math.min(20, s + 5); // Very slight saturation increase
+                        const newLight = Math.max(75, Math.min(90, l - 5)); // Slightly less bright
+                        return hslToRgb(h, newSat, newLight);
+                    } else {
+                        // For regular colors in AW, make them more muted and earthy
+                        const newSat = Math.max(20, s * 0.8); // Reduce saturation
+                        const newLight = Math.max(25, Math.min(75, l * 0.9)); // Slightly darker
+                        return hslToRgb(h, newSat, newLight);
+                    }
+                } else {
+                    // For trending or other collections, return unchanged
+                    return color;
+                }
+            } catch (e) {
+                // If adjustment fails, return original color
+                return color;
+            }
+        });
+    }
     
     // Modified: Function to prepare display colors with one from each color family
     function prepareDisplayColors(colors) {
@@ -9013,316 +7885,109 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
 
     // Generate and show preview function
-// FIXED: Generate and show preview function that matches the actual processing method
-// FIXED: Generate and show preview function with improved color replacement
-async function generateAndShowPreview(previewCanvas, fullPaletteColors, paletteIndex, collection) {
-  
-  // Helper functions for color conversion
-  function rgbToHsl(r, g, b) {
-    try {
-      r /= 255;
-      g /= 255;
-      b /= 255;
-      
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
-      
-      if (max === min) {
-        h = s = 0;
-      } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        
-        switch (max) {
-          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-      }
-      
-      return [h * 360, s * 100, l * 100];
-    } catch (e) {
-      return [0, 0, 50];
-    }
-  }
-  
-  function hslToRgb(h, s, l) {
-    try {
-      h /= 360;
-      s /= 100;
-      l /= 100;
-      
-      let r, g, b;
-      
-      if (s === 0) {
-        r = g = b = l;
-      } else {
-        const hue2rgb = (p, q, t) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
-        };
-        
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
-      }
-      
-      return [
-        Math.round(r * 255),
-        Math.round(g * 255),
-        Math.round(b * 255)
-      ];
-    } catch (e) {
-      return [128, 128, 128];
-    }
-  }
-
-  // Color distance calculation
-  function colorDistance(rgb1, rgb2) {
-    const dr = rgb1[0] - rgb2[0];
-    const dg = rgb1[1] - rgb2[1];
-    const db = rgb1[2] - rgb2[2];
-    return Math.sqrt(dr * dr + dg * dg + db * db);
-  }
-
-  // Manual color replacement function
-  function replaceColorsInImageData(imageData, colorMappings, tolerance = 30) {
-    const data = imageData.data;
-    let changedPixels = 0;
-    
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const alpha = data[i + 3];
-      
-      // Skip transparent pixels
-      if (alpha === 0) continue;
-      
-      const currentColor = [r, g, b];
-      
-      // Find the closest matching original color
-      let bestMapping = null;
-      let minDistance = Infinity;
-      
-      for (const mapping of colorMappings) {
-        const distance = colorDistance(currentColor, mapping.originalColor);
-        if (distance < minDistance && distance <= tolerance) {
-          minDistance = distance;
-          bestMapping = mapping;
-        }
-      }
-      
-      // Replace the color if we found a good match
-      if (bestMapping) {
-        data[i] = bestMapping.targetColor[0];
-        data[i + 1] = bestMapping.targetColor[1];
-        data[i + 2] = bestMapping.targetColor[2];
-        changedPixels++;
-      }
-    }
-    
-    console.log(`Replaced ${changedPixels} pixels in preview`);
-    return changedPixels > 0;
-  }
-
-  try {
-    // Check cache first
-    if (window.palettePreviewCache && 
-        window.palettePreviewCache[collection] && 
-        window.palettePreviewCache[collection][paletteIndex]) {
-        
-        const cachedPreview = window.palettePreviewCache[collection][paletteIndex];
-        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-        
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-        
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            const scale = Math.min(
-                previewCanvas.width / img.width,
-                previewCanvas.height / img.height
-            );
+    async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex, collection) {
+      try {
+        // Check cache first
+        if (window.palettePreviewCache && 
+            window.palettePreviewCache[collection] && 
+            window.palettePreviewCache[collection][paletteIndex]) {
             
-            const scaledWidth = img.width * scale;
-            const scaledHeight = img.height * scale;
-            const x = (previewCanvas.width - scaledWidth) / 2;
-            const y = (previewCanvas.height - scaledHeight) / 2;
+            // Use cached preview
+            const cachedPreview = window.palettePreviewCache[collection][paletteIndex];
+            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
             
-            ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+            // Clear with white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
             
-            const container = previewCanvas.closest('.palette-clickable-container');
-            if (container) {
-                container.classList.add('preview-ready');
-            }
-            resolve();
-          };
-          img.onerror = () => {
-            drawFallbackPreview(previewCanvas, collection, paletteIndex);
-            resolve();
-          };
-          img.src = cachedPreview;
-        });
-    }
-    
-    // Get the original image
-    let originalCanvas = null;
-    if (totalLayers === 1) {
-        originalCanvas = document.getElementById('layer_canvas_1');
-    } else {
-        const layerNumber = parseInt(paletteIndex) + 1;
-        originalCanvas = document.getElementById(`layer_canvas_${layerNumber}`);
-    }
-    
-    if (!originalCanvas) {
-        console.error('No original canvas found for preview');
-        drawFallbackPreview(previewCanvas, collection, paletteIndex);
-        return;
-    }
-    
-    const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-    
-    // Create temp canvas
-    const originalAspect = originalCanvas.width / originalCanvas.height;
-    const tempCanvas = document.createElement('canvas');
-    if (originalAspect > 1) {
-        tempCanvas.width = 200;
-        tempCanvas.height = Math.round(200 / originalAspect);
-    } else {
-        tempCanvas.height = 200;
-        tempCanvas.width = Math.round(200 * originalAspect);
-    }
-    
-    const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-    
-    // Get original image
-    let originalImageToUse = originalCanvas;
-    
-    if (typeof layerStates !== 'undefined' && layerStates.hasOriginalState && layerStates.hasOriginalState(1)) {
-        const originalTempCanvas = document.createElement('canvas');
-        originalTempCanvas.width = originalCanvas.width;
-        originalTempCanvas.height = originalCanvas.height;
-        const originalTempCtx = originalTempCanvas.getContext('2d');
-        
-        const originalImageData = layerStates.getOriginalState(1);
-        await new Promise(resolve => {
-            const originalImg = new Image();
-            originalImg.onload = () => {
-                originalTempCtx.drawImage(originalImg, 0, 0);
-                originalImageToUse = originalTempCanvas;
-                resolve();
-            };
-            originalImg.src = originalImageData;
-        });
-    }
-    
-    // Draw to temp canvas
-    tempCtx.drawImage(originalImageToUse, 0, 0, tempCanvas.width, tempCanvas.height);
-    
-    // Check if hue-shifted
-    const isHueShifted = window[`${collection}PaletteHueShifted`] && 
-                        window[`${collection}PaletteHueShifted`][paletteIndex];
-    
-    let processedImageUrl;
-    
-    if (isHueShifted) {
-        // HUE SHIFTING METHOD
-        console.log(`Preview using hue shifting for palette ${paletteIndex}`);
-        
-        const hueShifts = [60, 120, 180, 240, 300];
-        const hueShift = hueShifts[paletteIndex % hueShifts.length];
-        
-        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-        const data = imageData.data;
-        
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const alpha = data[i + 3];
-            
-            if (alpha === 0) continue;
-            
-            const [h, s, l] = rgbToHsl(r, g, b);
-            let newHue = (h + hueShift) % 360;
-            let newSat = s;
-            let newLight = l;
-            
-            if (collection === 'ss') {
-                newSat = Math.min(100, s * 1.2);
-                newLight = Math.min(90, Math.max(40, l * 1.1));
-            } else if (collection === 'aw') {
-                newSat = Math.max(20, s * 0.8);
-                newLight = Math.min(80, Math.max(25, l * 0.9));
-            }
-            
-            const [newR, newG, newB] = hslToRgb(newHue, newSat, newLight);
-            
-            data[i] = newR;
-            data[i + 1] = newG;
-            data[i + 2] = newB;
-        }
-        
-        tempCtx.putImageData(imageData, 0, 0);
-        processedImageUrl = tempCanvas.toDataURL();
-        
-    } else {
-        // COLOR REPLACEMENT METHOD - ENHANCED
-        console.log(`Preview using color replacement for palette ${paletteIndex}`);
-        
-        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-        
-        // Try to get distinct colors, but if that fails, use a simpler approach
-        let originalColors;
-        try {
-            originalColors = await getDistinctColors(imageData, 30, 50);
-        } catch (e) {
-            console.log("getDistinctColors failed, using fallback method");
-            originalColors = null;
-        }
-        
-        if (!originalColors || originalColors.length === 0) {
-            console.log("Using simple color sampling method");
-            // Fallback: sample colors directly from the image
-            const sampledColors = new Set();
-            const data = imageData.data;
-            
-            // Sample every 10th pixel to get representative colors
-            for (let i = 0; i < data.length; i += 40) { // 40 = 10 pixels * 4 channels
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                const alpha = data[i + 3];
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                // Draw the image with proper aspect ratio (maintaining the display size of 200x200)
+                const scale = Math.min(
+                    previewCanvas.width / img.width,
+                    previewCanvas.height / img.height
+                );
                 
-                if (alpha > 128) { // Only consider non-transparent pixels
-                    const colorKey = `${r},${g},${b}`;
-                    sampledColors.add(colorKey);
+                const scaledWidth = img.width * scale;
+                const scaledHeight = img.height * scale;
+                
+                // Center the image
+                const x = (previewCanvas.width - scaledWidth) / 2;
+                const y = (previewCanvas.height - scaledHeight) / 2;
+                
+                // Draw the image with proper aspect ratio
+                ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+                
+                // Mark this preview as complete
+                const container = previewCanvas.closest('.palette-clickable-container');
+                if (container) {
+                    container.classList.add('preview-ready');
                 }
-            }
-            
-            // Convert back to array format
-            originalColors = Array.from(sampledColors).slice(0, 8).map(colorKey => {
-                const parts = colorKey.split(',');
-                return [parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])];
+                resolve();
+              };
+              img.onerror = () => {
+                // Draw fallback if loading fails
+                drawFallbackPreview(previewCanvas, collection, paletteIndex);
+                resolve();
+              };
+              img.src = cachedPreview;
             });
         }
         
-        if (originalColors.length === 0) {
-            console.error('No colors found in image for replacement');
-            // Just show the original image
+        // No cache, create new preview
+        // Get the original image
+        let originalCanvas = null;
+        if (totalLayers === 1) {
+            originalCanvas = document.getElementById('layer_canvas_1');
+        } else {
+            // For multi-layer, use the specific layer
+            const layerNumber = parseInt(paletteIndex) + 1;
+            originalCanvas = document.getElementById(`layer_canvas_${layerNumber}`);
+        }
+        
+        if (!originalCanvas) {
+            console.error('No original canvas found for preview');
+            drawFallbackPreview(previewCanvas, collection, paletteIndex);
+            return;
+        }
+        
+        // Clear the preview canvas with white background
+        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+        
+        // Create a temporary high-resolution canvas for processing
+        const originalAspect = originalCanvas.width / originalCanvas.height;
+        
+        const tempCanvas = document.createElement('canvas');
+        if (originalAspect > 1) {
+            // Image is wider than tall
+            tempCanvas.width = 200;
+            tempCanvas.height = Math.round(200 / originalAspect);
+        } else {
+            // Image is taller than wide
+            tempCanvas.height = 200;
+            tempCanvas.width = Math.round(200 * originalAspect);
+        }
+        
+        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+        
+        // Draw original image to temp canvas at high resolution
+        tempCtx.drawImage(originalCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // FIXED: Always use color replacement method for previews, regardless of palette type
+        // The hue shifting should only happen during actual processing, not in previews
+        
+        // Get the temp canvas data for processing
+        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Find original colors from the image
+        const originalColors = await getDistinctColors(imageData, 30, 50, 40);
+        
+        if (!originalColors || originalColors.length === 0) {
+            console.error('No original colors found for preview');
+            // Still draw the original image with correct aspect ratio in the display canvas
             const displayScale = Math.min(
                 previewCanvas.width / tempCanvas.width,
                 previewCanvas.height / tempCanvas.height
@@ -9330,91 +7995,78 @@ async function generateAndShowPreview(previewCanvas, fullPaletteColors, paletteI
             
             const displayWidth = tempCanvas.width * displayScale;
             const displayHeight = tempCanvas.height * displayScale;
+            
             const displayX = (previewCanvas.width - displayWidth) / 2;
             const displayY = (previewCanvas.height - displayHeight) / 2;
             
             ctx.drawImage(tempCanvas, displayX, displayY, displayWidth, displayHeight);
+            
+            // Cache the result anyway
+            cachePreview(previewCanvas, collection, paletteIndex);
+            
+            // Mark this preview as complete
+            markPreviewReady(previewCanvas);
             return;
         }
         
-        console.log(`Found ${originalColors.length} original colors for replacement`);
-        console.log(`Using ${fullPaletteColors.length} palette colors`);
-        
-        // Create color mappings - simpler approach
+        // Create color mappings using the palette colors (which are the shifted/diverse colors)
         const colorMappings = [];
-        const maxMappings = Math.min(originalColors.length, fullPaletteColors.length, 6);
-        
-        for (let i = 0; i < maxMappings; i++) {
+        for (let i = 0; i < Math.min(originalColors.length, paletteColors.length); i++) {
             colorMappings.push({
                 originalColor: originalColors[i],
-                targetColor: fullPaletteColors[i]
+                targetColor: paletteColors[i % paletteColors.length]
             });
         }
         
-        console.log(`Created ${colorMappings.length} color mappings`);
+        // Use a simplified processor for the preview
+        const colorProcessor = new ColorProcessor();
+        const imageUrl = tempCanvas.toDataURL();
         
-        // Apply color replacement manually
-        const success = replaceColorsInImageData(imageData, colorMappings, 40); // Higher tolerance
+        // Process the preview at high resolution using color replacement
+        const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
+            imageUrl,
+            colorMappings
+        );
         
-        if (success) {
-            tempCtx.putImageData(imageData, 0, 0);
-            processedImageUrl = tempCanvas.toDataURL();
-        } else {
-            console.log("Manual color replacement failed, trying ColorProcessor");
-            // Fallback to ColorProcessor if available
-            if (typeof ColorProcessor !== 'undefined') {
-                try {
-                    const colorProcessor = new ColorProcessor();
-                    const imageUrl = tempCanvas.toDataURL();
-                    processedImageUrl = await colorProcessor.applyMultipleColorMappings(imageUrl, colorMappings);
-                } catch (e) {
-                    console.error("ColorProcessor also failed:", e);
-                    processedImageUrl = tempCanvas.toDataURL(); // Use original
-                }
-            } else {
-                processedImageUrl = tempCanvas.toDataURL(); // Use original
-            }
-        }
-    }
-    
-    // Load processed image
-    return new Promise((resolve) => {
-      const resultImg = new Image();
-      resultImg.onload = () => {
-          const displayScale = Math.min(
-              previewCanvas.width / resultImg.width,
-              previewCanvas.height / resultImg.height
-          );
-          
-          const displayWidth = resultImg.width * displayScale;
-          const displayHeight = resultImg.height * displayScale;
-          const displayX = (previewCanvas.width - displayWidth) / 2;
-          const displayY = (previewCanvas.height - displayHeight) / 2;
-          
-          ctx.drawImage(resultImg, displayX, displayY, displayWidth, displayHeight);
-          
-          if (typeof cachePreview === 'function') {
+        // Load the processed image back to the preview canvas
+        return new Promise((resolve) => {
+          const resultImg = new Image();
+          resultImg.onload = () => {
+              // Draw the processed image with the correct positioning at display size (200x200)
+              const displayScale = Math.min(
+                  previewCanvas.width / resultImg.width,
+                  previewCanvas.height / resultImg.height
+              );
+              
+              const displayWidth = resultImg.width * displayScale;
+              const displayHeight = resultImg.height * displayScale;
+              
+              const displayX = (previewCanvas.width - displayWidth) / 2;
+              const displayY = (previewCanvas.height - displayHeight) / 2;
+              
+              ctx.drawImage(resultImg, displayX, displayY, displayWidth, displayHeight);
+              
+              // Cache the high resolution preview
               cachePreview(previewCanvas, collection, paletteIndex, processedImageUrl);
-          }
-          
-          if (typeof markPreviewReady === 'function') {
+              
+              // Mark this preview as complete
               markPreviewReady(previewCanvas);
-          }
-          resolve();
-      };
-      resultImg.onerror = (e) => {
-          console.error("Error loading processed preview:", e);
-          drawFallbackPreview(previewCanvas, collection, paletteIndex);
-          resolve();
-      };
-      resultImg.src = processedImageUrl;
-    });
-    
-  } catch (error) {
-    console.error("Error generating preview:", error);
-    drawFallbackPreview(previewCanvas, collection, paletteIndex);
-  }
-}
+              resolve();
+          };
+          resultImg.onerror = (e) => {
+              console.error("Error loading processed preview:", e);
+              drawFallbackPreview(previewCanvas, collection, paletteIndex);
+              resolve();
+          };
+          resultImg.src = processedImageUrl;
+        });
+        
+      } catch (error) {
+        console.error("Error generating preview:", error);
+        drawFallbackPreview(previewCanvas, collection, paletteIndex);
+      }
+    }
+
     // Modified cache function with safer implementation
     function cachePreview(canvas, collection, index, highResUrl) {
       // Initialize cache objects if they don't exist
@@ -9726,8 +8378,8 @@ async function generateAndShowPreview(previewCanvas, fullPaletteColors, paletteI
         allPalettes = [...hueShiftedPalettes];
         
         // Remaining 5 palettes: Use family replacement as before
-        const diversePalettes = generateDiversePalettes(validatedColors,collection);
-        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 20)];
+        const diversePalettes = generateDiversePalettes(validatedColors);
+        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 5)];
         
         // Initialize preview cache if needed
         if (!window.palettePreviewCache) {
@@ -9760,7 +8412,7 @@ async function generateAndShowPreview(previewCanvas, fullPaletteColors, paletteI
         // Create all palette containers first
         const paletteContainers = [];
         
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 10; i++) {
             const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
             if (!paletteContainer) continue;
             
@@ -9780,7 +8432,7 @@ async function generateAndShowPreview(previewCanvas, fullPaletteColors, paletteI
             if (paletteColors.length === 0) {
                 // Generate new colors with good distribution
                 paletteColors = [];
-                for (let j = 0; j < 25; j++) {
+                for (let j = 0; j < 9; j++) {
                     const hue = j * (360 / 9);
                     paletteColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
                 }
@@ -9887,7 +8539,7 @@ async function generateAndShowPreview(previewCanvas, fullPaletteColors, paletteI
             paletteContainers.push({
                 index: i,
                 canvas: previewCanvas,
-                colors: window[`${collection}PaletteColors`][i]
+                colors: paletteColors
             });
         }
         
@@ -11489,16 +10141,11 @@ async function loadFavorites() {
                 <div class="layer-toggle-item d-flex flex-column gap-2">
                     <div id="fav_colorPalette_${displayIndex}" class="color-palette d-flex flex-column"></div>
                     <div class="d-flex align-items-center justify-content-between w-100">
-                        <button id="fav_shufflePalette_${displayIndex}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-shuffle"></i>
-                        </button>
                         <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}">
-                            <i class="bi bi-heart-fill"></i>
+                            <i class="bi bi-star-fill"></i>
                             <span class="fav-count">${favorite.favorites_count}</span>
                         </button>
-                        <button type="button" id="fav_applyButton_${displayIndex}" class="btn btn-success">
-                            <i class="bi bi-magic"></i>
-                        </button>
+                      
                     </div>
                 
                     </div>
@@ -11652,16 +10299,12 @@ function displayAllFavorites(favorites, container) {
             <div class="layer-toggle-item d-flex flex-column gap-2">
                 <div id="fav_colorPalette_${displayIndex}" class="color-palette d-flex flex-column"></div>
                 <div class="d-flex align-items-center justify-content-between w-100">
-                    <button id="fav_shufflePalette_${displayIndex}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-shuffle"></i>
-                    </button>
+                    
                     <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}">
                         <i class="bi bi-heart-fill"></i>
                         <span class="fav-count">${favorite.favorites_count}</span>
                     </button>
-                    <button type="button" id="fav_applyButton_${displayIndex}" class="btn btn-success">
-                        <i class="bi bi-magic"></i>
-                    </button>
+                    
                 </div>
                 <div class="text-center small">
                     ${favorite.name}
@@ -11694,16 +10337,12 @@ function displayCompatibleFavorites(compatibleFavorites, container) {
             <div class="layer-toggle-item d-flex flex-column gap-2">
                 <div id="fav_colorPalette_${displayIndex}" class="color-palette d-flex flex-column"></div>
                 <div class="d-flex align-items-center justify-content-between w-100">
-                    <button id="fav_shufflePalette_${displayIndex}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-shuffle"></i>
-                    </button>
+                   
                     <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}">
                         <i class="bi bi-heart-fill"></i>
                         <span class="fav-count">${favorite.favorites_count}</span>
                     </button>
-                    <button type="button" id="fav_applyButton_${displayIndex}" class="btn btn-success">
-                        <i class="bi bi-magic"></i>
-                    </button>
+                   
                 </div>
                 <div class="text-center small">
                     ${favorite.name}
@@ -12072,7 +10711,7 @@ async function displayFavoritePalette(index, favoriteColors, collection = 'fav')
             if (canvas) {
                 const ctx = canvas.getContext('2d', { willReadFrequently: true });
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                currentImageColors = await getDistinctColors(imageData, 30, 50);
+                currentImageColors = await getDistinctColors(imageData, 30, 50, 40);
             }
         }
         
@@ -15750,9 +14389,7 @@ function createBackgroundVariations(baseColor, variationType) {
       return hslToRgb(h, Math.max(s * 0.7, 12), Math.min(Math.max(l * 0.9, 15), 75));
   }
 }
-
-
- 
+    
     // Harmony generation functions
     function generateMonochromaticPalette(baseColor, imageColors) {
       try {
@@ -16114,112 +14751,77 @@ function createBackgroundVariations(baseColor, variationType) {
         return [baseColor, ...imageColors.slice(0, Math.min(imageColors.length - 1, 8))];
       }
     }
-  
-// Replace ONLY the base color selection part in generateHarmonyPalettes:
-
-async function generateHarmonyPalettes(imageColors) {
-  const paletteCollectionName = `${harmonyCollection}PaletteColors`;
-  
-  if (!window[paletteCollectionName]) {
-    window[paletteCollectionName] = {};
-  }
-  
-  const totalColors = imageColors.length;
-  console.log(`Total distinct colors available: ${totalColors}`);
-  
-  // Generate palettes based on background variation setting
-  const palettesToGenerate = backgroundVariation === 'mixed' ? 30 : 10;
-  
-  // SIMPLE FIX: Better base color distribution
-  function getDistributedBaseColor(index, totalColors, totalPalettes) {
-    if (totalColors >= totalPalettes) {
-      // If we have enough colors, space them out evenly
-      const step = Math.floor(totalColors / totalPalettes);
-      return (index * step) % totalColors;
-    } else {
-      // If fewer colors than palettes, add some hue variation
-      const baseIndex = index % totalColors;
-      const cycle = Math.floor(index / totalColors);
+    
+    // Modified generateHarmonyPalettes function with background variations
+    async function generateHarmonyPalettes(imageColors) {
+      const paletteCollectionName = `${harmonyCollection}PaletteColors`;
       
-      if (cycle > 0) {
-        // Add hue shift for subsequent cycles
-        const baseColor = imageColors[baseIndex];
-        const [h, s, l] = rgbToHsl(...baseColor);
-        const hueShift = cycle * 25; // 25-degree shifts
-        const newHue = (h + hueShift) % 360;
-        return hslToRgb(newHue, s, l);
+      if (!window[paletteCollectionName]) {
+        window[paletteCollectionName] = {};
       }
       
-      return imageColors[baseIndex];
-    }
-  }
-  
-  for (let i = 0; i < palettesToGenerate; i++) {
-    let palette = [];
-    
-    // Get better distributed base color
-    let baseColor;
-    if (typeof getDistributedBaseColor(i, totalColors, palettesToGenerate) === 'number') {
-      baseColor = imageColors[getDistributedBaseColor(i, totalColors, palettesToGenerate)];
-    } else {
-      baseColor = getDistributedBaseColor(i, totalColors, palettesToGenerate);
-    }
-    
-    // Determine background variation for this palette
-    let currentBgVariation = backgroundVariation;
-    if (backgroundVariation === 'mixed') {
-      const variations = ['regular', 'dark', 'faint'];
-      currentBgVariation = variations[i % variations.length];
-    }
-    
-    console.log(`Generating ${harmonyType} palette ${i} with ${currentBgVariation} background using base color:`, [...baseColor]);
-    
-    // Generate the harmony palette (KEEP ALL ORIGINAL HARMONY LOGIC)
-    switch(harmonyType) {
-      case 'Monochromatic':
-        palette = generateMonochromaticPalette(baseColor, imageColors);
-        break;
-      case 'Analogous':
-        palette = generateAnalogousPalette(baseColor, imageColors);
-        break;
-      case 'Complementary':
-        palette = generateComplementaryPalette(baseColor, imageColors);
-        break;
-      case 'Split Complementary':
-        palette = generateSplitComplementaryPalette(baseColor, imageColors);
-        break;
-      case 'Triadic':
-        palette = generateTriadicPalette(baseColor, imageColors);
-        break;
-      case 'Tetradic':
-        palette = generateTetradicPalette(baseColor, imageColors);
-        break;
-      case 'Square':
-        palette = generateSquarePalette(baseColor, imageColors);
-        break;
-      default:
-        palette = [...imageColors];
-    }
-    
-    // Apply background variation to the first color (background color)
-    if (palette.length > 0) {
-      palette[0] = createBackgroundVariations(palette[0], currentBgVariation);
-    }
-    
-    // Store additional metadata about the palette
-    palette._backgroundVariation = currentBgVariation;
-    palette._harmonyType = harmonyType;
-    
-    logPalette(palette, `${harmonyType} Palette ${i} (${currentBgVariation} bg)`);
-    
-    // Store the palette
-    window[paletteCollectionName][i] = palette;
-    console.log(`Stored palette in window.${paletteCollectionName}[${i}] with ${currentBgVariation} background`);
-  }
-  
-
-  
-
+      const totalColors = imageColors.length;
+      console.log(`Total distinct colors available: ${totalColors}`);
+      
+      // Generate palettes based on background variation setting
+      const palettesToGenerate = backgroundVariation === 'mixed' ? 30 : 10;
+      
+      for (let i = 0; i < palettesToGenerate; i++) {
+        let palette = [];
+        const baseColorIndex = i % totalColors;
+        const baseColor = imageColors[baseColorIndex];
+        
+        // Determine background variation for this palette
+        let currentBgVariation = backgroundVariation;
+        if (backgroundVariation === 'mixed') {
+          const variations = ['regular', 'dark', 'faint'];
+          currentBgVariation = variations[i % variations.length];
+        }
+        
+        console.log(`Generating ${harmonyType} palette ${i} with ${currentBgVariation} background using base color:`, [...baseColor]);
+        
+        // Generate the harmony palette
+        switch(harmonyType) {
+          case 'Monochromatic':
+            palette = generateMonochromaticPalette(baseColor, imageColors);
+            break;
+          case 'Analogous':
+            palette = generateAnalogousPalette(baseColor, imageColors);
+            break;
+          case 'Complementary':
+            palette = generateComplementaryPalette(baseColor, imageColors);
+            break;
+          case 'Split Complementary':
+            palette = generateSplitComplementaryPalette(baseColor, imageColors);
+            break;
+          case 'Triadic':
+            palette = generateTriadicPalette(baseColor, imageColors);
+            break;
+          case 'Tetradic':
+            palette = generateTetradicPalette(baseColor, imageColors);
+            break;
+          case 'Square':
+            palette = generateSquarePalette(baseColor, imageColors);
+            break;
+          default:
+            palette = [...imageColors];
+        }
+        
+        // Apply background variation to the first color (background color)
+        if (palette.length > 0) {
+          palette[0] = createBackgroundVariations(palette[0], currentBgVariation);
+        }
+        
+        // Store additional metadata about the palette
+        palette._backgroundVariation = currentBgVariation;
+        palette._harmonyType = harmonyType;
+        
+        logPalette(palette, `${harmonyType} Palette ${i} (${currentBgVariation} bg)`);
+        
+        // Store the palette
+        window[paletteCollectionName][i] = palette;
+        console.log(`Stored palette in window.${paletteCollectionName}[${i}] with ${currentBgVariation} background`);
+      }
       
       // Create backup in truePaletteColors for processPallet compatibility
       if (!window.truePaletteColors) {
@@ -16741,7 +15343,7 @@ function displayHarmonyPalettesInSidebar(harmonyType, paletteCollectionName, bac
       let originalColors = [];
       if (typeof getDistinctColors === 'function') {
         try {
-          originalColors = await getDistinctColors(imageData, 30, 50);
+          originalColors = await getDistinctColors(imageData, 30, 50, 40);
         } catch (e) {
           console.warn('Error calling getDistinctColors:', e);
         }
@@ -17943,7 +16545,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalLayers = {{ layers|length }};
     
     if (totalLayers === 1) {
-      for (let i = 0; i < 25; i++) {
+      for (let i = 0; i < 10; i++) {
         displayColorPalette(i, distinctColorsArrayColorPallet, 'trending', distinctColorsArrayColorPallet.length+1, totalLayers);
         displayColorPalette(i, distinctColorsArrayColorPallet, 'ss', distinctColorsArrayColorPallet.length+1, totalLayers);
         displayColorPalette(i, distinctColorsArrayColorPallet, 'aw', distinctColorsArrayColorPallet.length+1, totalLayers);
@@ -18764,6 +17366,7 @@ function generateColorVariations(baseColor) {
   
   return variations;
 }
+
 // Add a utility function to check if colors are significantly different
 function areColorsDifferent(color1, color2, threshold = 5) {
     return Math.abs(color1[0] - color2[0]) > threshold ||
