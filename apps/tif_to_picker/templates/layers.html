@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <hr />
             <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
               {% if layers|length == 1 %}
-              {% for i in "0123456789" %}
+              {% for i in "01234567890123456789012345" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="trending_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                           <button type="button" 
@@ -7590,21 +7590,41 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             const usedTargetFamilies = new Set();
             
             // For each original family, assign a new target family
+            // For each original family, assign a new target family with better randomization
             availableFamilyNames.forEach((originalFamily, index) => {
                 let targetFamily;
                 let attempts = 0;
                 
-                // Try to find an unused target family
+                // Create more variation by using different strategies for different palette indices
+                const strategy = i % 4; // 4 different mapping strategies
+                
                 do {
-                    if (attempts < 5) {
-                        // First few attempts: try to use different families
-                        targetFamily = allFamilies[(index + i * 3) % allFamilies.length];
+                    if (strategy === 0) {
+                        // Strategy 0: Sequential with offset
+                        targetFamily = allFamilies[(index + i * 2) % allFamilies.length];
+                    } else if (strategy === 1) {
+                        // Strategy 1: Reverse sequential
+                        targetFamily = allFamilies[(allFamilies.length - 1 - index + i) % allFamilies.length];
+                    } else if (strategy === 2) {
+                        // Strategy 2: Prime number offset for more randomness
+                        const primeOffset = [7, 11, 13, 17, 19, 23];
+                        const offset = primeOffset[i % primeOffset.length];
+                        targetFamily = allFamilies[(index + offset) % allFamilies.length];
                     } else {
-                        // Later attempts: allow some repetition but add randomness
-                        targetFamily = allFamilies[Math.floor(Math.random() * allFamilies.length)];
+                        // Strategy 3: More random but still deterministic
+                        const seed = i * 37 + index * 41; // Use palette index and position as seed
+                        targetFamily = allFamilies[seed % allFamilies.length];
                     }
                     attempts++;
-                } while (usedTargetFamilies.has(targetFamily) && attempts < 10);
+                } while (usedTargetFamilies.has(targetFamily) && attempts < 15);
+                
+                // If still conflicting after many attempts, just add randomness
+                if (usedTargetFamilies.has(targetFamily)) {
+                    const availableTargets = allFamilies.filter(f => !usedTargetFamilies.has(f));
+                    if (availableTargets.length > 0) {
+                        targetFamily = availableTargets[(i + index) % availableTargets.length];
+                    }
+                }
                 
                 familyMapping[originalFamily] = targetFamily;
                 usedTargetFamilies.add(targetFamily);
@@ -8433,7 +8453,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         
         // Remaining 5 palettes: Use family replacement as before
         const diversePalettes = generateDiversePalettes(validatedColors);
-        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 5)];
+        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 25)];
         
         // Initialize preview cache if needed
         if (!window.palettePreviewCache) {
@@ -8466,7 +8486,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         // Create all palette containers first
         const paletteContainers = [];
         
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 25; i++) {
             const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
             if (!paletteContainer) continue;
             
@@ -16599,7 +16619,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalLayers = {{ layers|length }};
     
     if (totalLayers === 1) {
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 25; i++) {
         displayColorPalette(i, distinctColorsArrayColorPallet, 'trending', distinctColorsArrayColorPallet.length+1, totalLayers);
         displayColorPalette(i, distinctColorsArrayColorPallet, 'ss', distinctColorsArrayColorPallet.length+1, totalLayers);
         displayColorPalette(i, distinctColorsArrayColorPallet, 'aw', distinctColorsArrayColorPallet.length+1, totalLayers);

@@ -260,7 +260,7 @@ DATABASES = {
         # 'NAME': 'colorify3',
         'NAME': 'colorify3',
         'USER': 'root',
-        'PASSWORD': '1221',
+        'PASSWORD': 'tanuj1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
