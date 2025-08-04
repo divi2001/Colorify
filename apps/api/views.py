@@ -3,6 +3,10 @@ import logging
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse, HttpResponseRedirect
+from django.views.decorators.csrf import csrf_protect
+from allauth.account.views import SignupView
+from allauth.account.forms import SignupForm
 from apps.core.models import Project
 
 # Configure logging
@@ -61,3 +65,49 @@ def edit_project_view(request, user_id, project_id):
     except Exception as e:
         logger.error(f"Error rendering layers.html: {e}")
         raise
+
+
+# Custom SignupView that extends django-allauth's SignupView
+class CustomSignupView(SignupView):
+    def post(self, request, *args, **kwargs):
+        # Check if this is an AJAX request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            form_class = self.get_form_class()
+            form = self.get_form(form_class)
+            
+            if form.is_valid():
+                # Let allauth handle the complete signup process
+                # This includes creating user, sending confirmation email, etc.
+                response = self.form_valid(form)
+                
+                # If it's a redirect response (successful signup)
+                if isinstance(response, HttpResponseRedirect):
+                    return JsonResponse({
+                        'success': True,
+                        'redirect_url': response.url
+                    })
+                else:
+                    # This shouldn't normally happen, but just in case
+                    return JsonResponse({
+                        'success': True,
+                        'redirect_url': self.get_success_url()
+                    })
+            else:
+                # Return validation errors as JSON
+                errors = {}
+                for field, field_errors in form.errors.items():
+                    errors[field] = [str(error) for error in field_errors]
+                
+                return JsonResponse({
+                    'success': False,
+                    'errors': errors
+                })
+        
+        # For non-AJAX requests, use the parent class's post method
+        return super().post(request, *args, **kwargs)
+
+# Create a function-based view wrapper
+@csrf_protect
+def ajax_signup_view(request):
+    view = CustomSignupView.as_view()
+    return view(request)

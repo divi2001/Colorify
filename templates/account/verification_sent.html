@@ -1,9 +1,9 @@
-<!-- templates\account\password_reset_done.html -->
+<!-- verification_sent.html -->
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
 
-{% block head_title %}{% trans "Colorify Studio - Password Reset Done" %}{% endblock %}
+{% block head_title %}{% trans "Colorify Studio - Email Verification" %}{% endblock %}
 
 {% block extra_head %}
     <meta charset="UTF-8" />
@@ -35,10 +35,15 @@
             </div>
 
             <!-- Messages -->
+            {% if messages %}
             <div class="mb-8 text-center">
-                <div class="text-green-600 mb-2">Successfully signed in as deep.</div>
-                <div class="text-blue-600 mb-2">You have signed out.</div>
+                {% for message in messages %}
+                <div class="{% if message.tags %}{{ message.tags }}{% endif %} mb-2">
+                    {{ message }}
+                </div>
+                {% endfor %}
             </div>
+            {% endif %}
 
             <!-- Menu -->
             <div class="mb-8 text-center">
@@ -50,12 +55,21 @@
                 </ul>
             </div>
 
-            <!-- Password Reset Done Message -->
+            <!-- Email Verification Message -->
             <div class="text-center">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Password Reset Email Sent</h3>
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Verify Your Email Address</h3>
                 <p class="text-gray-600 mb-6">
-                    We have sent you an email. If you have not received it please check your spam folder. Otherwise contact us if you do not receive it in a few minutes.
+                    This part of the site requires us to verify that you are who you claim to be. For this purpose, we require that you verify ownership of your email address.
                 </p>
+                <p class="text-gray-600 mb-6">
+                    We have sent an email to you for verification. Please click on the link inside that email. If you do not see the verification email in your main inbox, check your spam folder. Otherwise contact us if you do not receive it within a few minutes.
+                </p>
+                <form method="post" action="{% url 'account_email' %}">
+                    {% csrf_token %}
+                    <button type="submit" name="action_send" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition">
+                        Resend Verification Email
+                    </button>
+                </form>
             </div>
         </div>
     </div>

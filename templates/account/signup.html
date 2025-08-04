@@ -69,14 +69,14 @@
 
                 <!-- Social Login -->
                 <div class="flex flex-col sm:flex-row gap-4 mb-6">
-                    <button class="flex-1 flex items-center justify-center pr-2 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <a href="{% url 'socialaccount_connections' %}" class="flex-1 flex items-center justify-center pr-2 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <img src="{% static 'images/google-logo.png' %}" alt="Google" class="w-14 h-8" />
                         <span class="text-sm">Sign Up with Google</span>
-                    </button>
-                    <button class="flex-1 flex items-center justify-center pr-2 gap-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    </a>
+                    <a href="{% url 'socialaccount_connections' %}" class="flex-1 flex items-center justify-center pr-2 gap-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <img src="{% static 'images/apple-logo.png' %}" alt="Apple" class="w-8 h-9" />
                         <span class="text-sm">Sign up with Apple ID</span>
-                    </button>
+                    </a>
                 </div>
 
                 <!-- Divider -->
@@ -90,77 +90,142 @@
                 </div>
 
                 <!-- Signup Form -->
-                <form method="POST" action="{% url 'account_signup' %}">
+                <form id="signup-form" method="POST" action="{% url 'account_signup' %}">
                     {% csrf_token %}
                     <div class="space-y-6">
+                        <!-- Username Field -->
                         <div>
-                            <label for="id_name" class="block text-sm font-medium mb-2">Username</label>
-                            <input type="text" name="username" id="id_name"
+                            <label for="id_username" class="block text-sm font-medium mb-2">
+                                Username <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="username" id="id_username"
                                 placeholder="Username"
-                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-primary"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.username.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
+                                required
+                                value="{{ form.username.value|default:'' }}"
                             />
-                        </div>
-                        <div>
-                            <label for="id_first_name" class="block text-sm font-medium mb-2">First Name</label>
-                            <input type="text" name="first_name" id="id_first_name"
-                                placeholder="First Name"
-                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-primary"
-                            />
-                        </div>
-                        <div>
-                            <label for="id_last_name" class="block text-sm font-medium mb-2">Last Name</label>
-                            <input type="text" name="last_name" id="id_last_name"
-                                placeholder="Last Name"
-                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-primary"
-                            />
-                        </div>
-                        <div>
-                            <label for="id_email" class="block text-sm font-medium mb-2">Email</label>
-                            <input type="email" name="email" id="id_email"
-                                placeholder="you@demomail.com"
-                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-primary"
-                            />
-                        </div>
-                        <div>
-                            <label for="id_password1" class="block text-sm font-medium mb-2">Password</label>
-                            <input type="password" name="password1" id="id_password1"
-                                placeholder="Enter Your Password"
-                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-primary"
-                            />
-                        </div>
-                        <div>
-                            <label for="id_password2" class="block text-sm font-medium mb-2">Confirm Password</label>
-                            <input type="password" name="password2" id="id_password2"
-                                placeholder="Re-Enter Your Password"
-                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-primary"
-                            />
-                        </div>
-                    </div>
-
-                    {% if form.errors or form.non_field_errors %}
-                    <div class="mt-4 space-y-2">                    
-                        <!-- Required/Missing fields -->
-                        {% for field in form %}
-                            {% if field.errors and field.field.required %}
-                                <div class="flex items-start space-x-2 bg-yellow-50 p-3 rounded-lg">
-                                    <div class="flex-shrink-0">
-                                        <!-- Warning icon -->
-                                        <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-medium text-yellow-800">Required Field:</p>
-                                        <p class="text-sm text-yellow-700">{{ field.label }} is required</p>
-                                    </div>
+                            {% if form.username.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
                                 </div>
                             {% endif %}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-            
+                        </div>
 
-                    <button type="submit"
+                        <!-- First Name Field -->
+                        <div>
+                            <label for="id_first_name" class="block text-sm font-medium mb-2">
+                                First Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="first_name" id="id_first_name"
+                                placeholder="First Name"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.first_name.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
+                                required
+                                value="{{ form.first_name.value|default:'' }}"
+                            />
+                            {% if form.first_name.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.first_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Last Name Field -->
+                        <div>
+                            <label for="id_last_name" class="block text-sm font-medium mb-2">
+                                Last Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="last_name" id="id_last_name"
+                                placeholder="Last Name"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.last_name.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
+                                required
+                                value="{{ form.last_name.value|default:'' }}"
+                            />
+                            {% if form.last_name.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.last_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Email Field -->
+                        <div>
+                            <label for="id_email" class="block text-sm font-medium mb-2">
+                                Email <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" name="email" id="id_email"
+                                placeholder="you@demomail.com"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.email.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
+                                required
+                                value="{{ form.email.value|default:'' }}"
+                            />
+                            {% if form.email.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Password Field -->
+                        <div>
+                            <label for="id_password1" class="block text-sm font-medium mb-2">
+                                Password <span class="text-red-500">*</span>
+                            </label>
+                            <input type="password" name="password1" id="id_password1"
+                                placeholder="Enter Your Password"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.password1.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
+                                required
+                            />
+                            {% if form.password1.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.password1.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <!-- Password requirements -->
+                            <div class="mt-2 text-xs text-gray-500">
+                                Password must contain at least 8 characters with uppercase, lowercase, number, and special character.
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password Field -->
+                        <div>
+                            <label for="id_password2" class="block text-sm font-medium mb-2">
+                                Confirm Password <span class="text-red-500">*</span>
+                            </label>
+                            <input type="password" name="password2" id="id_password2"
+                                placeholder="Re-Enter Your Password"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.password2.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
+                                required
+                            />
+                            {% if form.password2.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.password2.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Display non-field errors -->
+                    {% if form.non_field_errors %}
+                        <div class="mt-4 text-sm text-red-600">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <button type="submit" id="signup-btn"
                         class="w-full bg-[#4F5DFF] text-white py-3 rounded-xl mt-6 hover:bg-[#4F5DFF]/90 transition-colors">
                         Sign up
                     </button>
@@ -176,4 +241,301 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('signup-form');
+    
+    // Clear previous client-side errors
+    function clearClientErrors() {
+        const errorElements = document.querySelectorAll('[id$="-error"]');
+        errorElements.forEach(el => {
+            el.classList.add('hidden');
+            el.textContent = '';
+        });
+        
+        // Remove error styling from inputs
+        const inputs = form.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.classList.remove('border-red-500');
+            input.classList.add('border-gray-200');
+        });
+    }
+
+    // Display client-side field errors
+    function displayClientError(fieldName, message) {
+        const errorElement = document.getElementById(fieldName + '-error');
+        const inputElement = document.getElementById('id_' + fieldName);
+        
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+            
+            if (inputElement) {
+                inputElement.classList.add('border-red-500');
+                inputElement.classList.remove('border-gray-200');
+            }
+        }
+    }
+
+    // Clear specific field error
+    function clearFieldError(fieldName) {
+        const errorElement = document.getElementById(fieldName + '-error');
+        const inputElement = document.getElementById('id_' + fieldName);
+        
+        if (errorElement) {
+            errorElement.classList.add('hidden');
+        }
+        if (inputElement) {
+            inputElement.classList.remove('border-red-500');
+            inputElement.classList.add('border-gray-200');
+        }
+    }
+
+    // Validate username
+    function validateUsername(username) {
+        if (!username || username.trim() === '') {
+            return 'Username is required.';
+        }
+        if (username.trim().length < 3) {
+            return 'Username must be at least 3 characters long.';
+        }
+        if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+            return 'Username can only contain letters, numbers, and underscores.';
+        }
+        return null;
+    }
+
+    // Validate name fields
+    function validateName(name, fieldLabel) {
+        if (!name || name.trim() === '') {
+            return `${fieldLabel} is required.`;
+        }
+        if (name.trim().length < 2) {
+            return `${fieldLabel} must be at least 2 characters long.`;
+        }
+        if (!/^[a-zA-Z\s]+$/.test(name.trim())) {
+            return `${fieldLabel} can only contain letters and spaces.`;
+        }
+        return null;
+    }
+
+    // Validate email
+    function validateEmail(email) {
+        if (!email || email.trim() === '') {
+            return 'Email is required.';
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+            return 'Please enter a valid email address.';
+        }
+        return null;
+    }
+
+    // Validate password strength
+    function validatePassword(password) {
+        if (!password || password === '') {
+            return 'Password is required.';
+        }
+        if (password.length < 8) {
+            return 'Password must be at least 8 characters long.';
+        }
+        
+        const hasUppercase = /[A-Z]/.test(password);
+        const hasLowercase = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        
+        if (!hasUppercase) {
+            return 'Password must contain at least one uppercase letter.';
+        }
+        if (!hasLowercase) {
+            return 'Password must contain at least one lowercase letter.';
+        }
+        if (!hasNumber) {
+            return 'Password must contain at least one number.';
+        }
+        if (!hasSpecialChar) {
+            return 'Password must contain at least one special character.';
+        }
+        
+        return null;
+    }
+
+    // Validate password confirmation
+    function validatePasswordConfirmation(password1, password2) {
+        if (!password2 || password2 === '') {
+            return 'Please confirm your password.';
+        }
+        if (password1 !== password2) {
+            return 'Passwords do not match.';
+        }
+        return null;
+    }
+
+    // Real-time validation functions
+    const password1 = document.getElementById('id_password1');
+    const password2 = document.getElementById('id_password2');
+    const username = document.getElementById('id_username');
+    const firstName = document.getElementById('id_first_name');
+    const lastName = document.getElementById('id_last_name');
+    const email = document.getElementById('id_email');
+
+    // Real-time password validation
+    password1.addEventListener('input', function() {
+        const password = this.value;
+        if (password) {
+            const error = validatePassword(password);
+            if (error) {
+                displayClientError('password1', error);
+            } else {
+                clearFieldError('password1');
+            }
+        } else {
+            clearFieldError('password1');
+        }
+        
+        // Also validate password confirmation if it has a value
+        if (password2.value) {
+            const confirmError = validatePasswordConfirmation(password, password2.value);
+            if (confirmError) {
+                displayClientError('password2', confirmError);
+            } else {
+                clearFieldError('password2');
+            }
+        }
+    });
+
+    // Real-time password confirmation validation
+    password2.addEventListener('input', function() {
+        const password1Value = password1.value;
+        const password2Value = this.value;
+        
+        if (password2Value) {
+            const error = validatePasswordConfirmation(password1Value, password2Value);
+            if (error) {
+                displayClientError('password2', error);
+            } else {
+                clearFieldError('password2');
+            }
+        } else {
+            clearFieldError('password2');
+        }
+    });
+
+    // Real-time validation for other fields
+    username.addEventListener('blur', function() {
+        const error = validateUsername(this.value);
+        if (error) {
+            displayClientError('username', error);
+        } else {
+            clearFieldError('username');
+        }
+    });
+
+    firstName.addEventListener('blur', function() {
+        const error = validateName(this.value, 'First name');
+        if (error) {
+            displayClientError('first_name', error);
+        } else {
+            clearFieldError('first_name');
+        }
+    });
+
+    lastName.addEventListener('blur', function() {
+        const error = validateName(this.value, 'Last name');
+        if (error) {
+            displayClientError('last_name', error);
+        } else {
+            clearFieldError('last_name');
+        }
+    });
+
+    email.addEventListener('blur', function() {
+        const error = validateEmail(this.value);
+        if (error) {
+            displayClientError('email', error);
+        } else {
+            clearFieldError('email');
+        }
+    });
+
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        clearClientErrors();
+        let hasErrors = false;
+        
+        // Validate all fields
+        const usernameValue = username.value;
+        const firstNameValue = firstName.value;
+        const lastNameValue = lastName.value;
+        const emailValue = email.value;
+        const password1Value = password1.value;
+        const password2Value = password2.value;
+        
+        // Username validation
+        const usernameError = validateUsername(usernameValue);
+        if (usernameError) {
+            displayClientError('username', usernameError);
+            hasErrors = true;
+        }
+        
+        // First name validation
+        const firstNameError = validateName(firstNameValue, 'First name');
+        if (firstNameError) {
+            displayClientError('first_name', firstNameError);
+            hasErrors = true;
+        }
+        
+        // Last name validation
+        const lastNameError = validateName(lastNameValue, 'Last name');
+        if (lastNameError) {
+            displayClientError('last_name', lastNameError);
+            hasErrors = true;
+        }
+        
+        // Email validation
+        const emailError = validateEmail(emailValue);
+        if (emailError) {
+            displayClientError('email', emailError);
+            hasErrors = true;
+        }
+        
+        // Password validation
+        const passwordError = validatePassword(password1Value);
+        if (passwordError) {
+            displayClientError('password1', passwordError);
+            hasErrors = true;
+        }
+        
+        // Password confirmation validation
+        const passwordConfirmError = validatePasswordConfirmation(password1Value, password2Value);
+        if (passwordConfirmError) {
+            displayClientError('password2', passwordConfirmError);
+            hasErrors = true;
+        }
+        
+        // Prevent form submission if there are errors
+        if (hasErrors) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Clear error when user starts typing (for immediate feedback)
+    const allInputs = form.querySelectorAll('input');
+    allInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const fieldName = this.name;
+            const errorElement = document.getElementById(fieldName + '-error');
+            if (errorElement && !errorElement.classList.contains('hidden')) {
+                // Only clear if user is actively typing (not just on blur)
+                if (this.value.length > 0) {
+                    clearFieldError(fieldName);
+                }
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

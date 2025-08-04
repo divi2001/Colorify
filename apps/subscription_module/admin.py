@@ -12,6 +12,9 @@ from .models import (
     InspirationPDF, PDFLike, Palette, Color
 )
 from .utils import AutoPaletteGenerationForm
+from .models import ReferralCode
+from django.http import HttpResponseRedirect
+
 
 # Custom admin classes for Subscription models
 @admin.register(SubscriptionPlan)
@@ -27,7 +30,8 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
 
 @admin.register(UserSubscription)
 class UserSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'plan', 'is_active', 'start_date', 'end_date', 'max_devices')
+    list_display = ('user', 'plan', 'is_active', 'start_date', 'end_date', 
+                   'devices_used_count', 'get_max_devices', 'file_uploads_used', 'storage_used_mb')
     list_filter = ('active', 'plan')
     search_fields = ('user__username', 'user__email')
     raw_id_fields = ('user',)
@@ -36,6 +40,10 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
         return obj.is_active()
     is_active.boolean = True
     is_active.short_description = 'Active'
+
+    def get_max_devices(self, obj):
+        return obj.plan.max_devices if obj.plan else None
+    get_max_devices.short_description = 'Max Devices'
 
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):
@@ -262,3 +270,71 @@ class ColorAdmin(admin.ModelAdmin):
         css = {
             'all': ('admin/css/color_picker.css',)
         }
+
+class ReferralCodeForm(forms.ModelForm):
+    class Meta:
+        model = ReferralCode
+        fields = '__all__'
+
+@admin.register(ReferralCode)
+class ReferralCodeAdmin(admin.ModelAdmin):
+    form = ReferralCodeForm
+    list_display = ('code', 'discount_percentage', 'is_active', 'current_uses', 'max_uses', 'expiration_date')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('code',)
+    filter_horizontal = ('applicable_plans',)
+    readonly_fields = ('current_uses', 'created_at', 'generate_code_button')
+    
+    fieldsets = (
+        (None, {
+            'fields': ('generate_code_button', 'code', 'discount_percentage', 'is_active')
+        }),
+        ('Usage Limits', {
+            'fields': ('max_uses', 'current_uses', 'expiration_date')
+        }),
+        ('Applicability', {
+            'fields': ('applicable_plans', 'created_by')
+        }),
+        ('Dates', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def generate_code_button(self, obj):
+        return format_html(
+            '<a class="button" href="{}">Generate Random Code</a>',
+            reverse('admin:generate_referral_code')
+        )
+    generate_code_button.short_description = 'Generate Code'
+    generate_code_button.allow_tags = True
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'generate-code/',
+                self.admin_site.admin_view(self.generate_code),
+                name='generate_referral_code'
+            ),
+        ]
+        return custom_urls + urls
+    
+    def generate_code(self, request):
+        if request.method == 'GET':
+            new_code = ReferralCode.generate_random_code()
+            return HttpResponseRedirect(
+                reverse('admin:subscription_module_referralcode_add') + f'?code={new_code}'
+            )
+        return HttpResponseRedirect(reverse('admin:subscription_module_referralcode_add'))
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:  # Only set created_by for new instances
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        if 'code' in request.GET:
+            initial['code'] = request.GET['code']
+        return initial

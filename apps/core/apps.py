@@ -6,4 +6,4 @@ class CoreConfig(AppConfig):
     name = 'apps.core'
 
     def ready(self):
-        import apps.core.signals
+        import apps.core.signals  # noqa

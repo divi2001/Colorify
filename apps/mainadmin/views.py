@@ -1,15 +1,14 @@
-# apps/mainadmin/views.py
 from django.shortcuts import render
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Sum, F, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models.functions import TruncMonth, TruncWeek, ExtractMonth
-
+from django.db import models
 from apps.subscription_module.models import SubscriptionPlan, UserSubscription
 from apps.core.models import CustomUser, Project
 from django.contrib.auth import get_user_model
-
+from django.db.models import Case, When, DecimalField
 User = get_user_model()
 
 @staff_member_required
@@ -49,8 +48,18 @@ def admin_dashboard(request):
     ).order_by('-count')
     
     # Estimated Monthly Revenue (from active subscriptions)
+    # Using discounted_price if available, otherwise original_price
     monthly_revenue_estimate = active_subscriptions.aggregate(
-        revenue=Sum(F('plan__price') / (F('plan__duration_in_days') / 30))
+        revenue=Sum(
+            Case(
+                When(
+                    plan__discounted_price__isnull=False,
+                    then=F('plan__discounted_price') / (F('plan__duration_in_days') / 30)
+                ),
+                default=F('plan__original_price') / (F('plan__duration_in_days') / 30),
+                output_field=models.DecimalField(),
+            )
+        )
     )['revenue'] or 0
     
     # Recent Subscriptions

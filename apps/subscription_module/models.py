@@ -1,12 +1,11 @@
-# apps\subscription_module\models.py
+# apps/subscription_module/models.py
 from django.conf import settings
 from django.db import models
-from django.core.validators import FileExtensionValidator,MinValueValidator,MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django.utils import timezone
 import uuid
-from django.db import models
-from django.conf import settings
-from django.core.validators import MinValueValidator, MaxValueValidator
+import random
+import string
 
 
 class SubscriptionPlan(models.Model):
@@ -44,8 +43,13 @@ class SubscriptionPlan(models.Model):
         help_text="Number of files user can upload"
     )
     storage_limit_mb = models.IntegerField(
-        default=1024,  # 1GB default
+        default=1024,
         help_text="Storage limit in MB"
+    )
+    max_devices = models.IntegerField(  # MOVED FROM UserSubscription
+        default=1,
+        validators=[MinValueValidator(1)],
+        help_text="Maximum number of devices allowed"
     )
     is_active = models.BooleanField(
         default=True,
@@ -62,7 +66,6 @@ class SubscriptionPlan(models.Model):
         return self.discounted_price if self.discounted_price else self.original_price
     
     def save(self, *args, **kwargs):
-        # Set default durations based on subscription type if not custom
         if self.subscription_type != 'custom' and not self.duration_in_days:
             if self.subscription_type == 'monthly':
                 self.duration_in_days = 30
@@ -71,6 +74,79 @@ class SubscriptionPlan(models.Model):
             elif self.subscription_type == 'yearly':
                 self.duration_in_days = 365
         super().save(*args, **kwargs)
+
+class UserSubscription(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name='subscription'
+    )
+    plan = models.ForeignKey(
+        SubscriptionPlan, 
+        on_delete=models.SET_NULL, 
+        null=True
+    )
+    start_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField()
+    active = models.BooleanField(default=True)
+    devices = models.ManyToManyField('Device', blank=True)
+    file_uploads_used = models.IntegerField(default=0)
+    storage_used_mb = models.IntegerField(default=0)
+    devices_used_count = models.PositiveIntegerField(
+        default=0,
+        help_text='Number of devices currently being used'
+    )
+    
+    def __str__(self):
+        return f'{self.user.username} - {self.plan.name if self.plan else "No Plan"}'
+    
+    def is_active(self):
+        return self.end_date > timezone.now() and self.active
+    
+    def can_add_device(self):
+        return self.devices_used_count < (self.plan.max_devices if self.plan else 1)
+    
+    def has_storage_space(self, file_size_mb):
+        return (self.storage_used_mb + file_size_mb) <= (self.plan.storage_limit_mb if self.plan else 0)
+    
+    def can_upload_file(self):
+        return self.file_uploads_used < (self.plan.file_upload_limit if self.plan else 0)
+    
+    def days_remaining(self):
+        return (self.end_date - timezone.now()).days if self.is_active() else 0
+    
+    def add_device(self, device_id, device_name=None):
+        if not self.can_add_device():
+            raise ValueError("Device limit reached")
+        
+        device, created = Device.objects.get_or_create(
+            user=self.user,
+            device_id=device_id,
+            defaults={'device_name': device_name}
+        )
+        if created:
+            self.devices_used_count = models.F('devices_used_count') + 1
+            self.save(update_fields=['devices_used_count'])
+        self.devices.add(device)
+        return device
+    
+    def remove_device(self, device_id):
+        device = self.devices.filter(device_id=device_id).first()
+        if device:
+            self.devices.remove(device)
+            self.devices_used_count = models.F('devices_used_count') - 1
+            self.save(update_fields=['devices_used_count'])
+            return True
+        return False
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user'],
+                name='unique_user_subscription'
+            )
+        ]
+    
 
 class Device(models.Model):
     user = models.ForeignKey(
@@ -85,8 +161,109 @@ class Device(models.Model):
     
     def __str__(self):
         return f"{self.device_name or 'Unknown'} ({self.device_id})"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update last login timestamp in subscription if added
+        if hasattr(self.user, 'subscription'):
+            self.user.subscription.devices.add(self)
+    
+    def delete(self, *args, **kwargs):
+        # Decrement count when device is deleted
+        if hasattr(self.user, 'subscription'):
+            subscription = self.user.subscription
+            if self in subscription.devices.all():
+                subscription.devices_used_count = models.F('devices_used_count') - 1
+                subscription.save(update_fields=['devices_used_count'])
+        super().delete(*args, **kwargs)
 
+class ReferralCode(models.Model):
+    CODE_LENGTH = 8  # You can adjust this as needed
+    
+    code = models.CharField(max_length=20, unique=True)
+    discount_percentage = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        help_text="Discount percentage (1-100)"
+    )
+    expiration_date = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text="Optional expiration date for the code"
+    )
+    max_uses = models.PositiveIntegerField(
+        default=1,
+        help_text="Maximum number of times this code can be used"
+    )
+    current_uses = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of times this code has been used"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this code is currently valid"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_referral_codes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    applicable_plans = models.ManyToManyField(
+        SubscriptionPlan,
+        blank=True,
+        help_text="Plans this code applies to (leave empty for all plans)"
+    )
+
+    def __str__(self):
+        return f"{self.code} ({self.discount_percentage}% off)"
+    
+    @classmethod
+    def generate_random_code(cls, length=CODE_LENGTH):
+        """Generate a random alphanumeric code"""
+        characters = string.ascii_uppercase + string.digits
+        return ''.join(random.choice(characters) for _ in range(length))
+    
+    def is_valid(self):
+        """Check if the referral code is still valid"""
+        now = timezone.now()
+        expired = self.expiration_date and self.expiration_date < now
+        return (
+            self.is_active and 
+            not expired and 
+            self.current_uses < self.max_uses
+        )
+    
+    def apply_discount(self, original_price):
+        """Apply the discount to a price"""
+        if not self.is_valid():
+            raise ValueError("Referral code is not valid")
         
+        discount_amount = (original_price * self.discount_percentage) / 100
+        return original_price - discount_amount
+    
+    def use_code(self):
+        """Increment the usage count"""
+        if not self.is_valid():
+            raise ValueError("Referral code is not valid")
+        
+        self.current_uses += 1
+        if self.current_uses >= self.max_uses:
+            self.is_active = False
+        self.save()
+    
+    def save(self, *args, **kwargs):
+        if not self.code:
+            # Generate a unique code if one isn't provided
+            self.code = self.generate_random_code()
+            while ReferralCode.objects.filter(code=self.code).exists():
+                self.code = self.generate_random_code()
+        super().save(*args, **kwargs)
+
+
+
+
 class PaymentTransaction(models.Model):
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -110,9 +287,7 @@ class PaymentTransaction(models.Model):
     )
     subscription_plan = models.ForeignKey(
         SubscriptionPlan, 
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True
+        on_delete=models.CASCADE
     )
     transaction_type = models.CharField(
         max_length=20,
@@ -123,120 +298,48 @@ class PaymentTransaction(models.Model):
     status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
     payment_gateway_reference = models.CharField(max_length=255, blank=True, null=True)
     payment_method = models.CharField(max_length=50, default='PayU')
-    metadata = models.JSONField(default=dict, blank=True)  # For storing additional data like device count changes
+    metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        ordering = ['-created_at']
+
+    referral_code = models.ForeignKey(
+        ReferralCode,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transactions'
+    )
+
     def __str__(self):
         return f"{self.user.username} - {self.transaction_id} - {self.status}"
     
-    class Meta:
-        ordering = ['-created_at']
-        
     def mark_as_completed(self, payment_reference):
-        """Mark transaction as completed and update user subscription accordingly"""
         self.status = 'completed'
         self.payment_gateway_reference = payment_reference
         self.save()
         
-        if self.transaction_type == 'subscription':
-            # Create or update user subscription
+        # Use the referral code if applicable
+        if self.referral_code and self.referral_code.is_valid():
+            self.referral_code.use_code()
+        
+        if self.transaction_type in ['subscription', 'renewal']:
             start_date = timezone.now()
             end_date = start_date + timezone.timedelta(days=self.subscription_plan.duration_in_days)
             
-            user_subscription, created = UserSubscription.objects.update_or_create(
+            UserSubscription.objects.update_or_create(
                 user=self.user,
                 defaults={
                     'plan': self.subscription_plan,
-                    'start_date': start_date,
-                    'end_date': end_date,
+                    'start_date': start_date if self.transaction_type == 'subscription' else models.F('start_date'),
+                    'end_date': end_date if self.transaction_type == 'subscription' else models.F('end_date') + timezone.timedelta(days=self.subscription_plan.duration_in_days),
                     'active': True
                 }
             )
-            return user_subscription
-        
-        elif self.transaction_type == 'device':
-            # Upgrade device limit
-            user_subscription = UserSubscription.objects.get(user=self.user)
-            additional_devices = self.metadata.get('additional_devices', 1)
-            user_subscription.upgrade_device_limit(additional_devices)
-            return user_subscription
-        
-        elif self.transaction_type == 'renewal':
-            # Renew existing subscription
-            user_subscription = UserSubscription.objects.get(user=self.user)
-            user_subscription.end_date += timezone.timedelta(days=self.subscription_plan.duration_in_days)
-            user_subscription.active = True
-            user_subscription.save()
-            return user_subscription
-        
-        return None
 
-class UserSubscription(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE,
-        related_name='subscription'
-    )
-    plan = models.ForeignKey(
-        SubscriptionPlan, 
-        on_delete=models.SET_NULL, 
-        null=True
-    )
-    start_date = models.DateTimeField(auto_now_add=True)
-    end_date = models.DateTimeField()
-    active = models.BooleanField(default=True)
-    max_devices = models.IntegerField(
-        default=1,
-        validators=[MinValueValidator(1)],
-        help_text="Maximum number of devices that can access simultaneously"
-    )
-    devices = models.ManyToManyField(Device, blank=True)
-    file_uploads_used = models.IntegerField(default=0)
-    storage_used_mb = models.IntegerField(default=0)
-    
-    def __str__(self):
-        return f'{self.user.username} - {self.plan.name if self.plan else "No Plan"}'
-    
-    def is_active(self):
-        """Check if subscription is currently active"""
-        return self.end_date > timezone.now() and self.active
-    
-    def can_add_device(self):
-        """Check if user can add another device"""
-        return self.devices.count() < self.max_devices
-    
-    def has_storage_space(self, file_size_mb):
-        """Check if user has enough storage space for a file"""
-        return (self.storage_used_mb + file_size_mb) <= (self.plan.storage_limit_mb if self.plan else 0)
-    
-    def can_upload_file(self):
-        """Check if user can upload another file"""
-        return self.file_uploads_used < (self.plan.file_upload_limit if self.plan else 0)
-    
-    def days_remaining(self):
-        """Return number of days remaining in subscription"""
-        if self.is_active():
-            return (self.end_date - timezone.now()).days
-        return 0
-    
-    def upgrade_device_limit(self, additional_devices=1):
-        """Upgrade the number of allowed devices"""
-        self.max_devices += additional_devices
-        self.save()
-    
-    def add_device(self, device_id, device_name=None):
-        """Add a new device to the subscription"""
-        if not self.can_add_device():
-            raise ValueError("Device limit reached")
-        
-        device, created = Device.objects.get_or_create(
-            user=self.user,
-            device_id=device_id,
-            defaults={'device_name': device_name}
-        )
-        self.devices.add(device)
-        return device
+
 
 class InspirationPDF(models.Model):
     title = models.CharField(max_length=200)
@@ -282,6 +385,7 @@ class PDFLike(models.Model):
         pdf = self.pdf
         super().delete(*args, **kwargs)
         pdf.update_likes_count()
+
 
 class Palette(models.Model):
     TYPE_CHOICES = [
@@ -362,6 +466,7 @@ class BaseColor(models.Model):
         return f"{self.name} ({self.red}, {self.green}, {self.blue})"
 
 class PaletteFavorite(models.Model):
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorite_palettes')
     palette = models.ForeignKey(Palette, on_delete=models.CASCADE, related_name='palette_favorites')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -377,3 +482,4 @@ class PaletteFavorite(models.Model):
         palette = self.palette
         super().delete(*args, **kwargs)
         palette.update_favorites_count()
+

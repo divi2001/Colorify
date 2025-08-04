@@ -1,0 +1,75 @@
+<!-- templates/account/email_confirm.html -->
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block head_title %}{% trans "Colorify Studio - Confirm Email" %}{% endblock %}
+
+{% block extra_head %}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#5c6cff",
+                    },
+                },
+            },
+        };
+    </script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white p-8 rounded-3xl shadow-lg">
+            <!-- Logo -->
+            <div class="flex flex-col items-center mb-8">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-orange-400 rotate-45"></div>
+                    <div class="text-xl font-semibold text-gray-800">COLORIFY</div>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="mb-8 text-center">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="text-green-600 mb-2">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Email Confirmation Section -->
+            <div class="text-center">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Confirm Your Email Address</h3>
+                
+                {% if confirmation %}
+                    <p class="text-gray-600 mb-6">
+                        Please confirm that <strong>{{ confirmation.email_address.email }}</strong> is your email address.
+                    </p>
+                    
+                    <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
+                            Confirm Email
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-gray-600 mb-6">
+                        This email confirmation link expired or is invalid. Please 
+                        <a href="{% url 'account_email' %}" class="text-primary hover:underline">issue a new email confirmation request</a>.
+                    </p>
+                {% endif %}
+
+                <p class="text-gray-600 mt-6 text-sm">
+                    If you didn't request this email, please ignore it or contact our support team.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
