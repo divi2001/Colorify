@@ -15247,7 +15247,7 @@ async applyMultipleColorMappings(imageData, colorMappings, useJimp = false) {
       
       // Send to backend endpoint with proper CORS settings
       console.log("Sending request to Jimp backend...");
-      const response = await fetch('http://localhost:3000/api/process-image-with-jimp', {
+      const response = await fetch('http://13.203.1.189:8000/api/process-image-with-jimp', {
         method: 'POST',
         body: formData,
         // No need to set Content-Type with FormData
