@@ -103,7 +103,7 @@ class PreventConcurrentLoginsMiddleware:
             # If current session is not in active sessions
             if current_session_key not in active_sessions:
                 # Check if adding this session would exceed the limit
-                if len(active_sessions) >= max_sessions:
+                if len(active_sessions) >= 3:
                     # Delete the current session
                     Session.objects.filter(session_key=current_session_key).delete()
                     logout(request)

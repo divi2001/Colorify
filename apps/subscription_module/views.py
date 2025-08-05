@@ -41,80 +41,69 @@ def create_favorite_palette(request):
     """
     Handles creation of favorite palettes with source image colors.
     """
-    logger.info("create_favorite_palette: Request received from user %s", request.user.username)
-    
     try:
         data = request.data
-        logger.debug("Raw request data: %s", data)
         
-        # Validate we have colors data
-        if 'colors' not in data:
-            logger.error("Missing 'colors' field in request")
+        print("🔴 FRONTEND SENT - Colors:", data.get('colors'))
+        print("🔴 FRONTEND SENT - Source Colors:", data.get('source_image_colors'))
+        
+        # Get colors and source colors
+        palette_colors_raw = data.get('colors', [])
+        source_colors = data.get('source_image_colors', [])
+        
+        # Convert palette colors from dict format to array format
+        palette_colors = []
+        for color in palette_colors_raw:
+            if isinstance(color, dict):
+                # Handle dict format: {'red': 135, 'green': 138, 'blue': 120}
+                r = color.get('red', 0)
+                g = color.get('green', 0) 
+                b = color.get('blue', 0)
+                palette_colors.append([r, g, b])
+            elif isinstance(color, list) and len(color) >= 3:
+                # Handle array format: [135, 138, 120]
+                palette_colors.append([color[0], color[1], color[2]])
+            else:
+                print(f"🔴 WARNING: Skipping invalid color format: {color}")
+        
+        print("🔴 CONVERTED PALETTE COLORS:", palette_colors)
+        print("🔴 SOURCE COLORS (already arrays):", source_colors)
+        
+        if not palette_colors:
             return Response(
-                {"error": "Missing 'colors' array"},
+                {"error": "No valid colors provided"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Transform colors to consistent format (your existing logic)
-        normalized_colors = []
-        for idx, color in enumerate(data['colors']):
-            try:
-                if isinstance(color, dict):
-                    r = int(color.get('red', 0))
-                    g = int(color.get('green', 0))
-                    b = int(color.get('blue', 0))
-                    normalized_colors.append([r, g, b])
-                elif isinstance(color, list) and len(color) >= 3:
-                    r = int(color[0])
-                    g = int(color[1])
-                    b = int(color[2])
-                    normalized_colors.append([r, g, b])
-                else:
-                    return Response(
-                        {"error": f"Color {idx} must be either [r,g,b] array or {{red,green,blue}} object"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                if not all(0 <= val <= 255 for val in [r, g, b]):
-                    return Response(
-                        {"error": f"RGB values must be 0-255 in color {idx}"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                    
-            except (ValueError, TypeError) as e:
-                return Response(
-                    {"error": f"Invalid color values in color {idx}: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        
-        # Get source image colors from request
-        source_image_colors = data.get('source_image_colors', [])
-        logger.info("Received %d source image colors", len(source_image_colors))
-        
         # Create the palette
-        palette_name = data.get('name', f"Favorite Palette {now().strftime('%Y-%m-%d')}")
-        palette_type = data.get('type', 'TR')
+        palette_name = data.get('name', f"Favorite Palette {now().strftime('%Y-%m-%d %H:%M')}")
         
         palette = Palette.objects.create(
             name=palette_name,
             creator=request.user,
             base_color="Generated",
-            base_color_r=normalized_colors[0][0] if normalized_colors else 255,
-            base_color_g=normalized_colors[0][1] if normalized_colors else 255,
-            base_color_b=normalized_colors[0][2] if normalized_colors else 255,
-            num_colors=len(normalized_colors),
-            type=palette_type,
-            source_image_colors=source_image_colors  # Store the source colors
+            base_color_r=palette_colors[0][0],  # Now accessing array format
+            base_color_g=palette_colors[0][1],
+            base_color_b=palette_colors[0][2],
+            num_colors=len(palette_colors),
+            type=data.get('type', 'TR'),
+            source_image_colors=source_colors  # Store source colors as-is (already arrays)
         )
         
-        # Create color records (your existing logic)
-        for color in normalized_colors:
-            Color.objects.create(
+        print("🔴 STORED IN DB - Source Colors:", palette.source_image_colors)
+        
+        # Create color records
+        created_colors = []
+        for color in palette_colors:
+            color_obj = Color.objects.create(
                 palette=palette,
                 red=color[0],
                 green=color[1],
                 blue=color[2]
             )
+            created_colors.append([color_obj.red, color_obj.green, color_obj.blue])
+        
+        print("🔴 CREATED COLOR OBJECTS:", created_colors)
         
         # Create favorite relationship
         favorite, created = PaletteFavorite.objects.get_or_create(
@@ -124,24 +113,30 @@ def create_favorite_palette(request):
         
         palette.update_favorites_count()
         
-        response_data = {
+        # Verify what we stored immediately
+        retrieved_colors = list(palette.colors.all().values('red', 'green', 'blue'))
+        print("🔴 IMMEDIATELY RETRIEVED FROM DB:", retrieved_colors)
+        
+        return Response({
             'success': True,
             'palette_id': palette.id,
             'favorites_count': palette.favorites_count,
             'is_favorite': True,
-            'message': 'Palette successfully saved to favorites'
-        }
-        
-        logger.info("Successfully created favorite palette %d with %d source colors", 
-                   palette.id, len(source_image_colors))
-        return Response(response_data, status=status.HTTP_201_CREATED)
+            'message': 'Palette successfully saved to favorites',
+            'debug_info': {
+                'stored_source_colors': palette.source_image_colors,
+                'stored_palette_colors': retrieved_colors
+            }
+        }, status=status.HTTP_201_CREATED)
         
     except Exception as e:
-        logger.error("Unexpected error creating favorite palette: %s", str(e), exc_info=True)
+        import traceback
+        print("🔴 FULL ERROR:", traceback.format_exc())
         return Response(
-            {"error": "An unexpected error occurred"},
+            {"error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def remove_favorite_palette(request, palette_id):
@@ -159,22 +154,33 @@ def remove_favorite_palette(request, palette_id):
 def get_favorites(request):
     favorites = PaletteFavorite.objects.filter(user=request.user).select_related('palette')
     
+    print(f"🟡 FOUND {favorites.count()} favorites for user {request.user.username}")
+    
     data = []
     for favorite in favorites:
         palette = favorite.palette
         colors = palette.colors.all().values('red', 'green', 'blue')
+        colors_list = list(colors)
+        
+        print(f"🟡 RETRIEVING - Palette '{palette.name}' (ID: {palette.id})")
+        print(f"🟡 RETRIEVING - Source Colors: {palette.source_image_colors}")
+        print(f"🟡 RETRIEVING - Palette Colors: {colors_list[:3]}... (showing first 3)")
+        print(f"🟡 RETRIEVING - Total colors: {len(colors_list)}")
         
         data.append({
             'id': palette.id,
             'name': palette.name,
             'type': palette.type,
             'favorites_count': palette.favorites_count,
-            'source_image_colors': palette.source_image_colors,  # ADD THIS LINE
-            'colors': list(colors)
+            'source_image_colors': palette.source_image_colors,
+            'colors': colors_list
         })
     
+    print(f"🟡 SENDING TO FRONTEND: {len(data)} palettes")
+    if data:
+        print(f"🟡 FIRST PALETTE PREVIEW: {data[0]['name']} with {len(data[0]['colors'])} colors")
+    
     return Response(data)
-
 
 @require_POST
 @staff_member_required
