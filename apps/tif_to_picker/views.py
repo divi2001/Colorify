@@ -1046,10 +1046,9 @@ def is_color_fill_layer(layer):
         return False
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
-
-def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=4000, optimize=True, model_path="resnet50_model_scripted.pt"):
+def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=4000, optimize=True):
     """
-    Extract and compress layers from image files, with optional ML labeling.
+    Extract and compress layers from image files.
     
     Parameters:
     file_path (str): Path to input image file (TIFF, JPEG, PNG)
@@ -1058,7 +1057,6 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
     quality (int): Compression quality (1-100) for JPEG/WEBP
     max_dimension (int): Maximum dimension for width/height (maintains aspect ratio)
     optimize (bool): Apply additional optimization
-    model_path (str): Path to the ML model for labeling (optional)
     """
     import tifffile
     from PIL import Image, ExifTags
@@ -1068,32 +1066,9 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
     import piexif
     from PIL.Image import Resampling
     import json
-    import torch
-    import torchvision.transforms as transforms
-    import numpy as np
     import struct
     from fractions import Fraction
 
-    # Initialize ML model if path is provided
-    ml_model = None
-    if model_path and os.path.exists(model_path):
-        try:
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            ml_model = torch.jit.load(model_path, map_location=device)
-            ml_model.eval()
-            
-            # Define the same transforms used during model training (for inference)
-            inference_transforms = transforms.Compose([
-                transforms.Resize((1000, 1000)),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
-            
-            print(f"ML model loaded from {model_path}")
-        except Exception as e:
-            print(f"Error loading ML model: {str(e)}")
-            ml_model = None
-    
     # Increase PIL's maximum image size limit
     Image.MAX_IMAGE_PIXELS = None  # Disable the decompression bomb warning
     
@@ -1268,25 +1243,6 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             print(f"Error getting physical size from TIFF page: {str(e)}")
             return default_dpi, None
     
-    def predict_label(image):
-        """Get ML prediction for an image"""
-        if ml_model is None:
-            return None
-        
-        try:
-            # Apply the same preprocessing as during training
-            img_tensor = inference_transforms(image).unsqueeze(0).to(device)
-            
-            # Get prediction
-            with torch.no_grad():
-                outputs = ml_model(img_tensor)
-                _, predicted = torch.max(outputs, 1)
-                
-            return predicted.item()
-        except Exception as e:
-            print(f"Error during prediction: {str(e)}")
-            return None
-    
     def compress_and_save_image(image_array, output_path, original_size=None, dpi=(300, 300), physical_size_inches=None):
         try:
             # Convert numpy array to PIL Image
@@ -1327,8 +1283,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
             # Store original dimensions to return
             original_dimensions = (orig_width, orig_height)
             
-            # Run ML prediction on original image
-            ml_label = predict_label(img) if ml_model is not None else None
+            # Set ML label to 1 (hardcoded)
+            ml_label = 1
 
             # Resize if max_dimension is specified and image exceeds it
             resized = False
@@ -1479,12 +1435,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                     'dpi_y': dpi[1],
                     'physical_width_inches': physical_width_inches,
                     'physical_height_inches': physical_height_inches,
+                    'ml_label': ml_label
                 }
-                
-                # Add ML prediction if available
-                if ml_label is not None:
-                    metadata['ml_label'] = int(ml_label)
-                    print(f"ML prediction for {os.path.basename(output_path)}: {ml_label}")
                 
                 with open(metadata_path, 'w') as metadata_file:
                     json.dump(metadata, metadata_file)
@@ -1622,12 +1574,9 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_
                             'dpi_x': dpi[0],
                             'dpi_y': dpi[1],
                             'physical_width_inches': physical_width_inches,
-                            'physical_height_inches': physical_height_inches
+                            'physical_height_inches': physical_height_inches,
+                            'ml_label': ml_label
                         }
-                        
-                        # Add ML label if available
-                        if ml_label is not None:
-                            layer_info['ml_label'] = ml_label
                         
                         layers_info.append(layer_info)
                         
