@@ -81,7 +81,9 @@ function loadMockups() {
     fetch('/tif-editor/api/mockups/')
         .then(response => response.json())
         .then(data => {
+            console.log('API Response:', data); // Debug log
             if (data.success) {
+                console.log('Mockups data:', data.mockups); // Debug log
                 renderMockups(data.mockups);
             } else {
                 console.error('Error loading mockups:', data.error);
@@ -94,7 +96,6 @@ function loadMockups() {
         });
 }
 
-// Function to render mockups in the UI
 function renderMockups(mockups) {
     const mockupsGrid = document.querySelector('.mockups-grid');
     
@@ -113,18 +114,31 @@ function renderMockups(mockups) {
     
     // Create mockup items
     mockups.forEach(mockup => {
+        console.log('Processing mockup:', mockup); // Debug log
+        
         const mockupItem = document.createElement('div');
         mockupItem.className = 'mockup-item';
         mockupItem.dataset.mockupId = mockup.id;
         
-        // Create data URL from base64 data
         let imageSrc = '/static/images/placeholder.png'; // fallback
-        if (mockup.image_data && mockup.image_type) {
+        
+        // Check what type of image data we have
+        if (mockup.image_url) {
+            console.log('Using image_url:', mockup.image_url);
+            imageSrc = mockup.image_url;
+        } else if (mockup.image_data && mockup.image_type) {
+            console.log('Using base64 data, type:', mockup.image_type);
             imageSrc = `data:${mockup.image_type};base64,${mockup.image_data}`;
+        } else {
+            console.log('No image data found for mockup:', mockup.id);
         }
         
+        console.log('Final image src:', imageSrc);
+        
         mockupItem.innerHTML = `
-            <img src="${imageSrc}" alt="${mockup.name}" onerror="this.src='/static/images/placeholder.png'">
+            <img src="${imageSrc}" alt="${mockup.name}" 
+                 onload="console.log('Image loaded successfully:', '${mockup.name}')"
+                 onerror="console.error('Image failed to load:', '${mockup.name}', this.src); this.src='/static/images/placeholder.png'">
             <div class="mockup-info">
                 <span class="mockup-name">${mockup.name}</span>
                 <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
@@ -134,7 +148,6 @@ function renderMockups(mockups) {
         mockupsGrid.appendChild(mockupItem);
     });
 }
-
 // Updated apply mockup function
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('apply-mockup-btn')) {
