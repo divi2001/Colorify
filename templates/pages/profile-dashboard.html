@@ -160,13 +160,13 @@
                   tabindex="-1"
                 >
         
-                  <a
+                  {% comment %} <a
                     href="#"
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                     tabindex="-1"
                     >Settings</a
-                  >
+                  > {% endcomment %}
                   <a
                     href="{% url 'account_logout' %}"
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
