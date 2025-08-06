@@ -765,9 +765,11 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
-          <div class="flex items-center gap-3 animate-fade-in-left">
-            <img src="./static/images/logo.png" alt="Colorify Logo" width="70px" height="70px" />
-          </div>
+<div class="flex items-center gap-3 animate-fade-in-left">
+  <a href="{% url 'home' %}">
+    <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
+  </a>
+</div>
 
           <!-- Navigation Links -->
           <div class="hidden md:flex items-center gap-8 animate-fade-in-up ">

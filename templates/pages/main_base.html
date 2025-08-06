@@ -603,7 +603,7 @@
       display: none;
       align-items: baseline;
       opacity: 0;
-      transition: opacity 0.3s ease-in-out;
+      transition: opacity 0.5s ease-in-out;
     }
 
     .image-pair-landing.active {
@@ -765,7 +765,9 @@
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
           <div class="flex items-center gap-3 animate-fade-in-left">
-            <img src="./static/images/logo.png" alt="Colorify Logo" width="70px" height="70px" />
+            <a href="{% url 'home' %}">
+              <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
+            </a>
           </div>
 
           <!-- Navigation Links -->
@@ -862,14 +864,11 @@
                 class="w-[500px] h-96 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl flex flex-col items-center justify-center text-slate-500 border border-slate-200 shadow-2xl overflow-hidden p-8">
                 <!-- Animation Content -->
                 <div class="funky-text-landing">
-                  <span class="line1" style="    position: absolute;
-                  left: -120%;
-                  top: 95%;">
+                  <span class="line1" style="position: absolute; left: -120%; top: 95%;">
                     Select Palette
                     <img style="margin-left: 30px;" width="50px" height="50px" src="./static/images/arrow.svg" alt="arrow" />
                   </span>
-                  <span class="line2" style="    position: relative;
-    left: 70%;">
+                  <span class="line2" style="position: relative; left: 70%;">
                     Instant Result
                     <img style="margin-left: 30px;" width="50px" height="50px" src="./static/images/arrow.svg" alt="arrow" />
                   </span>
@@ -940,48 +939,6 @@
             style="animation-delay: 0.5s">
             <div class="w-full h-full rounded-[80px] bg-gradient-secondary opacity-20"></div>
           </div>
-
-          <!-- Enhanced Video Player -->
-          <!-- <div
-              class="relative z-10 rounded-3xl overflow-hidden border border-slate-200/50 p-6 bg-white/80 backdrop-blur-sm shadow-2xl hover-lift"
-            >
-              <div class="relative aspect-[16/9] w-full">
-                <video
-                  id="myVideo1"
-                  class="w-full h-full object-cover rounded-2xl shadow-lg"
-                  poster=""
-                >
-                  <source
-                    src="./static/images/Venice_10.mp4"
-                    type="video/mp4"
-                  />
-                  Your browser does not support the video tag.
-                </video>
-                <div class="absolute inset-0 flex items-center justify-center">
-                  <button
-                    id="playPauseButton1"
-                    class="w-20 h-20 bg-white/95 rounded-full flex items-center justify-center shadow-2xl hover:bg-white hover:scale-110 transition-all duration-300"
-                  >
-                    <svg
-                      id="playIcon1"
-                      class="w-10 h-10 ml-1"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <path d="M8 5v14l11-7z" fill="#667eea" />
-                    </svg>
-                    <svg
-                      id="pauseIcon1"
-                      class="w-10 h-10 hidden"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="#667eea" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div> -->
         </div>
       </div>
     </div>
@@ -1021,7 +978,6 @@
           <h2 class="figma-text-5xl mb-6">
             Empowering the Future of Color Matching with
             <div class="text-gradient-orange mt-2">
-              <!-- <span>Digital</span> -->
               <span class="relative ml-2">
                 <span class="text-gradient-orange">AI</span>
                 <svg class="absolute -bottom-6 right-0 w-40 h-8" viewBox="0 0 1200 100">
@@ -1032,7 +988,7 @@
           </h2>
           <p class="figma-text-lg text-slate-600 mb-8">
             We help the textile and print industry achieve flawless color accuracy. Our AI-powered platform removes
-            guesswork and delivers perfect matches in one click—saving time, reducing errors, and cutting costs
+            guesswork and delivers perfect matches in one click--saving time, reducing errors, and cutting costs
           </p>
           <button class="btn-primary text-white px-8 py-4 rounded-2xl font-light shadow-xl hover-lift">
             Know more
@@ -1083,7 +1039,7 @@
           </div>
           <h3 class="figma-text-2xl text-slate-800 mb-4">One-Click Color Matching</h3>
           <p class="figma-text-base text-slate-600">
-            Generate accurate color matches instantly—no manual adjustments, no guesswork.
+            Generate accurate color matches instantly--no manual adjustments, no guesswork.
           </p>
         </div>
 
@@ -1142,7 +1098,7 @@
           </div>
           <h3 class="figma-text-2xl mb-4">Built for Professionals</h3>
           <p class="figma-text-base text-white/90">
-            Tailored for digital print units, mills, and design studios—optimized for high-volume production.
+            Tailored for digital print units, mills, and design studios--optimized for high-volume production.
           </p>
         </div>
 
@@ -1167,7 +1123,6 @@
 
   <!-- Why Subscribe Section (Figma-style blue background) -->
   <section class="py-10 md:py-20 px-4 md:px-8 lg:px-20 scroll-reveal" style="background-color: #F2ECF8">
-    <!--  style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
         <!-- Left Content -->
@@ -1307,7 +1262,7 @@
           Ready to Simplify Color Matching?
         </h1>
         <p class="figma-text-lg md:figma-text-xl lg:figma-text-2xl text-white/90 mb-6 md:mb-10 max-w-3xl mx-auto">
-          Start designing faster, smarter, and with perfect color accuracy—no guesswork, no delays.
+          Start designing faster, smarter, and with perfect color accuracy--no guesswork, no delays.
         </p>
         <button
           class="bg-white text-slate-800 px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 rounded-xl md:rounded-2xl figma-text-base md:figma-text-lg hover:bg-slate-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
@@ -1322,7 +1277,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center">
         <p class="figma-text-lg">
-          <spa style="font-size: 30px;">Eliminate costly color mismatches in textile printing </span> <br> <span
+          <span style="font-size: 30px;">Eliminate costly color mismatches in textile printing </span> <br> <span
               style="font-size: 30px;font-weight: bold;"> 10x faster, 100% accurate,
               and AI-driven</span>
         </p>
@@ -1330,41 +1285,6 @@
 
     </div>
   </section>
-
-  <!-- Stats Section (Figma-style colorful background) -->
-  <!-- <section class="section-figma-purple py-20 scroll-reveal">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <h2 class="figma-text-5xl text-white mb-6">
-          Powering creativity worldwide
-        </h2>
-        <p class="figma-text-xl text-white/90 max-w-3xl mx-auto">
-          Join thousands of designers who trust Colorify to bring their
-          visions to life
-        </p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div class="text-center">
-          <div class="figma-text-6xl text-white mb-2">50K+</div>
-          <div class="figma-text-lg text-white/80">Active Designers</div>
-        </div>
-        <div class="text-center">
-          <div class="figma-text-6xl text-white mb-2">2M+</div>
-          <div class="figma-text-lg text-white/80">
-            Color Palettes Generated
-          </div>
-        </div>
-        <div class="text-center">
-          <div class="figma-text-6xl text-white mb-2">99.9%</div>
-          <div class="figma-text-lg text-white/80">Uptime Reliability</div>
-        </div>
-        <div class="text-center">
-          <div class="figma-text-6xl text-white mb-2">150+</div>
-          <div class="figma-text-lg text-white/80">Countries Served</div>
-        </div>
-      </div>
-    </div>
-  </section> -->
 
   <!-- Testimonials Section -->
   <section class="py-24 scroll-reveal" style="background-color: #FFFBE6;">
@@ -1465,7 +1385,7 @@
               </svg>
             </div>
             <p class="figma-text-base text-slate-700 leading-relaxed">
-              “It’s like having a color expert on-call—our design flow has never been smoother.”
+              "It's like having a color expert on-call--our design flow has never been smoother."
             </p>
           </div>
 
@@ -1509,7 +1429,7 @@
               </svg>
             </div>
             <p class="figma-text-base text-slate-700 leading-relaxed">
-              “We finally stopped struggling with color consistency across print batches.”
+              "We finally stopped struggling with color consistency across print batches."
             </p>
           </div>
 
@@ -1553,7 +1473,7 @@
               </svg>
             </div>
             <p class="figma-text-base text-slate-700 leading-relaxed">
-              “One-click matching is not a gimmick—it’s become an everyday essential for us.”
+              "One-click matching is not a gimmick--it's become an everyday essential for us."
             </p>
           </div>
 
@@ -1597,7 +1517,7 @@
               </svg>
             </div>
             <p class="figma-text-base text-slate-700 leading-relaxed">
-              “Colorify Studio helped us reduce rejections and improve delivery speed.”
+              "Colorify Studio helped us reduce rejections and improve delivery speed."
             </p>
           </div>
 
@@ -1641,7 +1561,7 @@
               </svg>
             </div>
             <p class="figma-text-base text-slate-700 leading-relaxed">
-              “The AI suggestions are spot on—our clients love the new color options.”
+              "The AI suggestions are spot on--our clients love the new color options."
             </p>
           </div>
 
@@ -1744,17 +1664,17 @@
  {% endblock %}
 
   <!-- Enhanced Footer -->
-  <!-- bg-gradient-to-br from-slate-50 to-slate-100 -->
   <footer class="py-16 mt-20"
     style="background-color:#222831; color: white !important;">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
         <!-- Brand -->
         <div class="space-y-6">
-          <div class="flex items-center gap-3">
-            <img src="./static/images/logo.png" alt="Colorify Logo" width="70px" height="70px" />
-            <span class="font-light text-2xl text-white">COLORIFY</span>
-          </div>
+        <div class="flex items-center gap-3 animate-fade-in-left">
+          <a href="{% url 'home' %}">
+            <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
+          </a>
+        </div>
           <p class="text-white/90 leading-relaxed">
             Revolutionizing design with AI-powered color intelligence. <br />
             <span class="font-light text-white">Helping you paint better!</span>
@@ -1827,37 +1747,12 @@
           </div>
         </div>
         <div class="flex gap-3 mt-6 md:mt-0">
-          <!-- Instagram Icon -->
-          <!-- <a href="#"
-            class="w-10 h-10 bg-gradient-primary text-white rounded-xl flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-md">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-            </svg>
-          </a> -->
-          <!-- Facebook Icon -->
-          <!-- <a href="#"
-            class="w-10 h-10 bg-gradient-secondary text-white rounded-xl flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-md">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z" />
-            </svg>
-          </a> -->
-          <!-- Pinterest Icon -->
-          <!-- <a href="#"
-            class="w-10 h-10 bg-gradient-tertiary text-white rounded-xl flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-md">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12" />
-            </svg>
-          </a> -->
         </div>
       </div>
     </div>
   </footer>
  
   {% block extra_js %}{% endblock %}
-
   <script>
     // Function to create video controls
     function setupVideoControls(videoId, buttonId, playIconId, pauseIconId) {
@@ -1920,23 +1815,14 @@
       }
     }
 
-    // Setup controls for both videos
-    setupVideoControls(
-      "myVideo1",
-      "playPauseButton1",
-      "playIcon1",
-      "pauseIcon1"
-    );
+    // Setup controls for videos
     setupVideoControls(
       "myVideo2",
       "playPauseButton2",
       "playIcon2",
       "pauseIcon2"
     );
-  </script>
 
-  <!-- Enhanced JavaScript for Modern Interactions -->
-  <script>
     // Mobile menu functionality
     const mobileMenuButton = document.getElementById("mobile-menu-button");
     const mobileMenu = document.getElementById("mobile-menu");
@@ -2041,42 +1927,6 @@
       }
     }
 
-    // Initialize all functions
-    document.addEventListener("DOMContentLoaded", function () {
-      initLoadingAnimations();
-      initButtonEffects();
-      initCardTilt();
-      initPaletteAnimation(); // Initialize palette animation
-
-      // Set up event listeners
-      window.addEventListener("scroll", () => {
-        revealOnScroll();
-        updateParallax();
-        updateNavbar();
-      });
-
-      // Initial calls
-      revealOnScroll();
-      updateNavbar();
-    });
-
-    // Performance optimization for scroll events
-    let ticking = false;
-
-    function requestTick() {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          updateParallax();
-          revealOnScroll();
-          updateNavbar();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    }
-
-    window.addEventListener("scroll", requestTick);
-
     // Palette Animation JavaScript
     function initPaletteAnimation() {
       let currentPair = 0;
@@ -2086,34 +1936,21 @@
       if (totalPairs === 0) return; // Exit if no image pairs found
 
       function switchToNextPair() {
+        // Remove active class from current pair
         imagePairs[currentPair].classList.remove('active');
+        
+        // Move to next pair (loop back to 0 when reaching the end)
         currentPair = (currentPair + 1) % totalPairs;
+        
+        // Add active class to new current pair
         imagePairs[currentPair].classList.add('active');
       }
 
-      // Start animation after a delay
+      // Start animation after page loads
       setTimeout(() => {
-        const intervalId = setInterval(switchToNextPair, 500);
-
-        // Optional: Stop animation when element is not visible
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (!entry.isIntersecting) {
-              // clearInterval(intervalId); // Uncomment to pause when not visible
-            }
-          });
-        });
-
-        const container = document.querySelector('.main-animation-container-landing');
-        if (container) {
-          observer.observe(container);
-        }
-      }, 900);
+        setInterval(switchToNextPair, 800); // Change image every 800ms
+      }, 1000); // Start after 1 second
     }
-  </script>
-</body>
-
-</html>
 
     // Initialize all functions
     document.addEventListener("DOMContentLoaded", function () {
@@ -2150,40 +1987,6 @@
     }
 
     window.addEventListener("scroll", requestTick);
-
-    // Palette Animation JavaScript
-    function initPaletteAnimation() {
-      let currentPair = 0;
-      const imagePairs = document.querySelectorAll('.image-pair-landing');
-      const totalPairs = imagePairs.length;
-
-      if (totalPairs === 0) return; // Exit if no image pairs found
-
-      function switchToNextPair() {
-        imagePairs[currentPair].classList.remove('active');
-        currentPair = (currentPair + 1) % totalPairs;
-        imagePairs[currentPair].classList.add('active');
-      }
-
-      // Start animation after a delay
-      setTimeout(() => {
-        const intervalId = setInterval(switchToNextPair, 500);
-
-        // Optional: Stop animation when element is not visible
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (!entry.isIntersecting) {
-              // clearInterval(intervalId); // Uncomment to pause when not visible
-            }
-          });
-        });
-
-        const container = document.querySelector('.main-animation-container-landing');
-        if (container) {
-          observer.observe(container);
-        }
-      }, 900);
-    }
   </script>
 </body>
 
