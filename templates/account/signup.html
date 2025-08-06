@@ -104,6 +104,7 @@
                                 required
                                 value="{{ form.username.value|default:'' }}"
                             />
+                            <!-- Server-side errors -->
                             {% if form.username.errors %}
                                 <div class="mt-2 text-sm text-red-600">
                                     {% for error in form.username.errors %}
@@ -111,6 +112,8 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <!-- Client-side error container -->
+                            <div id="username-error" class="mt-2 text-sm text-red-600 hidden"></div>
                         </div>
 
                         <!-- First Name Field -->
@@ -124,6 +127,7 @@
                                 required
                                 value="{{ form.first_name.value|default:'' }}"
                             />
+                            <!-- Server-side errors -->
                             {% if form.first_name.errors %}
                                 <div class="mt-2 text-sm text-red-600">
                                     {% for error in form.first_name.errors %}
@@ -131,6 +135,8 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <!-- Client-side error container -->
+                            <div id="first_name-error" class="mt-2 text-sm text-red-600 hidden"></div>
                         </div>
 
                         <!-- Last Name Field -->
@@ -144,6 +150,7 @@
                                 required
                                 value="{{ form.last_name.value|default:'' }}"
                             />
+                            <!-- Server-side errors -->
                             {% if form.last_name.errors %}
                                 <div class="mt-2 text-sm text-red-600">
                                     {% for error in form.last_name.errors %}
@@ -151,6 +158,8 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <!-- Client-side error container -->
+                            <div id="last_name-error" class="mt-2 text-sm text-red-600 hidden"></div>
                         </div>
 
                         <!-- Email Field -->
@@ -164,6 +173,7 @@
                                 required
                                 value="{{ form.email.value|default:'' }}"
                             />
+                            <!-- Server-side errors -->
                             {% if form.email.errors %}
                                 <div class="mt-2 text-sm text-red-600">
                                     {% for error in form.email.errors %}
@@ -171,6 +181,8 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <!-- Client-side error container -->
+                            <div id="email-error" class="mt-2 text-sm text-red-600 hidden"></div>
                         </div>
 
                         <!-- Password Field -->
@@ -183,6 +195,7 @@
                                 class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.password1.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
                                 required
                             />
+                            <!-- Server-side errors -->
                             {% if form.password1.errors %}
                                 <div class="mt-2 text-sm text-red-600">
                                     {% for error in form.password1.errors %}
@@ -190,6 +203,8 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <!-- Client-side error container -->
+                            <div id="password1-error" class="mt-2 text-sm text-red-600 hidden"></div>
                             <!-- Password requirements -->
                             <div class="mt-2 text-xs text-gray-500">
                                 Password must contain at least 8 characters with uppercase, lowercase, number, and special character.
@@ -206,6 +221,7 @@
                                 class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.password2.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
                                 required
                             />
+                            <!-- Server-side errors -->
                             {% if form.password2.errors %}
                                 <div class="mt-2 text-sm text-red-600">
                                     {% for error in form.password2.errors %}
@@ -213,6 +229,8 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <!-- Client-side error container -->
+                            <div id="password2-error" class="mt-2 text-sm text-red-600 hidden"></div>
                         </div>
                     </div>
 
