@@ -54,6 +54,12 @@ logger = logging.getLogger(__name__)
 
 from .models import Mockup
 
+import base64
+import os
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.conf import settings
+
 @require_http_methods(["GET"])
 def get_mockups_api(request):
     try:
@@ -62,13 +68,39 @@ def get_mockups_api(request):
         
         mockups_data = []
         for mockup in mockups:
-            mockups_data.append({
+            mockup_data = {
                 'id': mockup.id,
                 'name': mockup.name,
-                'image_url': mockup.image.url if mockup.image else None,
                 'description': mockup.description,
                 'created_at': mockup.created_at.isoformat(),
-            })
+                'image_data': None,
+                'image_type': None
+            }
+            
+            # Convert image to base64 if it exists
+            if mockup.image:
+                try:
+                    image_path = mockup.image.path
+                    if os.path.exists(image_path):
+                        with open(image_path, 'rb') as image_file:
+                            image_data = base64.b64encode(image_file.read()).decode('utf-8')
+                            
+                        # Get file extension to determine MIME type
+                        file_extension = os.path.splitext(image_path)[1].lower()
+                        mime_types = {
+                            '.jpg': 'image/jpeg',
+                            '.jpeg': 'image/jpeg',
+                            '.png': 'image/png',
+                            '.gif': 'image/gif',
+                            '.webp': 'image/webp'
+                        }
+                        
+                        mockup_data['image_data'] = image_data
+                        mockup_data['image_type'] = mime_types.get(file_extension, 'image/jpeg')
+                except Exception as img_error:
+                    print(f"Error processing image for mockup {mockup.id}: {img_error}")
+            
+            mockups_data.append(mockup_data)
         
         return JsonResponse({
             'success': True,

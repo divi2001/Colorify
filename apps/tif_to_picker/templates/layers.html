@@ -117,8 +117,14 @@ function renderMockups(mockups) {
         mockupItem.className = 'mockup-item';
         mockupItem.dataset.mockupId = mockup.id;
         
+        // Create data URL from base64 data
+        let imageSrc = '/static/images/placeholder.png'; // fallback
+        if (mockup.image_data && mockup.image_type) {
+            imageSrc = `data:${mockup.image_type};base64,${mockup.image_data}`;
+        }
+        
         mockupItem.innerHTML = `
-            <img src="${mockup.image_url}" alt="${mockup.name}" onerror="this.src='/static/images/placeholder.png'">
+            <img src="${imageSrc}" alt="${mockup.name}" onerror="this.src='/static/images/placeholder.png'">
             <div class="mockup-info">
                 <span class="mockup-name">${mockup.name}</span>
                 <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
@@ -128,6 +134,21 @@ function renderMockups(mockups) {
         mockupsGrid.appendChild(mockupItem);
     });
 }
+
+// Updated apply mockup function
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('apply-mockup-btn')) {
+        e.preventDefault();
+        
+        const mockupItem = e.target.closest('.mockup-item');
+        const mockupId = mockupItem.dataset.mockupId;
+        const mockupName = mockupItem.querySelector('.mockup-name').textContent;
+        const mockupImg = mockupItem.querySelector('img');
+        const mockupDataUrl = mockupImg.src; // This will be the data URL
+        
+        applyMockupOverlay(mockupId, mockupDataUrl, mockupName);
+    }
+});
 
 // Updated DOMContentLoaded event
 document.addEventListener('DOMContentLoaded', function() {

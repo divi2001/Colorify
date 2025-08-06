@@ -189,7 +189,7 @@
 
       <div class="flex">
         <!-- Sidebar -->
-        <div
+        {% comment %} <div
           class="w-16 bg-white shadow-md hidden flex-col items-center py-4 space-y-6 rounded-xl h-screen mt-8 md:flex"
         >
           <button class="p-2 rounded-lg hover:bg-gray-100">
@@ -227,7 +227,7 @@
           </button>
 
           <!-- Add more sidebar icons here -->
-        </div>
+        </div> {% endcomment %}
 
         <!-- Main Content -->
         <div class="flex-1 p-8">
@@ -708,7 +708,7 @@
             </div>
 
             <!-- Favourite Inspirations -->
-            <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-2">
+            {% comment %} <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-2">
               <h2 class="text-xl font-semibold mb-4">Favourite Inspirations</h2>
               <div class="grid grid-cols-3 gap-4">
                 <div class="h-24 rounded-lg overflow-hidden">
@@ -754,10 +754,10 @@
                   />
                 </div>
               </div>
-            </div>
+            </div> {% endcomment %}
 
             <!-- Favorite Palette -->
-            <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-3">
+            {% comment %} <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-3">
               <h2 class="text-xl font-semibold mb-4">Favorite Palette</h2>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="">
@@ -788,7 +788,7 @@
                     class="w-full h-full object-cover rounded-lg"
                   />
                 </div>
-              </div>
+              </div> {% endcomment %}
             </div>
           </div>
         </div>
