@@ -1,0 +1,2116 @@
+<!-- templates/pages/home.html -->
+<!-- templates/pages/main_base.html  -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Colorify - Home</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts - Inter (similar to Figma's typography) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    * {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      align-items: flex-start;
+      overflow-x: hidden;
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="black" viewBox="0 0 16 16"><path d="M14.082 2.182a.5.5 0 0 1 .103.557L8.528 15.467a.5.5 0 0 1-.917-.007L5.57 10.694.803 8.652a.5.5 0 0 1-.006-.916l12.728-5.657a.5.5 0 0 1 .556.103zM2.25 8.184l3.897 1.67a.5.5 0 0 1 .262.263l1.67 3.897L12.743 3.52z"/></svg>') 16 16, auto;
+    }
+
+    .mobile-menu {
+      display: none;
+      transition: all 0.3s ease;
+    }
+
+    .mobile-menu.active {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .animate-fade-in-left {
+      animation: fadeInLeft 0.8s ease forwards;
+    }
+
+    .animate-fade-in-right {
+      animation: fadeInRight 0.8s ease forwards;
+    }
+
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .animate-pulse-slow {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    /* Hover Animations */
+    .hover-scale {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-scale:hover {
+      transform: scale(1.05);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .hover-lift:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Button Animations */
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .btn-secondary:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+    }
+
+    /* Card Animations */
+    .feature-card {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+
+    .feature-card:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      border-color: rgba(102, 126, 234, 0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+
+    .feature-card:hover h3,
+    .feature-card:hover p {
+      color: #ffffff !important;
+    }
+
+    .feature-card-primary {
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      color: #1e293b;
+    }
+
+    .feature-card-primary:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      border-color: rgba(102, 126, 234, 0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      transform: translateY(-8px) scale(1.02);
+    }
+
+    .feature-card-primary h3,
+    .feature-card-primary p {
+      color: #1e293b;
+    }
+
+    .feature-card-primary:hover h3,
+    .feature-card-primary:hover p {
+      color: #ffffff !important;
+    }
+
+
+    /* Text Animations */
+    .text-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .text-gradient-orange {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .custom-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.3);
+      outline: none;
+      margin: 20px 0;
+    }
+
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .custom-slider-dark {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .custom-slider-dark::-webkit-slider-thumb {
+      background: #667eea;
+    }
+
+    #myVideo,
+    #myVideo * {
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+
+    /* Loading animations */
+    .fade-in {
+      opacity: 0;
+      animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .fade-in-delay-1 {
+      animation-delay: 0.1s;
+    }
+
+    .fade-in-delay-2 {
+      animation-delay: 0.2s;
+    }
+
+    .fade-in-delay-3 {
+      animation-delay: 0.3s;
+    }
+
+    .fade-in-delay-4 {
+      animation-delay: 0.4s;
+    }
+
+    /* Scroll reveal */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s ease;
+    }
+
+    .scroll-reveal.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Gradient backgrounds */
+    .bg-gradient-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .bg-gradient-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .bg-gradient-tertiary {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    /* Figma-style font weights and typography - Ultra thin */
+    .figma-text-sm {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.5;
+    }
+
+    .figma-text-base {
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.5;
+    }
+
+    .figma-text-lg {
+      font-size: 18px;
+      font-weight: 300;
+      line-height: 1.4;
+    }
+
+    .figma-text-xl {
+      font-size: 20px;
+      font-weight: 300;
+      line-height: 1.4;
+    }
+
+    .figma-text-2xl {
+      font-size: 24px;
+      font-weight: 300;
+      line-height: 1.33;
+    }
+
+    .figma-text-3xl {
+      font-size: 30px;
+      font-weight: 300;
+      line-height: 1.2;
+    }
+
+    .figma-text-4xl {
+      font-size: 36px;
+      font-weight: 300;
+      line-height: 1.1;
+    }
+
+    .figma-text-5xl {
+      font-size: 48px;
+      font-weight: 300;
+      line-height: 1.1;
+    }
+
+    .figma-text-6xl {
+      font-size: 60px;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    /* Hero text - Figma style massive bold headlines */
+    .figma-hero {
+      font-size: 55px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    @media (max-width: 768px) {
+      .figma-hero {
+        font-size: 48px;
+        line-height: 1;
+      }
+    }
+
+    /* Solid background sections like Figma */
+    .section-solid-light {
+      background: #feffc7;
+      border-top: 1px solid rgba(226, 232, 240, 0.8);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .section-solid-dark {
+      background: #1e293b;
+      color: white;
+    }
+
+    .section-solid-purple {
+      background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+      color: white;
+    }
+
+    .section-solid-blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+    }
+
+    .section-solid-green {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .section-solid-gray {
+      background: #f1f5f9;
+      border-top: 1px solid rgba(203, 213, 225, 0.6);
+      border-bottom: 1px solid rgba(203, 213, 225, 0.6);
+    }
+
+    .section-figma-purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+      color: white;
+    }
+
+    .section-figma-green {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+    }
+
+    /* Testimonial card styles */
+    .testimonial-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Scrollable testimonial container */
+    .testimonial-scroll-container {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* IE and Edge */
+    }
+
+    .testimonial-scroll-container::-webkit-scrollbar {
+      display: none;
+      /* Chrome, Safari, Opera */
+    }
+
+    .testimonial-scroll-wrapper {
+      display: flex;
+      gap: 24px;
+      padding: 20px 0;
+      animation: scrollTestimonials 30s linear infinite;
+      width: max-content;
+    }
+
+    .testimonial-scroll-wrapper:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes scrollTestimonials {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-33.33%);
+      }
+    }
+
+    .testimonial-card-scroll {
+      min-width: 350px;
+      max-width: 350px;
+      flex-shrink: 0;
+    }
+
+    /* Pricing card styles */
+    .pricing-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transition: all 0.4s ease;
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .pricing-card.featured {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .pricing-card.featured:hover {
+      transform: scale(1.08) translateY(-8px);
+    }
+
+    /* Company logo grid */
+    .company-logo {
+      opacity: 0.6;
+      transition: opacity 0.3s ease;
+      filter: grayscale(100%);
+    }
+
+    .company-logo:hover {
+      opacity: 1;
+      filter: grayscale(0%);
+    }
+
+    h2 {
+      font-family: var(--f-font-sans,
+          "__figmaSans_a26a19",
+          "__figmaSans_Fallback_a26a19",
+          SF Pro Display,
+          system-ui,
+          helvetica,
+          sans-serif);
+    }
+
+    /* Palette Animation Styles */
+    .funky-text-landing {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 18px;
+      font-weight: 300;
+      color: #000000;
+      text-align: left;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: gentleBounce 3s ease-in-out infinite;
+    }
+
+    .funky-text-landing:hover {
+      transform: scale(1.05) translateY(-2px);
+      color: #333333;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+      animation: hoverBounce 0.6s ease-in-out infinite;
+    }
+
+    .funky-text-landing .line1,
+    .funky-text-landing .line2 {
+      display: block;
+      line-height: 1.2;
+      transition: transform 0.2s ease;
+    }
+
+    .funky-text-landing .line2 {
+      font-size: 18px;
+      margin-top: 1px;
+    }
+
+    .funky-text-landing:hover .line1 {
+      transform: translateX(-2px);
+    }
+
+    .funky-text-landing:hover .line2 {
+      transform: translateX(2px);
+    }
+
+    .main-animation-container-landing {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      flex-wrap: nowrap;
+      width: 100%;
+      max-width: 550px;
+    }
+
+    .image-pair-landing {
+      display: none;
+      align-items: baseline;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .image-pair-landing.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .animation-left-cnt-landing {
+      border: 8px solid black;
+      border-right: 0;
+      border-top-left-radius: 15px;
+      border-bottom-left-radius: 15px;
+      display: block;
+      max-width: 180px;
+      height: auto;
+    }
+
+    .animation-right-cnt-landing {
+      border: 8px solid black;
+      border-top-right-radius: 15px;
+      border-bottom-right-radius: 15px;
+      border-top-left-radius: 15px;
+      border-bottom-left-radius: 0;
+      display: block;
+      max-width: 270px;
+      height: auto;
+    }
+
+    .navigation-top {
+      font-weight: inherit;
+    }
+
+    @keyframes gentleBounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes hoverBounce {
+
+      0%,
+      20%,
+      50%,
+      80%,
+      100% {
+        transform: scale(1.05) translateY(-2px);
+      }
+
+      40% {
+        transform: scale(1.08) translateY(-6px);
+      }
+
+      60% {
+        transform: scale(1.08) translateY(-4px);
+      }
+    }
+
+    /* Responsive styles for palette animation */
+    @media (max-width: 768px) {
+      .main-animation-container-landing {
+        max-width: 420px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 150px;
+        border-width: 6px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 230px;
+        border-width: 6px;
+      }
+
+      .funky-text-landing {
+        font-size: 16px;
+        margin-bottom: 15px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 16px;
+      }
+
+      /* Adjust container size for tablets */
+      .w-\[500px\].h-96 {
+        width: 420px;
+        height: 320px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .main-animation-container-landing {
+        max-width: 350px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 120px;
+        border-width: 5px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 190px;
+        border-width: 5px;
+      }
+
+      .funky-text-landing {
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 14px;
+      }
+
+      /* Adjust container size for mobile */
+      .w-\[500px\].h-96 {
+        width: 350px;
+        height: 280px;
+      }
+    }
+
+    @media (max-width: 320px) {
+      .main-animation-container-landing {
+        max-width: 300px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 100px;
+        border-width: 4px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 160px;
+        border-width: 4px;
+      }
+
+      .funky-text-landing {
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+  <!-- Navigation -->
+  <div class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/60">
+    <nav class="backdrop-blur-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <!-- Logo -->
+          <div class="flex items-center gap-3 animate-fade-in-left">
+            <img src="./static/images/logo.png" alt="Colorify Logo" width="70px" height="70px" />
+          </div>
+
+          <!-- Navigation Links -->
+          <div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
+            <a href="/"
+              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Home</a>
+            <a href="/about/"
+              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">About
+              us</a>
+            <a href="/plans/"
+              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Plans</a>
+            <a href="/contact/"
+              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact
+              us</a>
+            <a href="/accounts/login/" class="btn-primary text-white px-6 py-2.5 rounded-xl font-light shadow-lg">
+              Get Started
+            </a>
+          </div>
+
+          <!-- Mobile menu button -->
+          <div class="md:hidden">
+            <button id="mobile-menu-button" class="p-2 rounded-lg hover:bg-slate-100 transition-all duration-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu"
+          class="mobile-menu md:hidden bg-white/95 backdrop-blur-md py-2 px-4 rounded-lg mt-2 shadow-xl border border-slate-200">
+          <a href="/"
+            class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">Home</a>
+          <a href="/about/"
+            class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">About us</a>
+          <a href="/plans/"
+            class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">Plans</a>
+          <a href="/contact/"
+            class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">Contact us</a>
+          <a href="/accounts/login/"
+            class="block w-full mt-2 btn-primary text-white px-4 py-2.5 rounded-xl font-light text-center shadow-lg">
+            Get Started
+          </a>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <div class="bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div class="mx-auto px-4 pt-6 relative overflow-hidden">
+      <!-- Animated Background Elements -->
+      <div class="absolute top-80 left-0 right-0 z-0 animate-pulse-slow">
+        <img src="./static/images/Vector%2049.png" alt="wave background" class="w-full object-cover opacity-30" />
+      </div>
+
+      <!-- Floating Elements -->
+      <div
+        class="absolute top-1/4 right-1/4 w-64 h-64 bg-gradient-tertiary rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float">
+      </div>
+
+
+      <!-- Main Content -->
+      <div class="relative z-10">
+        <!-- Hero Section -->
+        <div class="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto min-h-[80vh]">
+          <!-- Left Side: Content -->
+          <div class="w-full md:w-1/2 text-center md:text-left fade-in">
+            <h1 class="figma-hero mb-8">
+              Generate <br /><span class="text-gradient">Color Matching</span>
+              with a single click<br />
+              <span class="text-gradient">Powered by AI</span>
+            </h1>
+
+            <p class="figma-text-xl text-slate-600 max-w-2xl mx-auto md:mx-0 fade-in-delay-1">
+              Built for digital print units, mills, and design studios worldwide
+            </p>
+
+            <div class="mt-10 flex flex-wrap justify-center md:justify-start gap-4 relative z-20 fade-in-delay-2">
+              <a href="/tif-editor/" class="btn-primary px-8 py-4 text-white rounded-2xl font-light shadow-xl text-lg">
+                Try Demo
+              </a>
+              <button
+                class="btn-secondary px-8 py-4 bg-white text-slate-700 rounded-2xl border-2 border-slate-200 font-light shadow-lg text-lg"
+                onclick="toggleModal('loginModal')">
+                Edit Tiff file
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Side: Enhanced Image Placeholder -->
+          <div class="w-full md:w-1/2 flex justify-center items-center mt-10 md:mt-0 fade-in-delay-3">
+            <div class="relative hover-scale">
+              <div
+                class="w-[500px] h-96 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl flex flex-col items-center justify-center text-slate-500 border border-slate-200 shadow-2xl overflow-hidden p-8">
+                <!-- Animation Content -->
+                <div class="funky-text-landing">
+                  <span class="line1" style="    position: absolute;
+                  left: -120%;
+                  top: 95%;">
+                    Select Palette
+                    <img style="margin-left: 30px;" width="50px" height="50px" src="./arrow.svg" alt="arrow" />
+                  </span>
+                  <span class="line2" style="    position: relative;
+    left: 70%;">
+                    Instant Result
+                    <img style="margin-left: 30px;" width="50px" height="50px" src="./arrow.svg" alt="arrow" />
+                  </span>
+                </div>
+
+                <div class="main-animation-container-landing">
+                  <div class="image-pair-landing active" data-pair="1">
+                    <img class="animation-left-cnt-landing" src="./1.png" alt="Image 1">
+                    <img class="animation-right-cnt-landing" src="./1a.png" alt="Image 1a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="2">
+                    <img class="animation-left-cnt-landing" src="./2.png" alt="Image 2">
+                    <img class="animation-right-cnt-landing" src="./2a.png" alt="Image 2a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="3">
+                    <img class="animation-left-cnt-landing" src="./3.png" alt="Image 3">
+                    <img class="animation-right-cnt-landing" src="./3a.png" alt="Image 3a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="4">
+                    <img class="animation-left-cnt-landing" src="./4.png" alt="Image 4">
+                    <img class="animation-right-cnt-landing" src="./4a.png" alt="Image 4a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="5">
+                    <img class="animation-left-cnt-landing" src="./5.png" alt="Image 5">
+                    <img class="animation-right-cnt-landing" src="./5a.png" alt="Image 5a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="6">
+                    <img class="animation-left-cnt-landing" src="./6.png" alt="Image 6">
+                    <img class="animation-right-cnt-landing" src="./6a.png" alt="Image 6a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="7">
+                    <img class="animation-left-cnt-landing" src="./7.png" alt="Image 7">
+                    <img class="animation-right-cnt-landing" src="./7a.png" alt="Image 7a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="8">
+                    <img class="animation-left-cnt-landing" src="./8.png" alt="Image 8">
+                    <img class="animation-right-cnt-landing" src="./8a.png" alt="Image 8a">
+                  </div>
+                </div>
+              </div>
+              <!-- Decorative elements -->
+              <div class="absolute -top-4 -right-4 w-8 h-8 bg-gradient-secondary rounded-full animate-float"></div>
+              <div class="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-tertiary rounded-full animate-float"
+                style="animation-delay: 0.5s"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enhanced Video Section -->
+        <div class="relative mt-36 max-w-5xl mx-auto scroll-reveal">
+          <div
+            class="absolute top-[30%] left-[95%] w-[20%] h-[50%] bg-gradient-tertiary rounded-full -z-10 blur-xl opacity-30 animate-float">
+          </div>
+
+
+          <!-- Background Decorative Elements -->
+          <div class="absolute -right-20 top-20 w-[200px] h-[500px] opacity-100 animate-float">
+            <div class="w-full h-full rounded-[80px] bg-gradient-primary opacity-20"></div>
+          </div>
+          <div class="absolute -left-20 top-80 w-[190px] h-[500px] opacity-100 animate-float"
+            style="animation-delay: 0.5s">
+            <div class="w-full h-full rounded-[80px] bg-gradient-secondary opacity-20"></div>
+          </div>
+
+          <!-- Enhanced Video Player -->
+          <!-- <div
+              class="relative z-10 rounded-3xl overflow-hidden border border-slate-200/50 p-6 bg-white/80 backdrop-blur-sm shadow-2xl hover-lift"
+            >
+              <div class="relative aspect-[16/9] w-full">
+                <video
+                  id="myVideo1"
+                  class="w-full h-full object-cover rounded-2xl shadow-lg"
+                  poster=""
+                >
+                  <source
+                    src="./static/images/Venice_10.mp4"
+                    type="video/mp4"
+                  />
+                  Your browser does not support the video tag.
+                </video>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <button
+                    id="playPauseButton1"
+                    class="w-20 h-20 bg-white/95 rounded-full flex items-center justify-center shadow-2xl hover:bg-white hover:scale-110 transition-all duration-300"
+                  >
+                    <svg
+                      id="playIcon1"
+                      class="w-10 h-10 ml-1"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <path d="M8 5v14l11-7z" fill="#667eea" />
+                    </svg>
+                    <svg
+                      id="pauseIcon1"
+                      class="w-10 h-10 hidden"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="#667eea" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div> -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Modal -->
+  <div id="loginModal"
+    class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-96 max-w-lg mx-4 hover-scale">
+      <h2 class="text-2xl font-normal text-slate-800 mb-2">Please Login</h2>
+      <p class="text-slate-600 mb-6">
+        You need to log in to edit Tiff files and access premium features.
+      </p>
+      <div class="flex gap-3">
+        <a href="/accounts/login/"
+          class="flex-1 btn-primary text-white px-6 py-3 rounded-xl font-light text-center shadow-lg">
+          Login
+        </a>
+        <button class="flex-1 btn-secondary bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-light shadow-lg"
+          onclick="toggleModal('loginModal')">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Enhanced First Section -->
+    <div class="mb-20 scroll-reveal">
+      <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+        <!-- Content LEFT -->
+        <div class="lg:block w-full lg:w-1/2">
+          <div class="text-sm text-gradient font-normal mb-6 tracking-wider uppercase">
+            ABOUT US
+          </div>
+          <h2 class="figma-text-5xl mb-6">
+            Empowering the Future of Color Matching with
+            <div class="text-gradient-orange mt-2">
+              <!-- <span>Digital</span> -->
+              <span class="relative ml-2">
+                <span class="text-gradient-orange">AI</span>
+                <svg class="absolute -bottom-6 right-0 w-40 h-8" viewBox="0 0 1200 100">
+                  <path d="M0,50 Q600,-80 1200,50" stroke="#ff6b6b" stroke-width="25" fill="none" opacity="0.7" />
+                </svg>
+              </span>
+            </div>
+          </h2>
+          <p class="figma-text-lg text-slate-600 mb-8">
+            We help the textile and print industry achieve flawless color accuracy. Our AI-powered platform removes
+            guesswork and delivers perfect matches in one click—saving time, reducing errors, and cutting costs
+          </p>
+          <button class="btn-primary text-white px-8 py-4 rounded-2xl font-light shadow-xl hover-lift">
+            Know more
+          </button>
+        </div>
+
+        <!-- Video RIGHT -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center hover-scale">
+          <div class="relative rounded-3xl overflow-hidden shadow-2xl">
+            <video id="myVideo" class="w-full h-full rounded-3xl" poster="" autoplay loop muted playsinline>
+              <source src="./static/images/arrowvideov2.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <!-- Enhanced Features Section -->
+  <div class="py-20 px-4 scroll-reveal" style="background-color: antiquewhite">
+    <div class="max-w-6xl mx-auto">
+      <!-- Heading Section -->
+      <div class="text-center mb-16">
+        <h2 class="figma-text-5xl mb-6">
+          <span>Our Key </span>
+          <span class="relative">
+            <span class="text-gradient">Features</span>
+            <svg class="absolute -bottom-6 left-1 w-40 h-8" viewBox="0 0 1200 100">
+              <path d="M0,50 Q600,-80 1200,50" stroke="#667eea" stroke-width="25" fill="none" opacity="0.7" />
+            </svg>
+          </span>
+        </h2>
+        <p class="figma-text-xl text-slate-600 max-w-3xl mx-auto">
+          Everything you need for accurate, effortless, and fast color matching.
+        </p>
+      </div>
+
+      <!-- Enhanced Features Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Generation Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/d226f3da73926f53fa4e123d7268b40b.jpg" alt="Generation"
+              class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
+            <div
+              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">One-Click Color Matching</h3>
+          <p class="figma-text-base text-slate-600">
+            Generate accurate color matches instantly—no manual adjustments, no guesswork.
+          </p>
+        </div>
+
+
+        <!-- Customization Card -->
+        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/girlwithbook_c.jpg" alt="Customization"
+              class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
+            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl mb-4">AI-Powered Accuracy</h3>
+          <p class="figma-text-base text-white/90">
+            Our advanced AI ensures consistent, print-ready colors every time.
+          </p>
+        </div>
+
+        <!-- Export Options Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/d226f3da73926f53fa4e123d7268b40b.jpg" alt="Export"
+              class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
+            <div
+              class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4"> Real-Time Preview</h3>
+          <p class="figma-text-base text-slate-600">
+            See how your matched colors look before printing, reducing errors and rework.
+          </p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8" style="padding-top: 30px;">
+        <!-- Generation Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/d226f3da73926f53fa4e123d7268b40b.jpg" alt="Generation"
+              class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
+            <div
+              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4"> Cloud-Based Access</h3>
+          <p class="figma-text-base text-slate-600">
+            Work from anywhere with secure cloud storage and quick accessibility for your team.
+          </p>
+        </div>
+
+
+        <!-- Customization Card -->
+        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/girlwithbook_c.jpg" alt="Customization"
+              class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
+            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl mb-4">Built for Professionals</h3>
+          <p class="figma-text-base text-white/90">
+            Tailored for digital print units, mills, and design studios—optimized for high-volume production.
+          </p>
+        </div>
+
+        <!-- Export Options Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/d226f3da73926f53fa4e123d7268b40b.jpg" alt="Export"
+              class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
+            <div
+              class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Unlimited Color Combinations</h3>
+          <p class="figma-text-base text-slate-600">
+            Explore endless color possibilities with automatic generation of matching combinations tailored to your
+            design needs.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Why Subscribe Section (Figma-style blue background) -->
+  <section class="py-10 md:py-20 px-4 md:px-8 lg:px-20 scroll-reveal">
+    <!--  style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
+        <!-- Left Content -->
+        <div class="w-full lg:max-w-xl text-center lg:text-left">
+          <h2 class="figma-text-3xl md:figma-text-4xl lg:figma-text-5xl mb-4 md:mb-6">
+            Why Choose
+            <span class="relative">
+              <span class="text-yellow-300">Colorify Studio?</span>
+              <svg class="absolute -bottom-3 md:-bottom-5 left-0 w-20 md:w-28 h-4 md:h-6 mb-1" viewBox="0 0 1200 100">
+                <path d="M0,50 Q600,-80 1200,50" stroke="#fbbf24" stroke-width="25" fill="none" />
+              </svg>
+            </span>
+            <br />Design Smarter, Faster!
+          </h2>
+
+          <p class="figma-text-lg md:figma-text-xl mb-8 md:mb-12">
+            Unlock the full potential of your designs with Colorify Studio's
+            subscription. Here's why it's a game-changer for designers:
+          </p>
+
+          <div class="space-y-6 md:space-y-8">
+            <h3 class="figma-text-xl md:figma-text-2xl lg:figma-text-3xl">Our Special Key Features</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <!-- Feature Items -->
+              <div class="space-y-3 md:space-y-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Offer More, Sell More</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base"> Generate Color Variations in Seconds</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Save Time, Cut Production Costs</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base"> Access Seasonal Color Trend Reports</span>
+                </div>
+              </div>
+
+              <!-- Right Column Features -->
+              <div class="space-y-3 md:space-y-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Unleash Limitless Creative Possibilities</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Stay Ahead of the Competition</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Works Seamlessly with Complex Print Files</span>
+                </div>
+               
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Content -->
+        <div class="relative w-full lg:w-auto mt-8 lg:mt-0 flex justify-center">
+          <!-- Background Circles - Hidden on mobile for cleaner look -->
+          <div class="hidden lg:block absolute top-20 left-[55%] w-[50%] h-[90%] bg-pink-300 rounded-full opacity-80">
+          </div>
+          <div
+            class="hidden lg:block absolute bottom-[30%] -right-[5%] w-[55%] h-80 bg-blue-400 rounded-full opacity-80">
+          </div>
+
+          <!-- Video/Image Container -->
+          <div class="relative w-full max-w-md md:max-w-lg lg:w-[600px] bg-white rounded-2xl shadow-xl overflow-hidden">
+            <video id="myVideo2" class="w-full h-full object-cover rounded-2xl" poster="">
+              <source src="./static/images/Venice_10.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <!-- Play Button Overlay -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <button id="playPauseButton2"
+                class="w-12 h-12 md:w-16 md:h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all">
+                <svg id="playIcon2" class="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none">
+                  <path d="M8 5v14l11-7z" fill="#4052FF" />
+                </svg>
+                <svg id="pauseIcon2" class="w-6 h-6 md:w-8 md:h-8 hidden" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="#4052FF" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Second Section (Gradient Background) - Made Responsive -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 md:mt-20">
+      <div
+        class="w-full rounded-2xl md:rounded-3xl bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] p-6 md:p-8 lg:p-12 text-center">
+        <h1 class="figma-text-3xl md:figma-text-4xl lg:figma-hero text-white mb-6 md:mb-8">
+          Ready to Simplify Color Matching?
+        </h1>
+        <p class="figma-text-lg md:figma-text-xl lg:figma-text-2xl text-white/90 mb-6 md:mb-10 max-w-3xl mx-auto">
+          Start designing faster, smarter, and with perfect color accuracy—no guesswork, no delays.
+        </p>
+        <button
+          class="bg-white text-slate-800 px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 rounded-xl md:rounded-2xl figma-text-base md:figma-text-lg hover:bg-slate-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
+          Explore now
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Company Logos Section (Figma-style solid background) -->
+  <section class="section-solid-light py-16 scroll-reveal">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <p class="figma-text-lg">
+          <spa style="font-size: 30px;">Eliminate costly color mismatches in textile printing </span> <br> <span
+              style="font-size: 30px;font-weight: bold;"> 10x faster, 100% accurate,
+              and AI-driven</span>
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Stats Section (Figma-style colorful background) -->
+  <!-- <section class="section-figma-purple py-20 scroll-reveal">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="figma-text-5xl text-white mb-6">
+          Powering creativity worldwide
+        </h2>
+        <p class="figma-text-xl text-white/90 max-w-3xl mx-auto">
+          Join thousands of designers who trust Colorify to bring their
+          visions to life
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div class="text-center">
+          <div class="figma-text-6xl text-white mb-2">50K+</div>
+          <div class="figma-text-lg text-white/80">Active Designers</div>
+        </div>
+        <div class="text-center">
+          <div class="figma-text-6xl text-white mb-2">2M+</div>
+          <div class="figma-text-lg text-white/80">
+            Color Palettes Generated
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="figma-text-6xl text-white mb-2">99.9%</div>
+          <div class="figma-text-lg text-white/80">Uptime Reliability</div>
+        </div>
+        <div class="text-center">
+          <div class="figma-text-6xl text-white mb-2">150+</div>
+          <div class="figma-text-lg text-white/80">Countries Served</div>
+        </div>
+      </div>
+    </div>
+  </section> -->
+
+  <!-- Testimonials Section -->
+  <section class="py-24 scroll-reveal">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="figma-text-5xl text-slate-900 mb-6">
+          What our <span class="text-gradient">customers</span> say
+        </h2>
+        <p class="figma-text-xl text-slate-600 max-w-3xl mx-auto">
+          Hear from designers and teams who've transformed their workflow with
+          Colorify
+        </p>
+      </div>
+
+      <div class="testimonial-scroll-container">
+        <div class="testimonial-scroll-wrapper">
+          <!-- Testimonial 1 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                A
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Amit Trivedi
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Production Head, Fabloom Textiles (Mill)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "Colorify Studio helped us cut down color correction time by more than 50%."
+            </p>
+          </div>
+
+          <!-- Testimonial 2 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                N
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Neha Kapoor
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Lead Designer, Chromica Studio (Design Studio)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              “It’s like having a color expert on-call—our design flow has never been smoother.”
+            </p>
+          </div>
+
+          <!-- Testimonial 3 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-tertiary rounded-full flex items-center justify-center text-white font-light mr-4">
+                R
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Ravi Nair
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Operations Manager, Printigo Digital (Digital Unit)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              “We finally stopped struggling with color consistency across print batches.”
+            </p>
+          </div>
+
+          <!-- Testimonial 4 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                M
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Megha Desai
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Creative Director, Desai & Co. Design (Design Studio)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              “One-click matching is not a gimmick—it’s become an everyday essential for us.”
+            </p>
+          </div>
+
+          <!-- Testimonial 5 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                S
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Sandeep Verma
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Plant Supervisor, TrueWeave Mills (Mill)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              “Colorify Studio helped us reduce rejections and improve delivery speed.”
+            </p>
+          </div>
+
+          <!-- Testimonial 6 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-tertiary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                R
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Ritika Iyer
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Print Head, Inkflow Technologies (Digital Print Unit)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              “The AI suggestions are spot on—our clients love the new color options.”
+            </p>
+          </div>
+
+          <!-- Duplicate testimonials for seamless scroll -->
+          <!-- Testimonial 1 (Duplicate) -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                S
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Sarah Chen
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Lead Designer at Stripe
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "Colorify has completely transformed our design workflow. The
+              AI-powered color suggestions are incredibly accurate and save us
+              hours of work every week."
+            </p>
+          </div>
+
+          <!-- Testimonial 2 (Duplicate) -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                M
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Marcus Johnson
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Creative Director at Shopify
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "The trend-based color generation is a game-changer. Our clients
+              love the modern, cohesive palettes we create using Colorify's AI
+              engine."
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Enhanced Footer -->
+  <!-- bg-gradient-to-br from-slate-50 to-slate-100 -->
+  <footer class="py-16 mt-20"
+    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white !important;">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+        <!-- Brand -->
+        <div class="space-y-6">
+          <div class="flex items-center gap-3">
+            <img src="./logo.png" alt="Colorify Logo" width="70px" height="70px" />
+            <span class="font-light text-2xl text-white">COLORIFY</span>
+          </div>
+          <p class="text-white/90 leading-relaxed">
+            Revolutionizing design with AI-powered color intelligence. <br />
+            <span class="font-light text-white">Helping you paint better!</span>
+          </p>
+        </div>
+
+        <!-- Links -->
+        <div>
+          <h3 class="font-light text-white mb-6 text-lg">QUICK LINKS</h3>
+          <ul class="space-y-3">
+            <li>
+              <a href="/" class="text-white/80 hover:text-white transition-colors duration-300 font-light">Home</a>
+            </li>
+            <li>
+              <a href="/privacy-policy/"
+                class="text-white/80 hover:text-white transition-colors duration-300 font-light">Privacy Policy</a>
+            </li>
+            <li>
+              <a href="/terms-of-service/"
+                class="text-white/80 hover:text-white transition-colors duration-300 font-light">Terms of
+                Service</a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Affiliate -->
+        <div>
+          <h3 class="font-light text-white mb-6 text-lg">PARTNERSHIPS</h3>
+          <p class="text-white/90 mb-6 leading-relaxed">
+            Join us and start getting paid<br />
+            for all the products you sell
+          </p>
+          <button onclick="window.location.href='/affiliate/'"
+            class="btn-secondary bg-white/20 text-white py-3 px-6 rounded-xl font-light hover:bg-white/30 transition-all duration-300 shadow-md border border-white/30">
+            Become an Affiliate
+          </button>
+        </div>
+
+        <!-- Newsletter -->
+        <div>
+          <h3 class="font-light text-white mb-6 text-lg">STAY UPDATED</h3>
+          <p class="text-white/90 mb-6 leading-relaxed">
+            Get the latest design trends and color innovations
+          </p>
+          <div
+            class="flex bg-white/10 rounded-xl border border-white/30 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+            <input type="email" placeholder="Enter your email"
+              class="flex-1 py-3 px-4 text-sm focus:outline-none bg-transparent text-white placeholder-white/70" />
+            <button>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 pr-10" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced Bottom Footer -->
+      <div class="mt-16 pt-8 border-t border-white/30 flex flex-col md:flex-row items-center justify-between">
+        <p class="text-white/80 font-light">
+          © 2025 Colorify Studio | All Rights Reserved
+        </p>
+        <div>
+          <h4 class="text-white/90 font-light">Recognised By</h4>
+          <div class="flex justify-center">
+            <img src="startup_india.png" alt="Startup India"
+              class="h-16 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
+          </div>
+        </div>
+        <div class="flex gap-3 mt-6 md:mt-0">
+          <!-- Instagram Icon -->
+          <!-- <a href="#"
+            class="w-10 h-10 bg-gradient-primary text-white rounded-xl flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-md">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+            </svg>
+          </a> -->
+          <!-- Facebook Icon -->
+          <!-- <a href="#"
+            class="w-10 h-10 bg-gradient-secondary text-white rounded-xl flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-md">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z" />
+            </svg>
+          </a> -->
+          <!-- Pinterest Icon -->
+          <!-- <a href="#"
+            class="w-10 h-10 bg-gradient-tertiary text-white rounded-xl flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-md">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12" />
+            </svg>
+          </a> -->
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Function to create video controls
+    function setupVideoControls(videoId, buttonId, playIconId, pauseIconId) {
+      const video = document.getElementById(videoId);
+      const playPauseButton = document.getElementById(buttonId);
+      const playIcon = document.getElementById(playIconId);
+      const pauseIcon = document.getElementById(pauseIconId);
+
+      if (!video || !playPauseButton || !playIcon || !pauseIcon) return;
+
+      function togglePlayPause() {
+        if (video.paused) {
+          // Pause all other videos first
+          document.querySelectorAll("video").forEach((v) => {
+            if (v !== video) {
+              v.pause();
+              // Reset other video buttons
+              const otherVideoId = v.id;
+              const otherPlayIcon = document.getElementById(
+                `playIcon${otherVideoId.slice(-1)}`
+              );
+              const otherPauseIcon = document.getElementById(
+                `pauseIcon${otherVideoId.slice(-1)}`
+              );
+              if (otherPlayIcon && otherPauseIcon) {
+                otherPlayIcon.classList.remove("hidden");
+                otherPauseIcon.classList.add("hidden");
+              }
+            }
+          });
+
+          video.play();
+          playIcon.classList.add("hidden");
+          pauseIcon.classList.remove("hidden");
+        } else {
+          video.pause();
+          playIcon.classList.remove("hidden");
+          pauseIcon.classList.add("hidden");
+        }
+      }
+
+      playPauseButton.addEventListener("click", togglePlayPause);
+      video.addEventListener("click", togglePlayPause);
+
+      video.addEventListener("ended", function () {
+        playIcon.classList.remove("hidden");
+        pauseIcon.classList.add("hidden");
+      });
+
+      // Hide default video controls
+      video.removeAttribute("controls");
+    }
+
+    function toggleModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal.classList.contains("hidden")) {
+        modal.classList.remove("hidden");
+      } else {
+        modal.classList.add("hidden");
+      }
+    }
+
+    // Setup controls for both videos
+    setupVideoControls(
+      "myVideo1",
+      "playPauseButton1",
+      "playIcon1",
+      "pauseIcon1"
+    );
+    setupVideoControls(
+      "myVideo2",
+      "playPauseButton2",
+      "playIcon2",
+      "pauseIcon2"
+    );
+  </script>
+
+  <!-- Enhanced JavaScript for Modern Interactions -->
+  <script>
+    // Mobile menu functionality
+    const mobileMenuButton = document.getElementById("mobile-menu-button");
+    const mobileMenu = document.getElementById("mobile-menu");
+
+    mobileMenuButton.addEventListener("click", () => {
+      mobileMenu.classList.toggle("active");
+    });
+
+    // Scroll reveal animation
+    function revealOnScroll() {
+      const reveals = document.querySelectorAll(".scroll-reveal");
+
+      for (let i = 0; i < reveals.length; i++) {
+        const windowHeight = window.innerHeight;
+        const elementTop = reveals[i].getBoundingClientRect().top;
+        const elementVisible = 150;
+
+        if (elementTop < windowHeight - elementVisible) {
+          reveals[i].classList.add("revealed");
+        }
+      }
+    }
+
+    // Smooth parallax scrolling for floating elements
+    function updateParallax() {
+      const scrolled = window.pageYOffset;
+      const parallaxElements = document.querySelectorAll(".animate-float");
+
+      parallaxElements.forEach((element, index) => {
+        const speed = 0.1 + index * 0.05;
+        const yPos = -(scrolled * speed);
+        element.style.transform = `translateY(${yPos}px)`;
+      });
+    }
+
+    // Enhanced button hover effects
+    function initButtonEffects() {
+      const buttons = document.querySelectorAll(
+        ".btn-primary, .btn-secondary"
+      );
+
+      buttons.forEach((button) => {
+        button.addEventListener("mouseenter", function () {
+          this.style.transform = "translateY(-2px) scale(1.02)";
+        });
+
+        button.addEventListener("mouseleave", function () {
+          this.style.transform = "translateY(0) scale(1)";
+        });
+      });
+    }
+
+    // Card tilt effect
+    function initCardTilt() {
+      const cards = document.querySelectorAll(
+        ".feature-card, .feature-card-primary"
+      );
+
+      cards.forEach((card) => {
+        card.addEventListener("mousemove", function (e) {
+          const rect = this.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+
+          const rotateX = (y - centerY) / 10;
+          const rotateY = (centerX - x) / 10;
+
+          this.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+        });
+
+        card.addEventListener("mouseleave", function () {
+          this.style.transform =
+            "perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)";
+        });
+      });
+    }
+
+    // Loading animation
+    function initLoadingAnimations() {
+      const fadeElements = document.querySelectorAll(".fade-in");
+
+      fadeElements.forEach((element, index) => {
+        setTimeout(() => {
+          element.style.opacity = "1";
+          element.style.transform = "translateY(0)";
+        }, index * 100);
+      });
+    }
+
+    // Navbar background on scroll
+    function updateNavbar() {
+      const navbar = document.querySelector("nav").parentElement;
+      if (window.scrollY > 50) {
+        navbar.classList.add("bg-white/95");
+        navbar.classList.remove("bg-white/80");
+      } else {
+        navbar.classList.add("bg-white/80");
+        navbar.classList.remove("bg-white/95");
+      }
+    }
+
+    // Initialize all functions
+    document.addEventListener("DOMContentLoaded", function () {
+      initLoadingAnimations();
+      initButtonEffects();
+      initCardTilt();
+      initPaletteAnimation(); // Initialize palette animation
+
+      // Set up event listeners
+      window.addEventListener("scroll", () => {
+        revealOnScroll();
+        updateParallax();
+        updateNavbar();
+      });
+
+      // Initial calls
+      revealOnScroll();
+      updateNavbar();
+    });
+
+    // Performance optimization for scroll events
+    let ticking = false;
+
+    function requestTick() {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateParallax();
+          revealOnScroll();
+          updateNavbar();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener("scroll", requestTick);
+
+    // Palette Animation JavaScript
+    function initPaletteAnimation() {
+      let currentPair = 0;
+      const imagePairs = document.querySelectorAll('.image-pair-landing');
+      const totalPairs = imagePairs.length;
+
+      if (totalPairs === 0) return; // Exit if no image pairs found
+
+      function switchToNextPair() {
+        imagePairs[currentPair].classList.remove('active');
+        currentPair = (currentPair + 1) % totalPairs;
+        imagePairs[currentPair].classList.add('active');
+      }
+
+      // Start animation after a delay
+      setTimeout(() => {
+        const intervalId = setInterval(switchToNextPair, 500);
+
+        // Optional: Stop animation when element is not visible
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) {
+              // clearInterval(intervalId); // Uncomment to pause when not visible
+            }
+          });
+        });
+
+        const container = document.querySelector('.main-animation-container-landing');
+        if (container) {
+          observer.observe(container);
+        }
+      }, 900);
+    }
+  </script>
+</body>
+
+</html>

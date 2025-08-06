@@ -1,5 +1,4 @@
-<!-- templates/pages/home.html -->
-<!-- templates/pages/main_base.html  -->
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -13,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
-
+  {% block extra_css %}{% endblock %}
   <style>
     * {
       font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -771,19 +770,21 @@
 
           <!-- Navigation Links -->
           <div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
-            <a href="/"
+            <a href="{% url 'home' %}"
               class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Home</a>
-            <a href="http://colorify.3mindstech.com/about/"
+            <a href="{% url 'about' %}"
               class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">About
               us</a>
-            <a href="http://colorify.3mindstech.com/plans/"
+            <a href="{% url 'plans' %}"
               class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Plans</a>
-            <a href="http://colorify.3mindstech.com/contact/"
+            <a href="{% url 'contact' %}"
               class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact
               us</a>
-            <a href="http://colorify.3mindstech.com/accounts/login/" class="btn-primary text-white px-6 py-2.5 rounded-xl font-light shadow-lg">
-              Try it Now
-            </a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'account_logout' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+            {% else %}
+                <a href="{% url 'account_login' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Get Started</a>
+            {% endif %}
           </div>
 
           <!-- Mobile menu button -->
@@ -799,23 +800,20 @@
         <!-- Mobile Menu -->
         <div id="mobile-menu"
           class="mobile-menu md:hidden bg-white/95 backdrop-blur-md py-2 px-4 rounded-lg mt-2 shadow-xl border border-slate-200">
-          <a href="/"
-            class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">Home</a>
-          <a href="/about/"
-            class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">About us</a>
-          <a href="/plans/"
-            class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">Plans</a>
-          <a href="/contact/"
-            class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">Contact us</a>
-          <a href="/accounts/login/"
-            class="block w-full mt-2 btn-primary text-white px-4 py-2.5 rounded-xl font-light text-center shadow-lg">
-            Try it Now
-          </a>
+    <a href="{% url 'home' %}" class="block py-2 text-gray-600 hover:text-gray-900">Home</a>
+    <a href="{% url 'about' %}" class="block py-2 text-gray-600 hover:text-gray-900">About us</a>
+    <a href="{% url 'plans' %}" class="block py-2 text-gray-600 hover:text-gray-900">Plans</a>
+    <a href="{% url 'contact' %}" class="block py-2 text-gray-600 hover:text-gray-900">Contact us</a>
+    {% if user.is_authenticated %}
+        <a href="{% url 'account_logout' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+    {% else %}
+        <a href="{% url 'account_login' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try it Now</a>
+    {% endif %}
         </div>
       </div>
     </nav>
   </div>
-
+  {% block content %}
   <div class="bg-gradient-to-br from-slate-50 via-white to-blue-50">
     <div class="mx-auto px-4 pt-6 relative overflow-hidden">
       <!-- Animated Background Elements -->
@@ -1743,7 +1741,7 @@
       </div>
     </div>
   </section>
-
+ {% endblock %}
 
   <!-- Enhanced Footer -->
   <!-- bg-gradient-to-br from-slate-50 to-slate-100 -->
@@ -1857,6 +1855,8 @@
       </div>
     </div>
   </footer>
+ 
+  {% block extra_js %}{% endblock %}
 
   <script>
     // Function to create video controls
@@ -2040,6 +2040,80 @@
         navbar.classList.remove("bg-white/95");
       }
     }
+
+    // Initialize all functions
+    document.addEventListener("DOMContentLoaded", function () {
+      initLoadingAnimations();
+      initButtonEffects();
+      initCardTilt();
+      initPaletteAnimation(); // Initialize palette animation
+
+      // Set up event listeners
+      window.addEventListener("scroll", () => {
+        revealOnScroll();
+        updateParallax();
+        updateNavbar();
+      });
+
+      // Initial calls
+      revealOnScroll();
+      updateNavbar();
+    });
+
+    // Performance optimization for scroll events
+    let ticking = false;
+
+    function requestTick() {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateParallax();
+          revealOnScroll();
+          updateNavbar();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener("scroll", requestTick);
+
+    // Palette Animation JavaScript
+    function initPaletteAnimation() {
+      let currentPair = 0;
+      const imagePairs = document.querySelectorAll('.image-pair-landing');
+      const totalPairs = imagePairs.length;
+
+      if (totalPairs === 0) return; // Exit if no image pairs found
+
+      function switchToNextPair() {
+        imagePairs[currentPair].classList.remove('active');
+        currentPair = (currentPair + 1) % totalPairs;
+        imagePairs[currentPair].classList.add('active');
+      }
+
+      // Start animation after a delay
+      setTimeout(() => {
+        const intervalId = setInterval(switchToNextPair, 500);
+
+        // Optional: Stop animation when element is not visible
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) {
+              // clearInterval(intervalId); // Uncomment to pause when not visible
+            }
+          });
+        });
+
+        const container = document.querySelector('.main-animation-container-landing');
+        if (container) {
+          observer.observe(container);
+        }
+      }, 900);
+    }
+  </script>
+</body>
+
+</html>
 
     // Initialize all functions
     document.addEventListener("DOMContentLoaded", function () {
