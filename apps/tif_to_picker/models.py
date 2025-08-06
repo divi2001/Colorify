@@ -6,9 +6,9 @@ import os
 
 class Mockup(models.Model):
     name = models.CharField(max_length=100)
-    image = models.ImageField(upload_to='mockups/', blank=True, null=True)  # Keep this for admin uploads
-    image_base64 = models.TextField(blank=True, null=True)  # Store base64 data
-    image_type = models.CharField(max_length=20, default='image/png')  # Store MIME type
+    image = models.ImageField(upload_to='mockups/', blank=True, null=True)
+    image_base64 = models.TextField(blank=True, null=True)
+    image_type = models.CharField(max_length=20, default='image/png')
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -24,18 +24,35 @@ class Mockup(models.Model):
         ordering = ['-created_at']
     
     def save(self, *args, **kwargs):
-        # If image is uploaded but no base64 data, convert it
+        # Convert image to base64 when saving
         if self.image and not self.image_base64:
             try:
-                # Read the image file
-                image_path = self.image.path
-                if os.path.exists(image_path):
-                    with open(image_path, 'rb') as image_file:
+                # For new uploads, the file might not be saved yet
+                if hasattr(self.image, 'file'):
+                    # Read from the uploaded file directly
+                    self.image.file.seek(0)
+                    image_data = base64.b64encode(self.image.file.read()).decode('utf-8')
+                    self.image_base64 = image_data
+                    
+                    # Determine MIME type from file name
+                    file_name = self.image.name
+                    file_extension = os.path.splitext(file_name)[1].lower()
+                    mime_types = {
+                        '.jpg': 'image/jpeg',
+                        '.jpeg': 'image/jpeg',
+                        '.png': 'image/png',
+                        '.gif': 'image/gif',
+                        '.webp': 'image/webp'
+                    }
+                    self.image_type = mime_types.get(file_extension, 'image/png')
+                    
+                elif hasattr(self.image, 'path') and os.path.exists(self.image.path):
+                    # For existing files
+                    with open(self.image.path, 'rb') as image_file:
                         image_data = base64.b64encode(image_file.read()).decode('utf-8')
                         self.image_base64 = image_data
                         
-                        # Determine MIME type from file extension
-                        file_extension = os.path.splitext(image_path)[1].lower()
+                        file_extension = os.path.splitext(self.image.path)[1].lower()
                         mime_types = {
                             '.jpg': 'image/jpeg',
                             '.jpeg': 'image/jpeg',
@@ -44,6 +61,7 @@ class Mockup(models.Model):
                             '.webp': 'image/webp'
                         }
                         self.image_type = mime_types.get(file_extension, 'image/png')
+                        
             except Exception as e:
                 print(f"Error converting image to base64: {e}")
         
