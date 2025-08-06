@@ -1678,10 +1678,12 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
         <!-- Brand -->
         <div class="space-y-6">
-          <div class="flex items-center gap-3">
-            <img src="./static/images/logo.png" alt="Colorify Logo" width="70px" height="70px" />
+        <div class="flex items-center gap-3">
+          <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
+            <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
             <span class="font-light text-2xl text-white">COLORIFY</span>
-          </div>
+          </a>
+        </div>
           <p class="text-white/90 leading-relaxed">
             Revolutionizing design with AI-powered color intelligence. <br />
             <span class="font-light text-white">Helping you paint better!</span>
