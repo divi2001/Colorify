@@ -114,31 +114,21 @@ function renderMockups(mockups) {
     
     // Create mockup items
     mockups.forEach(mockup => {
-        console.log('Processing mockup:', mockup); // Debug log
-        
         const mockupItem = document.createElement('div');
         mockupItem.className = 'mockup-item';
         mockupItem.dataset.mockupId = mockup.id;
         
-        let imageSrc = '/static/images/placeholder.png'; // fallback
-        
-        // Check what type of image data we have
-        if (mockup.image_url) {
-            console.log('Using image_url:', mockup.image_url);
-            imageSrc = mockup.image_url;
-        } else if (mockup.image_data && mockup.image_type) {
-            console.log('Using base64 data, type:', mockup.image_type);
-            imageSrc = `data:${mockup.image_type};base64,${mockup.image_data}`;
-        } else {
-            console.log('No image data found for mockup:', mockup.id);
+        // Use the complete data URL or fallback to placeholder
+        let imageSrc = '/static/images/placeholder.png';
+        if (mockup.has_image && mockup.image_data_url) {
+            imageSrc = mockup.image_data_url;
         }
-        
-        console.log('Final image src:', imageSrc);
         
         mockupItem.innerHTML = `
             <img src="${imageSrc}" alt="${mockup.name}" 
-                 onload="console.log('Image loaded successfully:', '${mockup.name}')"
-                 onerror="console.error('Image failed to load:', '${mockup.name}', this.src); this.src='/static/images/placeholder.png'">
+                 style="max-width: 100%; height: auto;"
+                 onload="console.log('✓ Image loaded:', '${mockup.name}')"
+                 onerror="console.error('✗ Image failed:', '${mockup.name}'); this.src='/static/images/placeholder.png'">
             <div class="mockup-info">
                 <span class="mockup-name">${mockup.name}</span>
                 <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
@@ -148,6 +138,7 @@ function renderMockups(mockups) {
         mockupsGrid.appendChild(mockupItem);
     });
 }
+
 // Updated apply mockup function
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('apply-mockup-btn')) {
@@ -162,7 +153,6 @@ document.addEventListener('click', function(e) {
         applyMockupOverlay(mockupId, mockupDataUrl, mockupName);
     }
 });
-
 // Updated DOMContentLoaded event
 document.addEventListener('DOMContentLoaded', function() {
     // Add mockups button handler

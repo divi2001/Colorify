@@ -59,8 +59,6 @@ import os
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
-
-
 @require_http_methods(["GET"])
 def get_mockups_api(request):
     try:
@@ -74,53 +72,9 @@ def get_mockups_api(request):
                 'name': mockup.name,
                 'description': mockup.description,
                 'created_at': mockup.created_at.isoformat(),
-                'image_data': None,
-                'image_type': None,
-                'has_image': False
+                'has_image': bool(mockup.image_base64),
+                'image_data_url': mockup.get_image_data_url()  # Complete data URL ready for img src
             }
-            
-            # Convert image to base64 if it exists
-            if mockup.image:
-                try:
-                    # Handle both absolute and relative paths
-                    if hasattr(mockup.image, 'path'):
-                        image_path = mockup.image.path
-                    else:
-                        # Fallback for cases where .path doesn't work
-                        image_path = os.path.join(settings.MEDIA_ROOT, str(mockup.image))
-                    
-                    print(f"Trying to read image from: {image_path}")  # Debug
-                    
-                    if os.path.exists(image_path):
-                        with open(image_path, 'rb') as image_file:
-                            image_content = image_file.read()
-                            image_data = base64.b64encode(image_content).decode('utf-8')
-                            
-                        # Get file extension to determine MIME type
-                        file_extension = os.path.splitext(image_path)[1].lower()
-                        mime_types = {
-                            '.jpg': 'image/jpeg',
-                            '.jpeg': 'image/jpeg',
-                            '.png': 'image/png',
-                            '.gif': 'image/gif',
-                            '.webp': 'image/webp',
-                            '.bmp': 'image/bmp',
-                            '.svg': 'image/svg+xml'
-                        }
-                        
-                        mockup_data['image_data'] = image_data
-                        mockup_data['image_type'] = mime_types.get(file_extension, 'image/jpeg')
-                        mockup_data['has_image'] = True
-                        
-                        print(f"Successfully encoded image for mockup {mockup.id}")  # Debug
-                    else:
-                        print(f"Image file not found: {image_path}")  # Debug
-                        
-                except Exception as img_error:
-                    print(f"Error processing image for mockup {mockup.id}: {img_error}")
-            else:
-                print(f"No image associated with mockup {mockup.id}")  # Debug
-            
             mockups_data.append(mockup_data)
         
         return JsonResponse({
@@ -130,7 +84,7 @@ def get_mockups_api(request):
         })
         
     except Exception as e:
-        print(f"Error in get_mockups_api: {e}")  # Debug
+        print(f"Error in get_mockups_api: {e}")
         return JsonResponse({
             'success': False,
             'error': str(e)
