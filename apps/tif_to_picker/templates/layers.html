@@ -16120,22 +16120,11 @@ function displayHarmonyPalettesInSidebar(harmonyType, paletteCollectionName, bac
     // Add to main container
     colorPaletteDiv.appendChild(clickableContainer);
     
-    // Create button container for harmony controls
+    // Create button container for harmony controls - ONLY FAVORITE BUTTON
     const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'd-flex align-items-center justify-content-between w-100';
+    buttonContainer.className = 'd-flex align-items-center justify-content-center w-100';
     
-    // Shuffle button
-    {% comment %} const shuffleBtn = document.createElement('button');
-    shuffleBtn.className = 'btn btn-sm btn-primary';
-    shuffleBtn.innerHTML = '<i class="bi bi-shuffle"></i>';
-    shuffleBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (typeof regenerateHarmonyPalette === 'function') {
-        regenerateHarmonyPalette(i, harmonyType);
-      }
-    }; {% endcomment %}
-    
-    // Favorite button
+    // Favorite button (only button now)
     const favBtn = document.createElement('button');
     favBtn.className = 'btn favorite-btn';
     favBtn.innerHTML = '<i class="bi bi-star"></i><span class="fav-count">0</span>';
@@ -16148,20 +16137,8 @@ function displayHarmonyPalettesInSidebar(harmonyType, paletteCollectionName, bac
       }
     };
     
-    // Apply button
-    {% comment %} const applyBtn = document.createElement('button');
-    applyBtn.className = 'btn btn-success';
-    applyBtn.innerHTML = '<i class="bi bi-magic"></i>';
-    applyBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (typeof applyHarmonyPalette === 'function') {
-        applyHarmonyPalette(paletteIndex, paletteCollectionName);
-      }
-    };
-     {% endcomment %}
-    buttonContainer.appendChild(shuffleBtn);
+    // Only add the favorite button
     buttonContainer.appendChild(favBtn);
-    buttonContainer.appendChild(applyBtn);
     
     layerToggleItem.appendChild(colorPaletteDiv);
     layerToggleItem.appendChild(buttonContainer);
