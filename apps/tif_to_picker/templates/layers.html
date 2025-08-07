@@ -18,6 +18,7 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
       rel="stylesheet"
     />
+    
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css"
@@ -238,6 +239,11 @@ document.addEventListener('DOMContentLoaded', function() {
       @keyframes l6 {
           100% {inset:0}
       }
+
+      .fav-count {
+  display: none !important;
+}
+
         </style>
   </head>
 
@@ -874,12 +880,68 @@ document.addEventListener('DOMContentLoaded', function() {
    
     </div>
   </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const leftBtn = document.getElementById('scroll-left');
+    const rightBtn = document.getElementById('scroll-right');
+    
+    function scrollLeft() {
+        // Try multiple possible scroll containers
+        const containers = [
+            document.querySelector('.scroll-container'),
+            document.getElementById('image-color-pickers'),
+            document.querySelector('.palette-selector')
+        ];
+        
+        for (let container of containers) {
+            if (container && container.scrollWidth > container.clientWidth) {
+                const scrollAmount = container.clientWidth * 0.3;
+                container.scrollLeft = Math.max(0, container.scrollLeft - scrollAmount);
+                break;
+            }
+        }
+    }
+    
+    function scrollRight() {
+        // Try multiple possible scroll containers
+        const containers = [
+            document.querySelector('.scroll-container'),
+            document.getElementById('image-color-pickers'),
+            document.querySelector('.palette-selector')
+        ];
+        
+        for (let container of containers) {
+            if (container && container.scrollWidth > container.clientWidth) {
+                const scrollAmount = container.clientWidth * 0.3;
+                const maxScroll = container.scrollWidth - container.clientWidth;
+                container.scrollLeft = Math.min(maxScroll, container.scrollLeft + scrollAmount);
+                break;
+            }
+        }
+    }
+    
+    if (leftBtn) leftBtn.addEventListener('click', scrollLeft);
+    if (rightBtn) rightBtn.addEventListener('click', scrollRight);
+});</script>
 
+<style>
+.scroll-container,
+.palette-selector,
+#image-color-pickers {
+    overflow-x: auto !important;
+    scroll-behavior: smooth !important;
+}
+
+.color-picker-container {
+    display: flex !important;
+    white-space: nowrap !important;
+}
+    </style>
   <div id="visualizer_palette" class="palette-wrapper">
       <!-- Left Scroll Button -->
       <button id="scroll-left" class="btn btn-outline-info"><</button>
       <div class="palette-selector has-btns is-sortable has-picker is-lockable is-sortable has-picker is-lockable scroll-container" style="height: 100%;" data-colors="10">
-          <div class="color-picker-container mt-1 rounded-2" style="width: fit-content;overflow: hidden;" id="image-color-pickers"></div>
+          <div class="color-picker-container mt-1 rounded-2" style="width: fit-content;overflow: visible;" id="image-color-pickers"></div>
       </div>
       <button id="scroll-right" class="btn btn-outline-info">></button>
   </div>
@@ -1900,7 +1962,7 @@ function loadInspirationContent() {
                               <span class="pdf-name">${pdf.title}</span>
                               <div class="pdf-actions">
                                   <span class="pdf-likes">
-                                      <i class="bi ${pdf.liked ? 'bi-heart-fill' : 'bi-heart'}"></i> 
+                                      <i class="bi ${pdf.liked ? 'bi-star-fill' : 'bi-star'}"></i> 
                                       <span class="likes-count">${pdf.likes_count}</span>
                                   </span>
                                   <button class="btn btn-sm btn-primary download-btn">
@@ -1939,7 +2001,7 @@ function toggleLike(pdfId, element) {
   .then(response => response.json())
   .then(data => {
       // Update the like button and count based on the response
-      element.className = data.liked ? 'bi bi-heart-fill' : 'bi-heart';
+      element.className = data.liked ? 'bi bi-star-fill' : 'bi-star';
       element.closest('.pdf-likes').querySelector('.likes-count').textContent = data.likes_count;
   })
   .catch(error => console.error('Error:', error));
@@ -9191,6 +9253,9 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         // Start generating the preview immediately
         generateAndShowPreview(previewCanvas, paletteColors, layerIndex, collection);
     }
+    setTimeout(() => {
+    syncFavoriteStarsWithAllCategories();
+}, 500);
 }
 
 
@@ -9931,42 +9996,50 @@ function updateLayersWithNewColorCount(layerIndex) {
 
 function getHarmonyPaletteData(paletteIndex) {
     try {
-        // Try to get from different possible harmony palette collections
+        // The harmony collections are named based on the harmony type + "PaletteColors"
         const harmonyCollections = [
-            'complementaryColors',
-            'analogousColors', 
-            'triadicColors',
-            'splitComplementaryColors',
-            'tetradicColors',
-            'monochromaticColors'
+            'complementaryPaletteColors',
+            'analogousPaletteColors', 
+            'triadicPaletteColors',
+            'splitComplementaryPaletteColors',
+            'tetradicPaletteColors',
+            'monochromaticPaletteColors',
+            'squarePaletteColors'
         ];
         
         let paletteColors = null;
         let harmonyType = 'harmony';
+        let collectionName = null;
         
         // Find which collection contains this palette
         for (const collection of harmonyCollections) {
             if (window[collection] && window[collection][paletteIndex]) {
                 paletteColors = window[collection][paletteIndex];
-                harmonyType = collection.replace('Colors', '');
+                collectionName = collection;
+                // Extract harmony type from collection name (remove "PaletteColors" suffix)
+                harmonyType = collection.replace('PaletteColors', '');
                 break;
             }
         }
         
         if (!paletteColors) {
             console.error('Could not find harmony palette with index:', paletteIndex);
+            console.log('Available collections:', harmonyCollections.filter(col => window[col]));
             return null;
         }
         
         // Get background variation if available
         const bgVariation = paletteColors._backgroundVariation || 'regular';
         
+        console.log(`Found harmony palette in ${collectionName} with ${paletteColors.length} colors`);
+        
         return {
             palette_type: 'HARMONY',
             colors: paletteColors,
             harmony_type: harmonyType,
             background_variation: bgVariation,
-            palette_index: parseInt(paletteIndex)
+            palette_index: parseInt(paletteIndex),
+            collection_name: collectionName
         };
         
     } catch (error) {
@@ -9975,36 +10048,133 @@ function getHarmonyPaletteData(paletteIndex) {
     }
 }
 
-
-// Add this to your existing JavaScript file
-async function toggleFavorite(button, paletteType) {
-    const paletteId = button.dataset.paletteId;
+function toggleFavorite(button, collection) {
+  const paletteType = button.dataset.paletteType;
+  const colorsId = button.dataset.colorsId;
+  const icon = button.querySelector('i');
+  const countSpan = button.querySelector('.fav-count');
+  
+  console.log('DEBUG - toggleFavorite called with:', {
+    collection,
+    paletteType,
+    colorsId
+  });
+  
+  // Handle harmony palettes differently
+  let colors;
+  let collectionName;
+  
+  if (collection === 'harmony' || paletteType === 'HARMONY') {
+    // For harmony palettes, find which collection contains this palette
+    const harmonyCollections = [
+      'complementaryPaletteColors',
+      'analogousPaletteColors', 
+      'triadicPaletteColors',
+      'splitComplementaryPaletteColors',
+      'tetradicPaletteColors',
+      'monochromaticPaletteColors',
+      'squarePaletteColors'
+    ];
     
-    if (paletteId) {
-        // Already favorited, remove it
-        await removePalette(paletteId);
-    } else {
-        // Not favorited, add it
-        const colorsId = button.getAttribute('data-colors-id');
-        const paletteTypeAttr = button.getAttribute('data-palette-type');
-        
-        let paletteData;
-        
-        if (paletteType === 'harmony' || paletteTypeAttr === 'HARMONY') {
-            // Handle harmony palettes
-            paletteData = getHarmonyPaletteData(colorsId);
-        } else {
-            // Handle other palette types (existing logic)
-            paletteData = getPaletteData(colorsId, paletteTypeAttr);
+    for (const harmonyCollection of harmonyCollections) {
+      if (window[harmonyCollection] && window[harmonyCollection][colorsId]) {
+        colors = window[harmonyCollection][colorsId];
+        collectionName = harmonyCollection.replace('PaletteColors', '');
+        console.log('DEBUG - Found harmony collection:', harmonyCollection, 'collectionName:', collectionName);
+        break;
+      }
+    }
+  } else {
+    // For other palette types, use the original logic
+    colors = window[`${collection}PaletteColors`][colorsId];
+    collectionName = collection;
+  }
+  
+  if (!colors) {
+      console.error('No colors found for this palette');
+      return;
+  }
+
+  // Get current image colors (no limits)
+  const currentImageColors = getCurrentImageColors();
+  
+  // For harmony palettes, use "HR" as the type
+  const finalType = (collection === 'harmony' || paletteType === 'HARMONY') ? 'HR' : paletteType;
+  
+  // Make a shorter name to avoid database issues
+  const shortName = `${collectionName.substring(0, 10)} ${colorsId}`;
+  
+  const paletteData = {
+      name: shortName,
+      type: finalType,
+      base_color_r: colors[0][0],
+      base_color_g: colors[0][1], 
+      base_color_b: colors[0][2],
+      num_colors: colors.length, // Use actual length
+      source_image_colors: currentImageColors, // All source colors
+      colors: colors.map(color => ({ // All palette colors
+          red: color[0],
+          green: color[1],
+          blue: color[2]
+      }))
+  };
+
+  console.log('DEBUG - Final palette data being sent:', paletteData);
+  console.log('DEBUG - Colors count:', colors.length, 'Source colors count:', currentImageColors.length);
+
+  // Check if it's harmony (star) or other (heart)
+  const isHarmony = collection === 'harmony' || paletteType === 'HARMONY';
+  const emptyIcon = isHarmony ? 'bi-star' : 'bi-star';
+
+  if (icon.classList.contains(emptyIcon)) {
+      // Add to favorites
+      savePalette(paletteData, button);
+  } else {
+      // Remove from favorites
+      removePalette(button.dataset.paletteId);
+  }
+}
+
+// Updated helper function to get current image colors (no limits)
+function getCurrentImageColors() {
+    try {
+        const storedColors = localStorage.getItem('distinctColorsArrayColorPallet');
+        if (storedColors) {
+            const parsedColors = JSON.parse(storedColors);
+            return parsedColors.filter(color => 
+                Array.isArray(color) && 
+                color.length === 3 && 
+                color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+            ); // No slice limit - return all valid colors
         }
-        
-        if (paletteData) {
-            await savePalette(paletteData, button);
-        } else {
-            console.error('Could not get palette data for favoriting');
-        }
+        return [];
+    } catch (e) {
+        console.error('Error getting current image colors:', e);
+        return [];
     }
 }
+
+
+
+
+// Helper function to get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+
   function getColorFamily(color) {
         const [h, s, l] = rgbToHsl(...color);
         
@@ -10025,22 +10195,13 @@ async function toggleFavorite(button, paletteType) {
 
 async function savePalette(paletteData, button) {
   try {
-      // Get current image colors
-      const currentImageColors = getCurrentImageColors();
-      
-      // Add source image colors to palette data
-      const enrichedPaletteData = {
-          ...paletteData,
-          source_image_colors: currentImageColors || [] // Store the actual RGB values
-      };
-
       const response = await fetch('api/palettes/favorite/', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
               'X-CSRFToken': getCookie('csrftoken')
           },
-          body: JSON.stringify(enrichedPaletteData)
+          body: JSON.stringify(paletteData)
       });
 
       const data = await response.json();
@@ -10049,17 +10210,29 @@ async function savePalette(paletteData, button) {
           const icon = button.querySelector('i');
           const countSpan = button.querySelector('.fav-count');
           
-          icon.classList.remove('bi-star');
-          icon.classList.add('bi-star-fill');
+          // Check if it's harmony or other palette type
+          const paletteType = button.dataset.paletteType;
+          const isHarmony = paletteType === 'HARMONY';
+          
+          if (isHarmony) {
+              icon.classList.remove('bi-star');
+              icon.classList.add('bi-star-fill');
+          } else {
+              icon.classList.remove('bi-star');
+              icon.classList.add('bi-star-fill');
+          }
+          
           button.dataset.paletteId = data.palette_id;
           countSpan.textContent = data.favorites_count;
           
+          // Refresh favorites section
           loadFavorites();
       }
   } catch (error) {
       console.error('Error saving palette:', error);
   }
 }
+
 
 // Helper function to get current image colors
 function getCurrentImageColors() {
@@ -10094,8 +10267,18 @@ async function removePalette(paletteId) {
           const icon = button.querySelector('i');
           const countSpan = button.querySelector('.fav-count');
           
-          icon.classList.remove('bi-star-fill');
-          icon.classList.add('bi-star');
+          // Check if it's harmony or other palette type
+          const paletteType = button.dataset.paletteType;
+          const isHarmony = paletteType === 'HARMONY';
+          
+          if (isHarmony) {
+              icon.classList.remove('bi-star-fill');
+              icon.classList.add('bi-star');
+          } else {
+              icon.classList.remove('bi-star-fill');
+              icon.classList.add('bi-star');
+          }
+          
           delete button.dataset.paletteId;
           
           const data = await response.json();
@@ -10108,7 +10291,6 @@ async function removePalette(paletteId) {
       console.error('Error removing palette:', error);
   }
 }
-
 function rgbToHex(r, g, b) {
     return '#' + [r, g, b].map(x => {
         const hex = x.toString(16);
@@ -10500,38 +10682,290 @@ function createAdvancedFamilyMapping(favoriteAnalysis, baseAnalysis) {
 
 
 
-// Add this simple function to check if two sets of colors are actually similar
+// Main function to compare all favorites with all palette categories (STANDALONE)
+function syncFavoriteStarsWithAllCategories() {
+    console.log('🌟 Starting sync of favorite stars with all categories...');
+    
+    // Get all favorites first
+    fetch('/tif-editor/api/palettes/favorites/')
+        .then(response => response.json())
+        .then(favorites => {
+            console.log(`Found ${favorites.length} favorites to sync`);
+            
+            if (favorites.length === 0) {
+                resetAllStars();
+                return;
+            }
+            
+            // Define all possible palette categories and their storage variables
+            const categories = [
+                { name: 'trending', storageVar: 'trendingPaletteColors', prefix: 'trending_' },
+                { name: 'ss', storageVar: 'ssPaletteColors', prefix: 'ss_' },
+                { name: 'aw', storageVar: 'awPaletteColors', prefix: 'aw_' },
+                { name: 'harmony', storageVar: 'harmonyPaletteColors', prefix: 'harmony_' }
+            ];
+            
+            // Process each category
+            categories.forEach(category => {
+                syncCategoryWithFavorites(category, favorites);
+            });
+            
+            console.log('✅ Finished syncing all categories with favorites');
+        })
+        .catch(error => {
+            console.error('Error fetching favorites for sync:', error);
+        });
+}
+
+// Function to sync a specific category with favorites
+function syncCategoryWithFavorites(category, favorites) {
+    console.log(`\n🔍 Syncing ${category.name} category...`);
+    
+    // Get stored palettes for this category
+    const categoryPalettes = window[category.storageVar];
+    if (!categoryPalettes) {
+        console.log(`❌ No stored palettes found for ${category.name}`);
+        return;
+    }
+    
+    // Get current image colors for matching
+    let currentImageColors = getCurrentImageColors();
+    
+    // Check each palette in this category
+    Object.keys(categoryPalettes).forEach(paletteIndex => {
+        const paletteColors = categoryPalettes[paletteIndex];
+        if (!paletteColors || paletteColors.length === 0) return;
+        
+        console.log(`  🎨 Checking ${category.name} palette ${paletteIndex}...`);
+        
+        // Find matching favorite
+        const matchingFavorite = findMatchingFavorite(
+            favorites, 
+            paletteColors, 
+            currentImageColors, 
+            category.name.toUpperCase(),
+            parseInt(paletteIndex)
+        );
+        
+        // Update the star for this palette
+        updateStarForPalette(category, paletteIndex, matchingFavorite);
+    });
+}
+
+// Function to find matching favorite based on multiple criteria
+function findMatchingFavorite(favorites, paletteColors, currentImageColors, categoryType, paletteIndex) {
+    for (const favorite of favorites) {
+        let isMatch = false;
+        
+        // Method 1: Direct type and index matching
+        if (favorite.type === categoryType && favorite.palette_index === paletteIndex) {
+            console.log(`    ✅ Direct match found: type=${categoryType}, index=${paletteIndex}`);
+            isMatch = true;
+        }
+        
+        // Method 2: Color similarity matching (if we have current image colors)
+        if (!isMatch && currentImageColors && favorite.source_image_colors) {
+            const imageColorsMatch = areColorsEqual(currentImageColors, favorite.source_image_colors);
+            if (imageColorsMatch) {
+                // Check if palette colors are similar
+                const favPaletteColors = favorite.colors.map(color => [color.red, color.green, color.blue]);
+                const paletteColorsMatch = areColorsSimilar(paletteColors, favPaletteColors, 40);
+                
+                if (paletteColorsMatch) {
+                    console.log(`    ✅ Color similarity match found for ${categoryType} palette ${paletteIndex}`);
+                    isMatch = true;
+                }
+            }
+        }
+        
+        // Method 3: Special handling for harmony palettes
+        if (!isMatch && (categoryType === 'HARMONY' || favorite.type === 'HARMONY' || favorite.type === 'HR')) {
+            if ((favorite.type === 'HARMONY' || favorite.type === 'HR') && 
+                favorite.palette_index === paletteIndex) {
+                console.log(`    ✅ Harmony match found: index=${paletteIndex}`);
+                isMatch = true;
+            }
+        }
+        
+        if (isMatch) {
+            return favorite;
+        }
+    }
+    
+    return null;
+}
+
+// Function to update star for a specific palette
+function updateStarForPalette(category, paletteIndex, matchingFavorite) {
+    // Use the specific ID pattern from the HTML templates
+    let favoriteBtn = null;
+    
+    // Try to find the button using the specific ID pattern
+    const buttonId = `${category.name}_fav_btn_${paletteIndex}`;
+    favoriteBtn = document.getElementById(buttonId);
+    
+    if (!favoriteBtn) {
+        // Fallback to other selectors if ID doesn't work
+        const fallbackSelectors = [
+            `[data-palette-type="${category.name.toUpperCase()}"][data-colors-id="${paletteIndex}"].favorite-btn`,
+            `[data-palette-type="${getPaletteTypeCode(category.name)}"][data-colors-id="${paletteIndex}"].favorite-btn`,
+            `#${category.prefix}colorPalette_${paletteIndex} + * .favorite-btn`,
+            `.favorite-btn[data-colors-id="${paletteIndex}"]`
+        ];
+        
+        for (const selector of fallbackSelectors) {
+            favoriteBtn = document.querySelector(selector);
+            if (favoriteBtn) {
+                console.log(`    🎯 Found button with fallback selector: ${selector}`);
+                break;
+            }
+        }
+    } else {
+        console.log(`    🎯 Found button with ID: ${buttonId}`);
+    }
+    
+    if (!favoriteBtn) {
+        console.log(`    ❌ Could not find favorite button for ${category.name} palette ${paletteIndex}`);
+        console.log(`    🔍 Tried ID: ${buttonId}`);
+        return;
+    }
+    
+    const icon = favoriteBtn.querySelector('i');
+    const countSpan = favoriteBtn.querySelector('.fav-count');
+    
+    if (matchingFavorite) {
+        console.log(`    ⭐ Filling star for ${category.name} palette ${paletteIndex}`);
+        
+        // Fill the star
+        if (icon) {
+            icon.classList.remove('bi-star');
+            icon.classList.add('bi-star-fill');
+        }
+        
+        // Update count
+        if (countSpan) {
+            countSpan.textContent = matchingFavorite.favorites_count || 1;
+        }
+        
+        // Store palette ID for removal functionality
+        favoriteBtn.setAttribute('data-palette-id', matchingFavorite.id);
+        favoriteBtn.setAttribute('data-is-favorited', 'true');
+        
+        // Add active class if it exists in the template
+        favoriteBtn.classList.add('active');
+        
+    } else {
+        console.log(`    ☆ Emptying star for ${category.name} palette ${paletteIndex}`);
+        
+        // Empty the star
+        if (icon) {
+            icon.classList.remove('bi-star-fill');
+            icon.classList.add('bi-star');
+        }
+        
+        // Reset count
+        if (countSpan) {
+            countSpan.textContent = '0';
+        }
+        
+        // Remove attributes
+        favoriteBtn.removeAttribute('data-palette-id');
+        favoriteBtn.removeAttribute('data-is-favorited');
+        
+        // Remove active class
+        favoriteBtn.classList.remove('active');
+    }
+}
+
+// Helper function to get the correct palette type code
+function getPaletteTypeCode(categoryName) {
+    const typeMap = {
+        'trending': 'TR',
+        'ss': 'SS', 
+        'aw': 'AW',
+        'harmony': 'HARMONY'
+    };
+    return typeMap[categoryName] || categoryName.toUpperCase();
+}
+// Helper function to get current image colors
+function getCurrentImageColors() {
+    try {
+        const storedColors = localStorage.getItem('distinctColorsArrayColorPallet');
+        if (storedColors) {
+            const parsedColors = JSON.parse(storedColors);
+            return parsedColors.filter(color => 
+                Array.isArray(color) && 
+                color.length === 3 && 
+                color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+            );
+        }
+    } catch (e) {
+        console.log('Error reading localStorage colors:', e);
+    }
+    return null;
+}
+
+// Function to reset all stars (when no favorites exist)
+function resetAllStars() {
+    console.log('🔄 Resetting all stars...');
+    
+    const allFavoriteButtons = document.querySelectorAll('.favorite-btn:not(.active)');
+    
+    allFavoriteButtons.forEach(btn => {
+        const icon = btn.querySelector('i');
+        const countSpan = btn.querySelector('.fav-count');
+        
+        if (icon) {
+            icon.classList.remove('bi-star-fill');
+            icon.classList.add('bi-star');
+        }
+        
+        if (countSpan) {
+            countSpan.textContent = '0';
+        }
+        
+        btn.removeAttribute('data-palette-id');
+        btn.removeAttribute('data-is-favorited');
+    });
+}
+
+// Enhanced areColorsSimilar function with better threshold
 function areColorsSimilar(colors1, colors2, threshold = 30) {
-    if (!colors1 || !colors2 || colors1.length < 4 || colors2.length < 4) {
+    if (!colors1 || !colors2 || colors1.length < 3 || colors2.length < 3) {
         return false;
     }
     
-    // Calculate average color distance between the two sets
+    // Compare first 8 colors from each palette
+    const compareCount = Math.min(colors1.length, colors2.length, 8);
     let totalDistance = 0;
     let comparisons = 0;
     
-    // Compare each color in set1 with closest color in set2
-    colors1.slice(0, 8).forEach(color1 => {
-        let minDistance = Infinity;
+    for (let i = 0; i < compareCount; i++) {
+        const color1 = colors1[i];
+        const color2 = colors2[i];
         
-        colors2.slice(0, 8).forEach(color2 => {
-            const distance = Math.sqrt(
-                Math.pow(color1[0] - color2[0], 2) +
-                Math.pow(color1[1] - color2[1], 2) +
-                Math.pow(color1[2] - color2[2], 2)
-            );
-            minDistance = Math.min(minDistance, distance);
-        });
+        if (!color1 || !color2 || color1.length !== 3 || color2.length !== 3) continue;
         
-        totalDistance += minDistance;
+        const distance = Math.sqrt(
+            Math.pow(color1[0] - color2[0], 2) +
+            Math.pow(color1[1] - color2[1], 2) +
+            Math.pow(color1[2] - color2[2], 2)
+        );
+        
+        totalDistance += distance;
         comparisons++;
-    });
+    }
+    
+    if (comparisons === 0) return false;
     
     const averageDistance = totalDistance / comparisons;
-    console.log(`Color similarity check: average distance = ${averageDistance.toFixed(1)}, threshold = ${threshold}`);
+    const isMatch = averageDistance <= threshold;
     
-    return averageDistance <= threshold;
+    console.log(`    📏 Color similarity: avg distance = ${averageDistance.toFixed(1)}, threshold = ${threshold}, match = ${isMatch}`);
+    
+    return isMatch;
 }
+
 function groupColorsByFamily(colors) {
     const families = {};
     
@@ -10555,59 +10989,290 @@ function groupColorsByFamily(colors) {
     return families;
 }
 
-
+// UPDATED loadFavorites function (WITHOUT the sync call)
 async function loadFavorites() {
     try {
-        const response = await fetch('api/palettes/favorites/');
-        const data = await response.json();
+        const response = await fetch('/tif-editor/api/palettes/favorites/');
+        if (!response.ok) throw new Error(`Failed to load favorites`);
         
-        if (response.ok) {
-            // Update all palette favorite buttons (including harmony)
-            const allButtons = document.querySelectorAll('.favorite-btn');
-            
-            allButtons.forEach(button => {
-                const colorsId = button.getAttribute('data-colors-id');
-                const paletteType = button.getAttribute('data-palette-type');
-                const icon = button.querySelector('i');
-                const countSpan = button.querySelector('.fav-count');
-                
-                // Reset button state
-                if (paletteType === 'HARMONY') {
-                    icon.classList.remove('bi-star-fill');
-                    icon.classList.add('bi-star');
-                } else {
-                    icon.classList.remove('bi-heart-fill');
-                    icon.classList.add('bi-heart');
-                }
-                delete button.dataset.paletteId;
-                
-                // Find matching favorite
-                const matchingFavorite = data.favorites.find(fav => 
-                    fav.palette_type === paletteType && 
-                    fav.palette_index === parseInt(colorsId)
-                );
-                
-                if (matchingFavorite) {
-                    if (paletteType === 'HARMONY') {
-                        icon.classList.remove('bi-star');
-                        icon.classList.add('bi-star-fill');
-                    } else {
-                        icon.classList.remove('bi-star');
-                        icon.classList.add('bi-star-fill');
-                    }
-                    button.dataset.paletteId = matchingFavorite.id;
-                }
-                
-                // Update count
-                if (countSpan) {
-                    countSpan.textContent = matchingFavorite ? matchingFavorite.favorites_count || 1 : 0;
-                }
-            });
+        const favorites = await response.json();
+        console.log("🟢 FRONTEND RECEIVED from API:", favorites.length, "favorites");
+        
+        const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+        favContainer.innerHTML = '';
+
+        if (favorites.length === 0) {
+            showNoFavoritesMessage(0, "You haven't saved any favorite palettes yet.");
+            return;
         }
+
+        // Get current image colors
+        let currentImageColors = null;
+        try {
+            const storedColors = localStorage.getItem('distinctColorsArrayColorPallet');
+            if (storedColors) {
+                const parsedColors = JSON.parse(storedColors);
+                currentImageColors = parsedColors.filter(color => 
+                    Array.isArray(color) && 
+                    color.length === 3 && 
+                    color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+                );
+            }
+        } catch (e) {
+            console.log('Error reading localStorage colors:', e);
+        }
+
+        if (!currentImageColors || currentImageColors.length < 4) {
+            favContainer.innerHTML = `
+                <div class="alert alert-warning text-center w-100">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>No Image Colors Available</strong>
+                    <div class="mt-2 small">
+                        Please load an image first to see compatible favorite palettes.
+                    </div>
+                    <button class="btn btn-sm btn-primary mt-2" onclick="loadFavorites()">
+                        <i class="bi bi-arrow-clockwise"></i> Retry
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        console.log(`🎨 Filtering favorites based on current image colors`);
+
+        const matchingFavorites = [];
+        const nonMatchingFavorites = [];
+        
+        favorites.forEach((favorite, originalIndex) => {
+            console.log(`\n--- Checking palette "${favorite.name}" (ID: ${favorite.id}) ---`);
+            
+            if (favorite.source_image_colors && Array.isArray(favorite.source_image_colors) && favorite.source_image_colors.length > 0) {
+                const colorsMatch = areColorsEqual(currentImageColors, favorite.source_image_colors);
+                
+                if (colorsMatch) {
+                    const favoriteColors = favorite.colors.map(color => [color.red, color.green, color.blue]);
+                    const processedFavorite = { 
+                        ...favorite, 
+                        colors: favoriteColors, 
+                        originalIndex 
+                    };
+                    matchingFavorites.push(processedFavorite);
+                    console.log(`✅ "${favorite.name}" matches current image - added to matching list`);
+                } else {
+                    nonMatchingFavorites.push({ ...favorite, originalIndex });
+                    console.log(`❌ "${favorite.name}" doesn't match current image`);
+                }
+            } else {
+                nonMatchingFavorites.push({ ...favorite, originalIndex });
+                console.log(`❌ "${favorite.name}" has no source colors stored`);
+            }
+        });
+
+        console.log(`\n🎨 Final Results: ${matchingFavorites.length} matching, ${nonMatchingFavorites.length} non-matching`);
+
+        if (matchingFavorites.length === 0) {
+            favContainer.innerHTML = `
+                <div class="alert alert-warning text-center w-100">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>No Matching Palettes Found</strong>
+                    <div class="mt-2 small">
+                        No saved palettes match your current image colors.
+                    </div>
+                    <button class="btn btn-sm btn-warning mt-2" onclick="showAllFavoritesOverride()">
+                        <i class="bi bi-eye"></i> Show All Anyway
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        // Clear and initialize the favorite palette colors storage
+        window.favPaletteColors = {};
+        
+        // Display matching favorites with appropriate icons
+        matchingFavorites.forEach((favorite, displayIndex) => {
+            console.log(`\n--- Displaying palette ${displayIndex}: "${favorite.name}" (ID: ${favorite.id}) ---`);
+            const colors = favorite.colors;
+            console.log('Colors being displayed (first 5):', colors.slice(0, 5));
+            
+            // Store the colors
+            window.favPaletteColors[displayIndex] = colors;
+            
+            // Determine if this is a harmony palette
+            const isHarmony = favorite.type === 'HR' || favorite.type === 'HARMONY';
+            const iconClass = isHarmony ? 'bi-star-fill' : 'bi-star-fill';
+            
+            // Create palette HTML with appropriate icon
+            const paletteHtml = `
+                <div class="layer-toggle-item d-flex flex-column gap-2" data-favorite-id="${favorite.id}" data-favorite-name="${favorite.name}">
+                    <div id="fav_colorPalette_${displayIndex}" class="color-palette d-flex flex-column"></div>
+                    <div class="d-flex align-items-center justify-content-center w-100">
+                        <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}" data-palette-type="${favorite.type}">
+                            <i class="${iconClass}"></i>
+                            <span class="fav-count">${favorite.favorites_count}</span>
+                        </button>
+                    </div>
+                    <div class="text-center small mt-1">
+                        <strong>${favorite.name}</strong>
+                        <div class="text-muted" style="font-size: 0.75em;">
+                            ${colors.length} colors • 100% match • ${isHarmony ? 'Harmony' : 'Regular'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            favContainer.insertAdjacentHTML('beforeend', paletteHtml);
+            
+            console.log(`🎨 CALLING displayFavoritePalette for index ${displayIndex}`);
+            console.log(`   Input colors (first 5):`, colors.slice(0, 5));
+            
+            // Call displayFavoritePalette to create the preview interface
+            displayFavoritePalette(displayIndex, colors, 'fav', 6, 1);
+            
+            // Add click event listener for the favorite button to remove from favorites
+            const favoriteBtn = document.querySelector(`[data-palette-id="${favorite.id}"]`);
+            if (favoriteBtn) {
+                favoriteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent triggering the palette click
+                    removeFavorite(favoriteBtn, displayIndex);
+                });
+            }
+        });
+
+        console.log('\n🔍 Final verification of stored palettes:');
+        Object.keys(window.favPaletteColors).forEach(key => {
+            console.log(`Palette ${key} (first 3):`, window.favPaletteColors[key].slice(0, 3), '...');
+        });
+
     } catch (error) {
         console.error('Error loading favorites:', error);
     }
 }
+
+// NEW: Function to update stars in trending/SS/AW/harmony sections based on current image colors
+function updatePaletteStarsBasedOnCurrentImage(favorites, currentImageColors = null) {
+    console.log('🌟 Updating palette stars based on current image colors...');
+    
+    // If no current image colors provided, try to get them
+    if (!currentImageColors) {
+        try {
+            const storedColors = localStorage.getItem('distinctColorsArrayColorPallet');
+            if (storedColors) {
+                const parsedColors = JSON.parse(storedColors);
+                currentImageColors = parsedColors.filter(color => 
+                    Array.isArray(color) && 
+                    color.length === 3 && 
+                    color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+                );
+            }
+        } catch (e) {
+            console.log('Error reading localStorage colors:', e);
+            return;
+        }
+    }
+    
+    if (!currentImageColors || currentImageColors.length < 4) {
+        console.log('❌ No current image colors available for star updating');
+        return;
+    }
+
+    // Get all palette sections
+    const sections = ['trending', 'ss', 'aw', 'harmony'];
+    
+    sections.forEach(sectionType => {
+        console.log(`\n🔍 Checking ${sectionType} section...`);
+        
+        // Get all stored palettes for this section
+        const sectionPalettes = window[`${sectionType}PaletteColors`];
+        if (!sectionPalettes) {
+            console.log(`❌ No stored palettes found for ${sectionType}`);
+            return;
+        }
+        
+        // Check each palette in this section
+        Object.keys(sectionPalettes).forEach(paletteIndex => {
+            const paletteColors = sectionPalettes[paletteIndex];
+            if (!paletteColors || paletteColors.length === 0) return;
+            
+            // Find matching favorite based on image colors and palette colors
+            const matchingFavorite = favorites.find(fav => {
+                // Check if this favorite matches current image AND this specific palette
+                if (!fav.source_image_colors || !areColorsEqual(currentImageColors, fav.source_image_colors)) {
+                    return false;
+                }
+                
+                // Check if the favorite's palette colors match this section's palette
+                const favPaletteColors = fav.colors.map(color => [color.red, color.green, color.blue]);
+                return areColorsSimilar(paletteColors, favPaletteColors, 50);
+            });
+            
+            // Find the favorite button for this palette
+            let favoriteBtn = null;
+            
+            // Method 1: Try to find by palette index and section type
+            favoriteBtn = document.querySelector(
+                `[data-palette-index="${paletteIndex}"][data-palette-type="${sectionType.toUpperCase()}"] .favorite-btn`
+            );
+            
+            // Method 2: Try alternative selectors
+            if (!favoriteBtn) {
+                const possibleSelectors = [
+                    `#${sectionType}_colorPalette_${paletteIndex} .favorite-btn`,
+                    `[data-colors-id="${paletteIndex}"][data-palette-type="${sectionType.toUpperCase()}"]`,
+                    `.palette-container[data-index="${paletteIndex}"][data-section="${sectionType}"] .favorite-btn`
+                ];
+                
+                for (const selector of possibleSelectors) {
+                    favoriteBtn = document.querySelector(selector);
+                    if (favoriteBtn) break;
+                }
+            }
+            
+            if (favoriteBtn) {
+                const icon = favoriteBtn.querySelector('i');
+                const countSpan = favoriteBtn.querySelector('.fav-count');
+                
+                if (matchingFavorite) {
+                    console.log(`✅ Found matching favorite for ${sectionType} palette ${paletteIndex}`);
+                    
+                    // Fill the star
+                    if (icon) {
+                        icon.classList.remove('bi-star');
+                        icon.classList.add('bi-star-fill');
+                    }
+                    
+                    // Update count
+                    if (countSpan) {
+                        countSpan.textContent = matchingFavorite.favorites_count || 1;
+                    }
+                    
+                    // Store palette ID for removal functionality
+                    favoriteBtn.setAttribute('data-palette-id', matchingFavorite.id);
+                } else {
+                    // Empty the star
+                    if (icon) {
+                        icon.classList.remove('bi-star-fill');
+                        icon.classList.add('bi-star');
+                    }
+                    
+                    // Reset count
+                    if (countSpan) {
+                        countSpan.textContent = '0';
+                    }
+                    
+                    // Remove palette ID
+                    favoriteBtn.removeAttribute('data-palette-id');
+                }
+            } else {
+                console.log(`❌ Could not find favorite button for ${sectionType} palette ${paletteIndex}`);
+            }
+        });
+    });
+    
+    console.log('✅ Finished updating palette stars based on current image');
+}
+
+
 
 function areColorsEqual(colors1, colors2, tolerance = 50) {
     if (!colors1 || !colors2) return false;
@@ -10709,7 +11374,7 @@ function displayAllFavorites(favorites, container) {
                 <div class="d-flex align-items-center justify-content-between w-100">
                     
                     <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}">
-                        <i class="bi bi-heart-fill"></i>
+                        <i class="bi bi-star-fill"></i>
                         <span class="fav-count">${favorite.favorites_count}</span>
                     </button>
                     
@@ -10848,8 +11513,8 @@ function showNoCompatibleFavoritesMessageHSL(incompatibleFavorites, baseColors) 
     }
 }
 
-// Function to override and show all favorites
-// Function to override and show all favorites
+
+// Update showAllFavoritesOverride to show proper icons
 function showAllFavoritesOverride() {
     fetch('/tif-editor/api/palettes/favorites/')
         .then(response => response.json())
@@ -10869,46 +11534,37 @@ function showAllFavoritesOverride() {
                 const colors = favorite.colors.map(color => [color.red, color.green, color.blue]);
                 window.favPaletteColors[displayIndex] = colors;
                 
+                // Determine if this is a harmony palette
+                const isHarmony = favorite.type === 'HR' || favorite.type === 'HARMONY';
+                const iconClass = isHarmony ? 'bi-star-fill' : 'bi-star-fill';
+                
                 const paletteHtml = `
                     <div class="layer-toggle-item d-flex flex-column gap-2">
                         <div id="fav_colorPalette_${displayIndex}" class="color-palette d-flex flex-column"></div>
-                        <div class="d-flex align-items-center justify-content-between w-100">
-                            <button id="fav_shufflePalette_${displayIndex}" type="button" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-shuffle"></i> Shuffle
-                            </button>
-                            <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}">
-                                <i class="bi bi-star-fill"></i>
+                        <div class="d-flex align-items-center justify-content-center w-100">
+                            <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}" data-palette-type="${favorite.type}">
+                                <i class="${iconClass}"></i>
                                 <span class="fav-count">${favorite.favorites_count}</span>
-                            </button>
-                            <button id="fav_applyButton_${displayIndex}" type="button" class="btn btn-sm btn-primary">
-                                <i class="bi bi-check"></i> Apply
                             </button>
                         </div>
                         <div class="text-center small mt-1">
                             ${favorite.name}
+                            <div class="text-muted" style="font-size: 0.75em;">
+                                ${isHarmony ? 'Harmony' : 'Regular'} • ${colors.length} colors
+                            </div>
                         </div>
                     </div>
                 `;
                 
                 favContainer.insertAdjacentHTML('beforeend', paletteHtml);
-                displayColorPalette(displayIndex, colors, 'fav', 6, 1);
+                displayFavoritePalette(displayIndex, colors, 'fav', 6, 1);
                 
-                // Add event listeners
-                const shuffleBtn = document.getElementById(`fav_shufflePalette_${displayIndex}`);
-                const applyBtn = document.getElementById(`fav_applyButton_${displayIndex}`);
-                
-                if (shuffleBtn) {
-                    shuffleBtn.addEventListener('click', () => {
-                        displayColorPalette(displayIndex, window.favPaletteColors[displayIndex], 'fav', 6, 1);
-                    });
-                }
-                
-                if (applyBtn) {
-                    applyBtn.addEventListener('click', () => {
-                        const fullPalette = window.favPaletteColors[displayIndex];
-                        if (typeof window.processPallet === 'function' && fullPalette) {
-                            window.processPallet(null, 1, null, 0, null, fullPalette, displayIndex, 'fav');
-                        }
+                // Add remove favorite functionality
+                const favoriteBtn = document.querySelector(`[data-palette-id="${favorite.id}"]:last-of-type`);
+                if (favoriteBtn) {
+                    favoriteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        removeFavorite(favoriteBtn, displayIndex);
                     });
                 }
             });
