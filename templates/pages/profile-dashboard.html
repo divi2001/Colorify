@@ -70,11 +70,26 @@
       body {
         font-family: "Inter", sans-serif;
       }
+      /* Ensure full height layout */
+      html, body {
+        height: 100%;
+      }
+      .full-height-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .expandable-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
     </style>
   </head>
-  
-  <body class="bg-gray-100">
-    <div class="p-3">
+
+
+  <body class="bg-gray-100 h-screen overflow-hidden">
+    <div class="h-screen flex flex-col p-3 gap-3">
       <!-- Top Navbar -->
       <nav class="bg-white shadow-md rounded-xl">
         <div class="mx-auto">
@@ -83,7 +98,7 @@
               <div class="flex-shrink-0 flex items-center ml-3">
                 <img
                   class="h-8 w-auto"
-                  src="./static/images/logo.png"
+                  src="{% static 'images/logo.png' %}"
                   alt="Colorify logo"
                 />
                 <span class="ml-2 text-xl font-bold text-indigo-600">COLORIFY</span>
@@ -181,7 +196,7 @@
         </div>
       </nav>
 
-      <div class="flex">
+      <main class="flex-1 min-h-0 flex flex-col">
         <!-- Sidebar -->
         {% comment %} <div
           class="w-16 bg-white shadow-md hidden flex-col items-center py-4 space-y-6 rounded-xl h-screen mt-8 md:flex"
@@ -224,569 +239,417 @@
         </div> {% endcomment %}
 
         <!-- Main Content -->
-        <div class="flex-1 p-8">
-          <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            <!-- My Account -->
-            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 lg:col-span-2">
-              <h2 class="text-xl font-semibold mb-4">My Account</h2>
-              <div class="flex flex-col sm:flex-row mb-6">
-                <div class="w-full sm:w-1/3 mb-4 sm:mb-0 sm:mr-6">
-                  <div class="bg-teal-500 rounded-lg overflow-hidden mb-2 h-48 flex items-center justify-center" id="profilePhotoContainer">
-                    {% if user.profile_photo %}
-                      <img 
-                        src="{{ user.profile_photo.url }}" 
-                        alt="Profile Picture" 
-                        class="w-full h-auto" 
-                        id="profilePhotoDisplay"
-                      />
-                    {% else %}
-                      <div class="w-full h-full flex items-center justify-center bg-gray-200">
-                        <span class="text-gray-500">No profile photo</span>
-                      </div>
-                    {% endif %}
-                  </div>
-                  <input type="file" id="profilePhotoInput" class="hidden" accept="image/*" onchange="handleProfilePhotoChange(event)">
-                  <button
-                    onclick="document.getElementById('profilePhotoInput').click()"
-                    class="w-full bg-gray-200 text-gray-700 px-3 py-2 rounded-full text-sm mb-2"
-                  >
-                    Edit Profile Photo
-                  </button>
-                  {% if user.profile_photo %}
-                  <button
-                    onclick="deleteProfilePhoto()"
-                    class="w-full bg-red-100 text-red-700 px-3 py-2 rounded-full text-sm"
-                  >
-                    Remove Photo
-                  </button>
-                  {% endif %}
-                </div>
-                <div class="w-full sm:w-2/3 space-y-3">
-                  <div class="mb-2">
-                    <div id="nameView">
-                      <p class="text-sm text-gray-500 flex items-center">
-                        Name
-                        <svg
-                          class="h-3 w-3 ml-1 text-gray-400 cursor-pointer"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                          onclick="toggleEdit('name')"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                          ></path>
-                        </svg>
-                      </p>
-                      <p class="font-semibold" id="nameText">
-                        {% if user.first_name %}
-                            {{ user.first_name }} {{ user.last_name }}
-                        {% else %}
-                            {{ user.username }}
-                        {% endif %}
-                      </p>
+        <!-- Content Container: Uses calc() to leave bottom gap -->
+        <div class="h-full">
+          
+          <!-- My Account Card: Full height minus padding -->
+          <div class="h-full bg-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8 flex flex-col overflow-hidden">
+            
+            <!-- Header: Fixed height -->
+            <div class="flex-shrink-0 mb-6">
+              <h2 class="text-xl font-semibold">My Account</h2>
+            </div>
+            
+            <!-- Scrollable Content Area: Takes remaining space -->
+            <div class="flex-1 min-h-0 overflow-y-auto">
+              <div class="space-y-6 lg:space-y-8">
+                
+                <!-- Profile Section -->
+                <section class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                  
+                  <!-- Profile Photo Column -->
+                  <div class="w-full lg:w-80 flex-shrink-0">
+                    <div class="bg-teal-500 rounded-lg overflow-hidden mb-3 aspect-square max-w-64 mx-auto lg:mx-0 flex items-center justify-center" id="profilePhotoContainer">
+                      {% if user.profile_photo %}
+                        <img 
+                          src="{{ user.profile_photo.url }}" 
+                          alt="Profile Picture" 
+                          class="w-full h-full object-cover" 
+                          id="profilePhotoDisplay"
+                        />
+                      {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                          <span class="text-gray-500">No profile photo</span>
+                        </div>
+                      {% endif %}
                     </div>
-                    <div id="nameEdit" class="hidden">
-                      <div class="mb-2">
-                        <label for="firstNameInput" class="block text-sm text-gray-500">First Name</label>
-                        <input type="text" id="firstNameInput" class="border rounded px-2 py-1 w-full" value="{{ user.first_name }}">
-                      </div>
-                      <div class="mb-2">
-                        <label for="lastNameInput" class="block text-sm text-gray-500">Last Name</label>
-                        <input type="text" id="lastNameInput" class="border rounded px-2 py-1 w-full" value="{{ user.last_name }}">
-                      </div>
-                      <div class="mt-2">
-                        <button onclick="saveName()" class="bg-blue-500 text-white px-2 py-1 rounded mr-2">Save</button>
-                        <button onclick="cancelEdit('name')" class="bg-gray-300 px-2 py-1 rounded">Cancel</button>
-                      </div>
+                    <input type="file" id="profilePhotoInput" class="hidden" accept="image/*" onchange="handleProfilePhotoChange(event)">
+                    <div class="max-w-64 mx-auto lg:mx-0 space-y-2">
+                      <button
+                        onclick="document.getElementById('profilePhotoInput').click()"
+                        class="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm hover:bg-gray-300 transition-colors"
+                      >
+                        Edit Profile Photo
+                      </button>
+                      {% if user.profile_photo %}
+                      <button
+                        onclick="deleteProfilePhoto()"
+                        class="w-full bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm hover:bg-red-200 transition-colors"
+                      >
+                        Remove Photo
+                      </button>
+                      {% endif %}
                     </div>
                   </div>
-                  <div class="mb-2">
-                    <div id="genderView">
-                      <p class="text-sm text-gray-500 flex items-center">
-                        Gender
-                        <svg
-                          class="h-3 w-3 ml-1 text-gray-400 cursor-pointer"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                          onclick="toggleEdit('gender')"
+                  
+                  <!-- Profile Details Column -->
+                  <div class="flex-1 min-w-0">
+                    <div class="space-y-6">
+                      
+                      <!-- Name Section -->
+                      <div>
+                        <div id="nameView">
+                          <p class="text-sm text-gray-500 flex items-center mb-1">
+                            Name
+                            <svg
+                              class="h-3 w-3 ml-1 text-gray-400 cursor-pointer hover:text-gray-600 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                              onclick="toggleEdit('name')"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              ></path>
+                            </svg>
+                          </p>
+                          <p class="font-semibold text-lg" id="nameText">
+                            {% if user.first_name %}
+                                {{ user.first_name }} {{ user.last_name }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                          </p>
+                        </div>
+                        <div id="nameEdit" class="hidden space-y-3">
+                          <div>
+                            <label for="firstNameInput" class="block text-sm text-gray-500 mb-1">First Name</label>
+                            <input type="text" id="firstNameInput" class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="{{ user.first_name }}">
+                          </div>
+                          <div>
+                            <label for="lastNameInput" class="block text-sm text-gray-500 mb-1">Last Name</label>
+                            <input type="text" id="lastNameInput" class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="{{ user.last_name }}">
+                          </div>
+                          <div class="flex gap-2">
+                            <button onclick="saveName()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Save</button>
+                            <button onclick="cancelEdit('name')" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Gender and Designation Grid -->
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- Gender Section -->
+                        <div>
+                          <div id="genderView">
+                            <p class="text-sm text-gray-500 flex items-center mb-1">
+                              Gender
+                              <svg
+                                class="h-3 w-3 ml-1 text-gray-400 cursor-pointer hover:text-gray-600 transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                                onclick="toggleEdit('gender')"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                ></path>
+                              </svg>
+                            </p>
+                            <p class="font-medium" id="genderText">
+                              {% if user.gender == 'M' %}
+                                Male
+                              {% elif user.gender == 'F' %}
+                                Female
+                              {% elif user.gender == 'O' %}
+                                Other
+                              {% else %}
+                                Not specified
+                              {% endif %}
+                            </p>
+                          </div>
+                          <div id="genderEdit" class="hidden space-y-3">
+                            <select id="genderInput" class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                              <option value="Male" {% if user.gender == 'M' %}selected{% endif %}>Male</option>
+                              <option value="Female" {% if user.gender == 'F' %}selected{% endif %}>Female</option>
+                              <option value="Other" {% if user.gender == 'O' %}selected{% endif %}>Other</option>
+                            </select>
+                            <div class="flex gap-2">
+                              <button onclick="saveEdit('gender')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Save</button>
+                              <button onclick="cancelEdit('gender')" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Designation Section -->
+                        <div>
+                          <div id="designationView">
+                            <p class="text-sm text-gray-500 flex items-center mb-1">
+                              Designation
+                              <svg
+                                class="h-3 w-3 ml-1 text-gray-400 cursor-pointer hover:text-gray-600 transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                                onclick="toggleEdit('designation')"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                ></path>
+                              </svg>
+                            </p>
+                            <p class="font-medium" id="designationText">
+                              {% if user.designation %}
+                                {{ user.designation }}
+                              {% else %}
+                                Not specified
+                              {% endif %}
+                            </p>
+                          </div>
+                          <div id="designationEdit" class="hidden space-y-3">
+                            <input 
+                              type="text" 
+                              id="designationInput" 
+                              class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                              value="{% if user.designation %}{{ user.designation }}{% endif %}"
+                              placeholder="Enter designation"
+                            >
+                            <div class="flex gap-2">
+                              <button onclick="saveEdit('designation')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Save</button>
+                              <button onclick="cancelEdit('designation')" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Password Section -->
+                      <div>
+                        <div id="passwordView">
+                          <p class="text-sm text-gray-500 flex items-center mb-1">
+                            Password
+                            <svg
+                              class="h-3 w-3 ml-1 text-gray-400 cursor-pointer hover:text-gray-600 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                              onclick="toggleEdit('password')"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              ></path>
+                            </svg>
+                          </p>
+                          <p class="font-medium" id="passwordText">••••••••••</p>
+                        </div>
+                        <div id="passwordEdit" class="hidden space-y-3">
+                          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                            <div>
+                              <label for="currentPasswordInput" class="block text-sm text-gray-500 mb-1">Current Password</label>
+                              <input type="password" id="currentPasswordInput" class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                              <label for="newPasswordInput" class="block text-sm text-gray-500 mb-1">New Password</label>
+                              <input type="password" id="newPasswordInput" class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                              <label for="confirmPasswordInput" class="block text-sm text-gray-500 mb-1">Confirm New Password</label>
+                              <input type="password" id="confirmPasswordInput" class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                          </div>
+                          <div class="flex gap-2">
+                            <button onclick="savePassword()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Save</button>
+                            <button onclick="cancelEdit('password')" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Delete Account Button -->
+                      <div>
+                        <button
+                          class="text-red-600 text-sm border border-red-300 rounded-full px-6 py-2 hover:bg-red-50 hover:border-red-500 transition-colors"
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                          ></path>
-                        </svg>
-                      </p>
-                      <p id="genderText">
-                        {% if user.gender == 'M' %}
-                          Male
-                        {% elif user.gender == 'F' %}
-                          Female
-                        {% elif user.gender == 'O' %}
-                          Other
-                        {% else %}
-                          Not specified
-                        {% endif %}
-                      </p>
-                    </div>
-                    <div id="genderEdit" class="hidden">
-                      <select id="genderInput" class="border rounded px-2 py-1 w-full">
-                        <option value="Male" {% if user.gender == 'M' %}selected{% endif %}>Male</option>
-                        <option value="Female" {% if user.gender == 'F' %}selected{% endif %}>Female</option>
-                        <option value="Other" {% if user.gender == 'O' %}selected{% endif %}>Other</option>
-                      </select>
-                      <div class="mt-2">
-                        <button onclick="saveEdit('gender')" class="bg-blue-500 text-white px-2 py-1 rounded mr-2">Save</button>
-                        <button onclick="cancelEdit('gender')" class="bg-gray-300 px-2 py-1 rounded">Cancel</button>
+                          Delete Account Permanently
+                        </button>
                       </div>
                     </div>
                   </div>
-                  <div class="mb-2">
-                    <div id="designationView">
-                      <p class="text-sm text-gray-500 flex items-center">
-                        Designation
-                        <svg
-                          class="h-3 w-3 ml-1 text-gray-400 cursor-pointer"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                          onclick="toggleEdit('designation')"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                          ></path>
-                        </svg>
-                      </p>
-                      <p id="designationText">
-                        {% if user.designation %}
-                          {{ user.designation }}
-                        {% else %}
-                          Not specified
-                        {% endif %}
-                      </p>
+                </section>
+                
+                <!-- Details Sections Grid -->
+                <section class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+                  
+                  <!-- Address Section -->
+                  <div class="space-y-4">
+                    <h4 class="font-semibold text-lg flex items-center">
+                      Address
+                      <svg
+                        class="h-4 w-4 ml-2 text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        onclick="toggleEdit('address')"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        ></path>
+                      </svg>
+                    </h4>
+                    <div id="addressView" class="space-y-4">
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Address Line</p>
+                        <p class="font-medium" id="addressLineText">
+                          {% if user.address_line %}{{ user.address_line }}{% else %}Not specified{% endif %}
+                        </p>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">City</p>
+                        <p class="font-medium" id="cityText">
+                          {% if user.city %}{{ user.city }}{% else %}Not specified{% endif %}
+                        </p>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">State</p>
+                        <p class="font-medium" id="stateText">
+                          {% if user.state %}{{ user.state }}{% else %}Not specified{% endif %}
+                        </p>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Country</p>
+                        <p class="font-medium" id="countryText">
+                          {% if user.country %}{{ user.country }}{% else %}Not specified{% endif %}
+                        </p>
+                      </div>
                     </div>
-                    <div id="designationEdit" class="hidden">
+                    <div id="addressEdit" class="hidden space-y-3">
                       <input 
                         type="text" 
-                        id="designationInput" 
-                        class="border rounded px-2 py-1 w-full" 
-                        value="{% if user.designation %}{{ user.designation }}{% endif %}"
+                        id="addressLineInput" 
+                        class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        value="{% if user.address_line %}{{ user.address_line }}{% endif %}" 
+                        placeholder="Address Line"
                       >
-                      <div class="mt-2">
-                        <button onclick="saveEdit('designation')" class="bg-blue-500 text-white px-2 py-1 rounded mr-2">Save</button>
-                        <button onclick="cancelEdit('designation')" class="bg-gray-300 px-2 py-1 rounded">Cancel</button>
+                      <input 
+                        type="text" 
+                        id="cityInput" 
+                        class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        value="{% if user.city %}{{ user.city }}{% endif %}" 
+                        placeholder="City"
+                      >
+                      <input 
+                        type="text" 
+                        id="stateInput" 
+                        class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        value="{% if user.state %}{{ user.state }}{% endif %}" 
+                        placeholder="State"
+                      >
+                      <input 
+                        type="text" 
+                        id="countryInput" 
+                        class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        value="{% if user.country %}{{ user.country }}{% endif %}" 
+                        placeholder="Country"
+                      >
+                      <div class="flex gap-2">
+                        <button onclick="saveAddress()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Save</button>
+                        <button onclick="cancelEdit('address')" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
                       </div>
                     </div>
                   </div>
-                  <div class="mb-4">
-                    <div id="passwordView">
-                      <p class="text-sm text-gray-500 flex items-center">
-                        Password
-                        <svg
-                          class="h-3 w-3 ml-1 text-gray-400 cursor-pointer"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                          onclick="toggleEdit('password')"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                          ></path>
-                        </svg>
-                      </p>
-                      <p id="passwordText">••••••••••</p>
-                    </div>
-                    <div id="passwordEdit" class="hidden">
-                      <div class="mb-2">
-                        <label for="currentPasswordInput" class="block text-sm text-gray-500">Current Password</label>
-                        <input type="password" id="currentPasswordInput" class="border rounded px-2 py-1 w-full">
+                  
+                  <!-- Contact Details Section -->
+                  <div class="space-y-4">
+                    <h4 class="font-semibold text-lg flex items-center">
+                      Contact Details
+                      <svg
+                        class="h-4 w-4 ml-2 text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        onclick="toggleEdit('contact')"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        ></path>
+                      </svg>
+                    </h4>
+                    <div id="contactView" class="space-y-4">
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Phone Number</p>
+                        <p class="font-medium" id="phoneText">
+                          {% if user.phone_number %}{{ user.phone_number }}{% else %}Not specified{% endif %}
+                        </p>
                       </div>
-                      <div class="mb-2">
-                        <label for="newPasswordInput" class="block text-sm text-gray-500">New Password</label>
-                        <input type="password" id="newPasswordInput" class="border rounded px-2 py-1 w-full">
-                      </div>
-                      <div class="mb-2">
-                        <label for="confirmPasswordInput" class="block text-sm text-gray-500">Confirm New Password</label>
-                        <input type="password" id="confirmPasswordInput" class="border rounded px-2 py-1 w-full">
-                      </div>
-                      <div class="mt-2">
-                        <button onclick="savePassword()" class="bg-blue-500 text-white px-2 py-1 rounded mr-2">Save</button>
-                        <button onclick="cancelEdit('password')" class="bg-gray-300 px-2 py-1 rounded">Cancel</button>
+                      <div>
+                        <p class="text-sm text-gray-500 mb-1">Email</p>
+                        <p class="font-medium" id="emailText">{{ user.email }}</p>
                       </div>
                     </div>
-                  </div>
-                  <button
-                    class="text-red-500 text-sm border border-red-500 rounded-full px-4 py-1"
-                  >
-                    Delete Account Permanently
-                  </button>
-                </div>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                <div>
-                  <h4 class="font-semibold mb-2 flex items-center">
-                    Address
-                    <svg
-                      class="h-4 w-4 ml-1 text-gray-500 cursor-pointer"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      onclick="toggleEdit('address')"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      ></path>
-                    </svg>
-                  </h4>
-                  <div id="addressView">
-                    <p class="text-sm text-gray-500">Address Line</p>
-                    <p class="mb-2" id="addressLineText">
-                      {% if user.address_line %}{{ user.address_line }}{% else %}Not specified{% endif %}
-                    </p>
-                    <p class="text-sm text-gray-500">City</p>
-                    <p class="mb-2" id="cityText">
-                      {% if user.city %}{{ user.city }}{% else %}Not specified{% endif %}
-                    </p>
-                    <p class="text-sm text-gray-500">State</p>
-                    <p class="mb-2" id="stateText">
-                      {% if user.state %}{{ user.state }}{% else %}Not specified{% endif %}
-                    </p>
-                    <p class="text-sm text-gray-500">Country</p>
-                    <p class="mb-4" id="countryText">
-                      {% if user.country %}{{ user.country }}{% else %}Not specified{% endif %}
-                    </p>
-                  </div>
-                  <div id="addressEdit" class="hidden">
-                    <input 
-                      type="text" 
-                      id="addressLineInput" 
-                      class="border rounded px-2 py-1 w-full mb-2" 
-                      value="{% if user.address_line %}{{ user.address_line }}{% endif %}" 
-                      placeholder="Address Line"
-                    >
-                    <input 
-                      type="text" 
-                      id="cityInput" 
-                      class="border rounded px-2 py-1 w-full mb-2" 
-                      value="{% if user.city %}{{ user.city }}{% endif %}" 
-                      placeholder="City"
-                    >
-                    <input 
-                      type="text" 
-                      id="stateInput" 
-                      class="border rounded px-2 py-1 w-full mb-2" 
-                      value="{% if user.state %}{{ user.state }}{% endif %}" 
-                      placeholder="State"
-                    >
-                    <input 
-                      type="text" 
-                      id="countryInput" 
-                      class="border rounded px-2 py-1 w-full mb-2" 
-                      value="{% if user.country %}{{ user.country }}{% endif %}" 
-                      placeholder="Country"
-                    >
-                    <div class="mt-2">
-                      <button onclick="saveAddress()" class="bg-blue-500 text-white px-2 py-1 rounded mr-2">Save</button>
-                      <button onclick="cancelEdit('address')" class="bg-gray-300 px-2 py-1 rounded">Cancel</button>
+                    <div id="contactEdit" class="hidden space-y-3">
+                      <input 
+                        type="tel" 
+                        id="phoneInput" 
+                        class="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                        value="{% if user.phone_number %}{{ user.phone_number }}{% endif %}" 
+                        placeholder="Phone Number"
+                      >
+                      <p class="text-sm text-gray-400">Email cannot be changed</p>
+                      <div class="flex gap-2">
+                        <button onclick="savePhoneNumber()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Save</button>
+                        <button onclick="cancelEdit('contact')" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div>
-                  <h4 class="font-semibold mb-2 flex items-center">
-                    Contact Details
-                    <svg
-                      class="h-4 w-4 ml-1 text-gray-500 cursor-pointer"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      onclick="toggleEdit('contact')"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      ></path>
-                    </svg>
-                  </h4>
-                  <div id="contactView">
-                    <p class="text-sm text-gray-500">Phone Number</p>
-                    <p class="mb-2" id="phoneText">
-                      {% if user.phone_number %}{{ user.phone_number }}{% else %}Not specified{% endif %}
-                    </p>
-                    <p class="text-sm text-gray-500">Email</p>
-                    <p id="emailText">{{ user.email }}</p>
-                  </div>
-                  <div id="contactEdit" class="hidden">
-                    <input 
-                      type="tel" 
-                      id="phoneInput" 
-                      class="border rounded px-2 py-1 w-full mb-2" 
-                      value="{% if user.phone_number %}{{ user.phone_number }}{% endif %}" 
-                      placeholder="Phone Number"
-                    >
-                    <p class="text-sm text-gray-400 mb-4">Email cannot be changed</p>
-                    <div class="mt-2">
-                      <button onclick="savePhoneNumber()" class="bg-blue-500 text-white px-2 py-1 rounded mr-2">Save</button>
-                      <button onclick="cancelEdit('contact')" class="bg-gray-300 px-2 py-1 rounded">Cancel</button>
-                    </div>
-                  </div>
-              
-                  <div class="mt-5">
-                    <h4 class="font-semibold mb-2">Subscription</h4>
-                    <ul class="text-sm">
-                      <li class="flex items-center mb-1">
-                        <span
-                          class="w-2 h-2 bg-gray-400 rounded-full mr-2"
-                        ></span>
-                        Month 1
-                      </li>
-                      <li class="flex items-center mb-1">
-                        <span
-                          class="w-2 h-2 bg-gray-900 rounded-full mr-2"
-                        ></span>
-                        Month 2
-                        <span
-                          class="bg-gray-200 text-gray-800 px-2 py-0.5 rounded-full text-xs ml-2"
-                          >Current</span
-                        >
+                  
+                  <!-- Subscription Section -->
+                  <div class="space-y-4 lg:col-span-2 xl:col-span-1">
+                    <h4 class="font-semibold text-lg">Subscription</h4>
+                    <ul class="space-y-3">
+                      <li class="flex items-center">
+                        <span class="w-3 h-3 bg-gray-400 rounded-full mr-3 flex-shrink-0"></span>
+                        <span class="font-medium">Month 1</span>
                       </li>
                       <li class="flex items-center">
-                        <span
-                          class="w-2 h-2 bg-gray-200 rounded-full mr-2"
-                        ></span>
-                        <span class="text-gray-400">Month 3</span>
+                        <span class="w-3 h-3 bg-gray-900 rounded-full mr-3 flex-shrink-0"></span>
+                        <span class="font-medium">Month 2</span>
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs ml-auto font-medium">Current</span>
+                      </li>
+                      <li class="flex items-center">
+                        <span class="w-3 h-3 bg-gray-200 rounded-full mr-3 flex-shrink-0"></span>
+                        <span class="text-gray-400 font-medium">Month 3</span>
                       </li>
                     </ul>
                   </div>
-                </div>
+                </section>
               </div>
-            </div>
-
-            <!-- Activity Overview -->
-            {% comment %} <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-3">
-              <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Activity Overview</h2>
-                <button
-                  id="newProjectButton"
-                  class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm"
-                >
-                + New Project
-                </button>
-              </div>
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">My Projects</h3>
-                <div class="flex space-x-2">
-                  <div class="dropdown">
-                    <button
-                      onclick="toggleDropdown('sortDropdown')"
-                      class="bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm"
-                    >
-                      Sort By
-                    </button>
-                    <div id="sortDropdown" class="dropdown-content">
-                      <a href="#" onclick="sortTable('name')">Name</a>
-                      <div class="px-3 py-2">
-                        <p class="font-semibold">Date Range</p>
-                        <div class="flex space-x-2 mt-2">
-                          <input
-                            type="date"
-                            class="border rounded px-2 py-1 text-sm"
-                            placeholder="From:"
-                          />
-                          <input
-                            type="date"
-                            class="border rounded px-2 py-1 text-sm"
-                            placeholder="To:"
-                          />
-                        </div>
-                        <div class="mt-2">
-                          <label class="inline-flex items-center">
-                            <input
-                              type="radio"
-                              name="dateFilter"
-                              class="form-radio"
-                            />
-                            <span class="ml-2">Most Recent</span>
-                          </label>
-                        </div>
-                        <div class="mt-1">
-                          <label class="inline-flex items-center">
-                            <input
-                              type="radio"
-                              name="dateFilter"
-                              class="form-radio"
-                            />
-                            <span class="ml-2">Last Opened</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      onclick="toggleDropdown('filterDropdown')"
-                      class="bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm"
-                    >
-                      Filter
-                    </button>
-                    <div id="filterDropdown" class="dropdown-content">
-                      <div class="px-3 py-2">
-                        <p class="font-semibold">Status</p>
-                        <div class="mt-2">
-                          <label class="inline-flex items-center">
-                            <input
-                              type="checkbox"
-                              class="form-checkbox text-indigo-600"
-                            />
-                            <span class="ml-2 text-yellow-600">Drafts</span>
-                          </label>
-                        </div>
-                        <div class="mt-1">
-                          <label class="inline-flex items-center">
-                            <input
-                              type="checkbox"
-                              class="form-checkbox text-indigo-600"
-                            />
-                            <span class="ml-2 text-green-600">Exported</span>
-                          </label>
-                        </div>
-                        <div class="mt-1">
-                          <label class="inline-flex items-center">
-                            <input
-                              type="checkbox"
-                              class="form-checkbox text-indigo-600"
-                            />
-                            <span class="ml-2 text-red-600">Deleted</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <table id="projectTable" class="w-full text-sm">
-                <thead>
-                  <tr class="text-left text-gray-500">
-                    <th class="pb-2">Name</th>
-                    <th class="pb-2">Date</th>
-                    <th class="pb-2">Status</th>
-                    <th class="pb-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- Repeat this row structure for the other 6 rows, changing the Status as needed -->
-                </tbody>
-              </table>
-            </div> {% endcomment %}
-
-            <!-- Favourite Inspirations -->
-            {% comment %} <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-2">
-              <h2 class="text-xl font-semibold mb-4">Favourite Inspirations</h2>
-              <div class="grid grid-cols-3 gap-4">
-                <div class="h-24 rounded-lg overflow-hidden">
-                  <img
-                    src="{% static "images\image (1).png" %}"
-                    alt="Orange inspiration"
-                    class="w-full h-full object-cover"
-                  />
-                </div>
-                <div class="h-24 rounded-lg overflow-hidden">
-                  <img
-                    src="{% static "images\image (1).png" %}"
-                    alt="Pink inspiration"
-                    class="w-full h-full object-cover"
-                  />
-                </div>
-                <div class="h-24 rounded-lg overflow-hidden">
-                  <img
-                    src="{% static "images\image (1).png" %}"
-                    alt="Green inspiration"
-                    class="w-full h-full object-cover"
-                  />
-                </div>
-                <div class="h-24 rounded-lg overflow-hidden">
-                  <img
-                    src="{% static "images\image (1).png" %}"
-                    alt="Blue inspiration"
-                    class="w-full h-full object-cover"
-                  />
-                </div>
-                <div class="h-24 rounded-lg overflow-hidden">
-                  <img
-                    src="{% static "images\image (1).png" %}"
-                    alt="Purple inspiration"
-                    class="w-full h-full object-cover"
-                  />
-                </div>
-                <div class="h-24 rounded-lg overflow-hidden">
-                  <img
-                    src="{% static "images\image (1).png" %}"
-                    alt="Yellow inspiration"
-                    class="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            </div> {% endcomment %}
-
-            <!-- Favorite Palette -->
-            {% comment %} <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-3">
-              <h2 class="text-xl font-semibold mb-4">Favorite Palette</h2>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="">
-                  <img
-                    src="{% static "images\color_pallete.png" %}"
-                    alt="Color Palette"
-                    class="w-full h-full object-cover rounded-lg"
-                  />
-                </div>
-                <div class="">
-                  <img
-                    src="color_pallete.png"
-                    alt="Color Palette"
-                    class="w-full h-full object-cover rounded-lg"
-                  />
-                </div>
-                <div class="">
-                  <img
-                    src="color_pallete.png"
-                    alt="Color Palette"
-                    class="w-full h-full object-cover rounded-lg"
-                  />
-                </div>
-                <div class="">
-                  <img
-                    src="color_pallete.png"
-                    alt="Color Palette"
-                    class="w-full h-full object-cover rounded-lg"
-                  />
-                </div>
-              </div> {% endcomment %}
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   </body>
 </html>
