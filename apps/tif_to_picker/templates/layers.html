@@ -880,12 +880,68 @@ document.addEventListener('DOMContentLoaded', function() {
    
     </div>
   </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const leftBtn = document.getElementById('scroll-left');
+    const rightBtn = document.getElementById('scroll-right');
+    
+    function scrollLeft() {
+        // Try multiple possible scroll containers
+        const containers = [
+            document.querySelector('.scroll-container'),
+            document.getElementById('image-color-pickers'),
+            document.querySelector('.palette-selector')
+        ];
+        
+        for (let container of containers) {
+            if (container && container.scrollWidth > container.clientWidth) {
+                const scrollAmount = container.clientWidth * 0.3;
+                container.scrollLeft = Math.max(0, container.scrollLeft - scrollAmount);
+                break;
+            }
+        }
+    }
+    
+    function scrollRight() {
+        // Try multiple possible scroll containers
+        const containers = [
+            document.querySelector('.scroll-container'),
+            document.getElementById('image-color-pickers'),
+            document.querySelector('.palette-selector')
+        ];
+        
+        for (let container of containers) {
+            if (container && container.scrollWidth > container.clientWidth) {
+                const scrollAmount = container.clientWidth * 0.3;
+                const maxScroll = container.scrollWidth - container.clientWidth;
+                container.scrollLeft = Math.min(maxScroll, container.scrollLeft + scrollAmount);
+                break;
+            }
+        }
+    }
+    
+    if (leftBtn) leftBtn.addEventListener('click', scrollLeft);
+    if (rightBtn) rightBtn.addEventListener('click', scrollRight);
+});</script>
 
+<style>
+.scroll-container,
+.palette-selector,
+#image-color-pickers {
+    overflow-x: auto !important;
+    scroll-behavior: smooth !important;
+}
+
+.color-picker-container {
+    display: flex !important;
+    white-space: nowrap !important;
+}
+    </style>
   <div id="visualizer_palette" class="palette-wrapper">
       <!-- Left Scroll Button -->
       <button id="scroll-left" class="btn btn-outline-info"><</button>
       <div class="palette-selector has-btns is-sortable has-picker is-lockable is-sortable has-picker is-lockable scroll-container" style="height: 100%;" data-colors="10">
-          <div class="color-picker-container mt-1 rounded-2" style="width: fit-content;overflow: hidden;" id="image-color-pickers"></div>
+          <div class="color-picker-container mt-1 rounded-2" style="width: fit-content;overflow: visible;" id="image-color-pickers"></div>
       </div>
       <button id="scroll-right" class="btn btn-outline-info">></button>
   </div>
