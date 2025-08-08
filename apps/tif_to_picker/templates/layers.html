@@ -11873,7 +11873,7 @@ function removeFavorite(button, index) {
     })
     .catch(error => {
         console.error('Error removing favorite:', error);
-        alert('Error removing favorite: ' + error.message);
+        {% comment %} alert('Error removing favorite: ' + error.message); {% endcomment %}
     });
 }
 

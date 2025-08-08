@@ -764,11 +764,11 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
-<div class="flex items-center gap-3 animate-fade-in-left">
-  <a href="/">
-    <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
-  </a>
-</div>
+        <div class="flex items-center gap-3 animate-fade-in-left">
+          <a href="/">
+            <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
+          </a>
+        </div>
 
           <!-- Navigation Links -->
           <div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
@@ -782,10 +782,15 @@
             <a href="{% url 'contact' %}"
               class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact
               us</a>
+
+            <a href="{% url 'contact' %}"
+              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact
+              us</a>
             {% if user.is_authenticated %}
                 <a href="{% url 'account_logout' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
             {% else %}
-                <a href="{% url 'account_login' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Get Started</a>
+            
+                <a href="{% url 'account_login' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Get It Started</a>
             {% endif %}
           </div>
 
@@ -809,7 +814,7 @@
     {% if user.is_authenticated %}
         <a href="{% url 'account_logout' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
     {% else %}
-        <a href="{% url 'account_login' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try it Now</a>
+        <a href="{% url 'account_login' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try Now</a>
     {% endif %}
         </div>
       </div>
@@ -847,7 +852,7 @@
 
           <div class="mt-10 flex flex-wrap justify-center md:justify-start gap-4 relative z-20 fade-in-delay-2">
             <a href="/tif-editor/" class="btn-primary px-8 py-4 text-white rounded-2xl font-light shadow-xl text-lg">
-              Try Now
+              Try It Now
             </a>
             
             {% comment %} <!-- Fixed Edit Tiff file button with authentication check -->
@@ -870,17 +875,26 @@
             <div class="relative hover-scale">
               <div
                 class="w-[500px] h-96 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl flex flex-col items-center justify-center text-slate-500 border border-slate-200 shadow-2xl overflow-hidden p-8">
-                <!-- Animation Content -->
-                <div class="funky-text-landing">
-                  <span class="line1" style="position: absolute; left: -120%; top: 95%;">
-                    Select Palette
-                    <img style="margin-left: 30px;" width="50px" height="50px" src="./static/images/arrow.svg" alt="arrow" />
-                  </span>
-                  <span class="line2" style="position: relative; left: 70%;">
-                    Instant Result
-                    <img style="margin-left: 30px;" width="50px" height="50px" src="./static/images/arrow.svg" alt="arrow" />
-                  </span>
-                </div>
+<div class="funky-text-landing">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+    
+    .funky-text {
+      font-family: 'Indie Flower', cursive;
+      font-size: 1.1em;
+      letter-spacing: 1px;
+    }
+  </style>
+  
+  <span class="line1 funky-text" style="position: absolute; left: -110%; top: 95%;">
+    SELECT PALLET
+    <img style="margin-left: 30px;" width="50px" height="50px" src="{% static 'images/arrow.svg' %}" alt="arrow" />
+  </span>
+  <span class="line2 funky-text" style="position: relative; left: 70%;">
+    INSTANT RESULT
+    <img style="margin-left: 30px;" width="50px" height="50px" src="{% static 'images/arrow.svg' %}" alt="arrow" />
+  </span>
+</div>
 
                 <div class="main-animation-container-landing">
                   <div class="image-pair-landing active" data-pair="1">
@@ -1751,7 +1765,7 @@
         <div>
           <h4 class="text-white/90 font-light">Recognised By</h4>
           <div class="flex justify-center">
-            <img src="./static/images/startup_india.png" alt="Startup India"
+            <img src={% static 'images/startup_india.png' %} alt="Startup India"
               class="h-16 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
           </div>
         </div>
