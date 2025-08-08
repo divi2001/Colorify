@@ -1,3 +1,4 @@
+<!-- templates\pages\home.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -764,12 +765,11 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
-        <div class="flex items-center gap-3 animate-fade-in-left">
-          <a href="/">
-            <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
-          </a>
-        </div>
-
+          <div class="flex items-center gap-3 animate-fade-in-left">
+            <a href="/">
+              <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
+            </a>
+          </div>
           <!-- Navigation Links -->
           <div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
             <a href="{% url 'home' %}"
@@ -807,15 +807,15 @@
         <!-- Mobile Menu -->
         <div id="mobile-menu"
           class="mobile-menu md:hidden bg-white/95 backdrop-blur-md py-2 px-4 rounded-lg mt-2 shadow-xl border border-slate-200">
-    <a href="{% url 'home' %}" class="block py-2 text-gray-600 hover:text-gray-900">Home</a>
-    <a href="{% url 'about' %}" class="block py-2 text-gray-600 hover:text-gray-900">About us</a>
-    <a href="{% url 'plans' %}" class="block py-2 text-gray-600 hover:text-gray-900">Plans</a>
-    <a href="{% url 'contact' %}" class="block py-2 text-gray-600 hover:text-gray-900">Contact us</a>
-    {% if user.is_authenticated %}
-        <a href="{% url 'account_logout' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
-    {% else %}
-        <a href="{% url 'account_login' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try Now</a>
-    {% endif %}
+          <a href="{% url 'home' %}" class="block py-2 text-gray-600 hover:text-gray-900">Home</a>
+          <a href="{% url 'about' %}" class="block py-2 text-gray-600 hover:text-gray-900">About us</a>
+          <a href="{% url 'plans' %}" class="block py-2 text-gray-600 hover:text-gray-900">Plans</a>
+          <a href="{% url 'contact' %}" class="block py-2 text-gray-600 hover:text-gray-900">Contact us</a>
+          {% if user.is_authenticated %}
+              <a href="{% url 'account_logout' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+          {% else %}
+              <a href="{% url 'account_login' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try it Now</a>
+          {% endif %}
         </div>
       </div>
     </nav>
@@ -1686,95 +1686,110 @@
  {% endblock %}
 
   <!-- Enhanced Footer -->
-  <footer class="py-16 mt-20"
-    style="background-color:#222831; color: white !important;">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
-        <!-- Brand -->
-        <div class="space-y-6">
-        <div class="flex items-center gap-3">
-          <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
-            <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
-            <span class="font-light text-2xl text-white">COLORIFY</span>
-          </a>
-        </div>
-          <p class="text-white/90 leading-relaxed">
-            Revolutionizing design with AI-powered color intelligence. <br />
-            <span class="font-light text-white">Helping you paint better!</span>
-          </p>
-        </div>
-
-        <!-- Links -->
-        <div>
-          <h3 class="font-light text-white mb-6 text-lg">QUICK LINKS</h3>
-          <ul class="space-y-3">
-            <li>
-              <a href="/" class="text-white/80 hover:text-white transition-colors duration-300 font-light">Home</a>
-            </li>
-            <li>
-              <a href="/privacy-policy/"
-                class="text-white/80 hover:text-white transition-colors duration-300 font-light">Privacy Policy</a>
-            </li>
-            <li>
-              <a href="/terms-of-service/"
-                class="text-white/80 hover:text-white transition-colors duration-300 font-light">Terms of
-                Service</a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Affiliate -->
-        <div>
-          <h3 class="font-light text-white mb-6 text-lg">PARTNERSHIPS</h3>
-          <p class="text-white/90 mb-6 leading-relaxed">
-            Join us and start getting paid<br />
-            for all the products you sell
-          </p>
-          <button onclick="window.location.href='/affiliate/'"
-            class="btn-secondary bg-white/20 text-white py-3 px-6 rounded-xl font-light hover:bg-white/30 transition-all duration-300 shadow-md border border-white/30">
-            Become an Affiliate
-          </button>
-        </div>
-
-        <!-- Newsletter -->
-        <div>
-          <h3 class="font-light text-white mb-6 text-lg">STAY UPDATED</h3>
-          <p class="text-white/90 mb-6 leading-relaxed">
-            Get the latest design trends and color innovations
-          </p>
-          <div
-            class="flex bg-white/10 rounded-xl border border-white/30 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-            <input type="email" placeholder="Enter your email"
-              class="flex-1 py-3 px-4 text-sm focus:outline-none bg-transparent text-white placeholder-white/70" />
-            <button>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 pr-10" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
-          </div>
-        </div>
+<footer class="py-16 mt-20 pl-10 pr-10"
+  style="background-color:#222831; color: white !important;">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+      <!-- Brand -->
+      <div class="space-y-6">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
+          <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
+          <span class="font-light text-2xl text-white">COLORIFY</span>
+        </a>
+      </div>
+        <p class="text-white/90 leading-relaxed">
+          Revolutionizing design with AI-powered color intelligence. <br />
+          <span class="font-light text-white">Helping you paint better!</span>
+        </p>
       </div>
 
-      <!-- Enhanced Bottom Footer -->
-      <div class="mt-16 pt-8 border-t border-white/30 flex flex-col md:flex-row items-center justify-between">
-        <p class="text-white/80 font-light">
-          © 2025 Colorify Studio | All Rights Reserved
+      <!-- Links -->
+      <div>
+        <h3 class="font-light text-white mb-6 text-lg">QUICK LINKS</h3>
+        <ul class="space-y-3">
+          <li>
+            <a href="/" class="text-white/80 hover:text-white transition-colors duration-300 font-light">Home</a>
+          </li>
+          <li>
+            <a href="/privacy-policy/"
+              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Privacy Policy</a>
+          </li>
+          <li>
+            <a href="/terms-of-service/"
+              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Terms of
+              Service</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Affiliate -->
+      <div>
+        <h3 class="font-light text-white mb-6 text-lg">PARTNERSHIPS</h3>
+        <p class="text-white/90 mb-6 leading-relaxed">
+          Join us and start getting paid<br />
+          for all the products you sell
         </p>
-        <div>
-          <h4 class="text-white/90 font-light">Recognised By</h4>
-          <div class="flex justify-center">
-            <img src={% static 'images/startup_india.png' %} alt="Startup India"
-              class="h-16 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
-          </div>
-        </div>
-        <div class="flex gap-3 mt-6 md:mt-0">
+        <button onclick="window.location.href='/affiliate/'"
+          class="btn-secondary bg-white/20 text-white py-3 px-6 rounded-xl font-light hover:bg-white/30 transition-all duration-300 shadow-md border border-white/30">
+          Become an Affiliate
+        </button>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="font-light text-white mb-6 text-lg">STAY UPDATED</h3>
+        <p class="text-white/90 mb-6 leading-relaxed">
+          Get the latest design trends and color innovations
+        </p>
+        <div
+          class="flex bg-white/10 rounded-xl border border-white/30 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+          <input type="email" placeholder="Enter your email"
+            class="flex-1 py-3 px-4 text-sm focus:outline-none bg-transparent text-white placeholder-white/70" />
+          <button>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 pr-10" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
-  </footer>
- 
+
+    <!-- Enhanced Bottom Footer -->
+    <div class="mt-16 pt-8 border-t border-white/30 flex flex-col md:flex-row items-center justify-between">
+      <p class="text-white/80 font-light">
+        © 2025 Colorify Studio | All Rights Reserved
+      </p>
+      <div>
+        <h4 class="text-white/90 font-light">Recognised By</h4>
+        <div class="flex justify-center">
+          <img src={% static 'images/startup_india.png' %} alt="Startup India"
+            class="h-16 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6 md:mt-0">
+      </div>
+    </div>
+  </div>
+  <!-- Horizontal Divider and Credits -->
+  <div class="mt-8 pt-6">
+    <div class="flex items-center justify-between">
+      <div class="flex-1 border-t border-white/30"></div>
+      <div class="flex items-center gap-3 px-6">
+        <span class="text-white/70 font-light text-sm">Crafted with elegance by</span>
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 bg-gradient-to-r from-blue-400 to-purple-500 rounded-sm flex items-center justify-center">
+            <span class="text-white text-xs font-bold">3M</span>
+          </div>
+          <span class="text-white font-light text-sm">3 Minds Digital</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
   {% block extra_js %}{% endblock %}
   <script>
     // Function to create video controls
