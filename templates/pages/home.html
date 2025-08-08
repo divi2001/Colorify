@@ -847,10 +847,10 @@
 
           <div class="mt-10 flex flex-wrap justify-center md:justify-start gap-4 relative z-20 fade-in-delay-2">
             <a href="/tif-editor/" class="btn-primary px-8 py-4 text-white rounded-2xl font-light shadow-xl text-lg">
-              Try Demo
+              Try Now
             </a>
             
-            <!-- Fixed Edit Tiff file button with authentication check -->
+            {% comment %} <!-- Fixed Edit Tiff file button with authentication check -->
             {% if user.is_authenticated %}
               <a href="/tif-editor/" class="btn-secondary px-8 py-4 bg-white text-slate-700 rounded-2xl border-2 border-slate-200 font-light shadow-lg text-lg">
                 Edit Tiff file
@@ -861,7 +861,7 @@
                 onclick="toggleModal('loginModal')">
                 Edit Tiff file
               </button>
-            {% endif %}
+            {% endif %} {% endcomment %}
           </div>
           </div>
 

@@ -219,6 +219,9 @@ document.addEventListener('DOMContentLoaded', function() {
         width: {{width}}px;
         height: {{height}}px;
       }
+           #harmonyMenu {
+            display: none;
+        }
       .loader {
         width: 120px;
         height: 22px;
@@ -267,8 +270,9 @@ document.addEventListener('DOMContentLoaded', function() {
           <i class="bi bi-caret-left-fill ms-auto"></i>
         </button>
         <div class="header-logo" style="margin:0 auto;" >
-          <i class="bi bi-palette"></i>
-          Colorify
+          <a href="{% url 'home' %}">
+            <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" style="max-width: 100%; height: auto; max-height: 40px;">
+          </a>
         </div>
         <ul class="mostLeftUl">
           <li>
@@ -301,12 +305,12 @@ document.addEventListener('DOMContentLoaded', function() {
               <span class="textSpan">Harmony</span>
             </a>
           </li>
-          <li>
+          {% comment %} <li>
             <a href="#" id="paletteGeneratorButton">
               <i class="bi bi-eyedropper mx-1"></i>
               <span class="textSpan">Color Picker</span>
             </a>
-          </li>
+          </li> {% endcomment %}
           {% comment %} <li>
             <a href="#" id="baseColorButton">
               <i class="bi bi-palette mx-1"></i>
@@ -828,21 +832,23 @@ document.addEventListener('DOMContentLoaded', function() {
   <!-- Footer -->
 <footer class="bg-light text-center py-2 mt-auto visualizer_toolbar d-flex align-items-center justify-content-center gap-4">
      
-  <div id="visualizer_buttons_left ">
+<div id="visualizer_buttons_left">
     <div class="d-flex align-items-center gap-2">
-      <div class="upload-wrapper">
-        <form id="uploadForm" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <input type="file" id="fileInput" name="tiff_file" accept=".tif" style="display: none;">
-            <button type="button" class="btn btn-outline-dark upload-btn m-0 p-2 px-3 bg-linear-blue" onclick="document.getElementById('fileInput').click();">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-upload" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383"/>
-                    <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708z"/>
-                </svg>
-                Upload
-            </button>
-        </form>
+        <div class="upload-wrapper">
+            <form id="uploadForm" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" id="fileInput" name="image_file" accept=".png,.jpg,.jpeg" style="display: none;">
+                <button type="button" class="btn btn-outline-dark upload-btn m-0 p-2 px-3 bg-linear-blue" onclick="document.getElementById('fileInput').click();">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-upload" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383"/>
+                        <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708z"/>
+                    </svg>
+                    Upload
+                </button>
+            </form>
+        </div>
     </div>
+</div>
 
     
     <div class="image-adjustments">
@@ -960,7 +966,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </button>
 
 
-<div class="harmony-container">
+{% comment %} <div class="harmony-container">
   <button type="button" class="btn shadow-lg" id="harmonyButton">
     <svg width="20" height="20" viewBox="0 0 34 33" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -995,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fill="#3C4CD1" />
     </svg>
       Generate
-  </button>
+  </button> {% endcomment %}
   <div class="harmony-menu" id="harmonyMenu" style="display: none;">
       <div class="menu-item" data-harmony="Monochromatic">Monochromatic</div>
       <div class="menu-item" data-harmony="Analogous">Analogous</div>
@@ -1028,20 +1034,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
   </div>
   <div class="control-buttons">
-  <button 
+  {% comment %} <button 
     id="editLayerBtn" 
     class="rounded-2 btn btn-success4 bg-linear-blue"
     onclick="editLayer(1)"
   >
     <i style="font-size: 18px; color: #ffffff" class="fa fa-edit"></i> 
-  </button>
-  <button 
+  </button> {% endcomment %}
+  {% comment %} <button 
     id="resetLayerBtn" 
     class="rounded-2 btn btn-success4 bg-linear-blue"
     onclick="resetLayer(1)"
   >
   <i style="font-size: 18px; color: #ffffff;" class="fa fa-refresh"></i>
-  </button>
+  </button> {% endcomment %}
 </div>
 
 
@@ -10702,7 +10708,14 @@ function syncFavoriteStarsWithAllCategories() {
                 { name: 'trending', storageVar: 'trendingPaletteColors', prefix: 'trending_' },
                 { name: 'ss', storageVar: 'ssPaletteColors', prefix: 'ss_' },
                 { name: 'aw', storageVar: 'awPaletteColors', prefix: 'aw_' },
-                { name: 'harmony', storageVar: 'harmonyPaletteColors', prefix: 'harmony_' }
+                // Add all harmony types
+                { name: 'monochromatic', storageVar: 'monochromaticPaletteColors', prefix: 'harmony_', harmonyType: 'Monochromatic' },
+                { name: 'analogous', storageVar: 'analogousPaletteColors', prefix: 'harmony_', harmonyType: 'Analogous' },
+                { name: 'complementary', storageVar: 'complementaryPaletteColors', prefix: 'harmony_', harmonyType: 'Complementary' },
+                { name: 'split_complementary', storageVar: 'split_complementaryPaletteColors', prefix: 'harmony_', harmonyType: 'Split Complementary' },
+                { name: 'triadic', storageVar: 'triadicPaletteColors', prefix: 'harmony_', harmonyType: 'Triadic' },
+                { name: 'tetradic', storageVar: 'tetradicPaletteColors', prefix: 'harmony_', harmonyType: 'Tetradic' },
+                { name: 'square', storageVar: 'squarePaletteColors', prefix: 'harmony_', harmonyType: 'Square' }
             ];
             
             // Process each category
@@ -10717,14 +10730,13 @@ function syncFavoriteStarsWithAllCategories() {
         });
 }
 
-// Function to sync a specific category with favorites
 function syncCategoryWithFavorites(category, favorites) {
     console.log(`\n🔍 Syncing ${category.name} category...`);
     
     // Get stored palettes for this category
     const categoryPalettes = window[category.storageVar];
     if (!categoryPalettes) {
-        console.log(`❌ No stored palettes found for ${category.name}`);
+        console.log(`❌ No stored palettes found for ${category.name} (${category.storageVar})`);
         return;
     }
     
@@ -10738,13 +10750,23 @@ function syncCategoryWithFavorites(category, favorites) {
         
         console.log(`  🎨 Checking ${category.name} palette ${paletteIndex}...`);
         
+        // Determine the category type for matching
+        let matchingCategoryType;
+        if (category.harmonyType) {
+            // For harmony palettes, use HARMONY as the type
+            matchingCategoryType = 'HARMONY';
+        } else {
+            matchingCategoryType = category.name.toUpperCase();
+        }
+        
         // Find matching favorite
         const matchingFavorite = findMatchingFavorite(
             favorites, 
             paletteColors, 
             currentImageColors, 
-            category.name.toUpperCase(),
-            parseInt(paletteIndex)
+            matchingCategoryType,
+            parseInt(paletteIndex),
+            category.harmonyType // Pass harmony type for harmony palettes
         );
         
         // Update the star for this palette
@@ -10752,8 +10774,7 @@ function syncCategoryWithFavorites(category, favorites) {
     });
 }
 
-// Function to find matching favorite based on multiple criteria
-function findMatchingFavorite(favorites, paletteColors, currentImageColors, categoryType, paletteIndex) {
+function findMatchingFavorite(favorites, paletteColors, currentImageColors, categoryType, paletteIndex, harmonyType = null) {
     for (const favorite of favorites) {
         let isMatch = false;
         
@@ -10763,7 +10784,34 @@ function findMatchingFavorite(favorites, paletteColors, currentImageColors, cate
             isMatch = true;
         }
         
-        // Method 2: Color similarity matching (if we have current image colors)
+        // Method 2: Harmony-specific matching
+        if (!isMatch && harmonyType) {
+            // Check if favorite type matches harmony type
+            const harmonyTypeMap = {
+                'Monochromatic': ['HARMONY', 'HR', 'MONOCHROMATIC'],
+                'Analogous': ['HARMONY', 'HR', 'ANALOGOUS'],
+                'Complementary': ['HARMONY', 'HR', 'COMPLEMENTARY'],
+                'Split Complementary': ['HARMONY', 'HR', 'SPLIT_COMPLEMENTARY'],
+                'Triadic': ['HARMONY', 'HR', 'TRIADIC'],
+                'Tetradic': ['HARMONY', 'HR', 'TETRADIC'],
+                'Square': ['HARMONY', 'HR', 'SQUARE']
+            };
+            
+            const validTypes = harmonyTypeMap[harmonyType] || ['HARMONY', 'HR'];
+            
+            if (validTypes.includes(favorite.type) && favorite.palette_index === paletteIndex) {
+                console.log(`    ✅ Harmony match found: ${harmonyType}, index=${paletteIndex}`);
+                isMatch = true;
+            }
+            
+            // Also check if favorite has harmony_type metadata
+            if (!isMatch && favorite.harmony_type === harmonyType && favorite.palette_index === paletteIndex) {
+                console.log(`    ✅ Harmony metadata match found: ${harmonyType}, index=${paletteIndex}`);
+                isMatch = true;
+            }
+        }
+        
+        // Method 3: Color similarity matching (if we have current image colors)
         if (!isMatch && currentImageColors && favorite.source_image_colors) {
             const imageColorsMatch = areColorsEqual(currentImageColors, favorite.source_image_colors);
             if (imageColorsMatch) {
@@ -10778,15 +10826,6 @@ function findMatchingFavorite(favorites, paletteColors, currentImageColors, cate
             }
         }
         
-        // Method 3: Special handling for harmony palettes
-        if (!isMatch && (categoryType === 'HARMONY' || favorite.type === 'HARMONY' || favorite.type === 'HR')) {
-            if ((favorite.type === 'HARMONY' || favorite.type === 'HR') && 
-                favorite.palette_index === paletteIndex) {
-                console.log(`    ✅ Harmony match found: index=${paletteIndex}`);
-                isMatch = true;
-            }
-        }
-        
         if (isMatch) {
             return favorite;
         }
@@ -10794,22 +10833,25 @@ function findMatchingFavorite(favorites, paletteColors, currentImageColors, cate
     
     return null;
 }
-
-// Function to update star for a specific palette
 function updateStarForPalette(category, paletteIndex, matchingFavorite) {
-    // Use the specific ID pattern from the HTML templates
     let favoriteBtn = null;
     
-    // Try to find the button using the specific ID pattern
-    const buttonId = `${category.name}_fav_btn_${paletteIndex}`;
+    // For harmony palettes, use harmony-specific button ID
+    let buttonId;
+    if (category.harmonyType) {
+        buttonId = `harmony_fav_btn_${paletteIndex}`;
+    } else {
+        buttonId = `${category.name}_fav_btn_${paletteIndex}`;
+    }
+    
     favoriteBtn = document.getElementById(buttonId);
     
     if (!favoriteBtn) {
-        // Fallback to other selectors if ID doesn't work
+        // Fallback selectors including harmony-specific ones
         const fallbackSelectors = [
+            `[data-palette-type="HARMONY"][data-colors-id="${paletteIndex}"].favorite-btn`,
             `[data-palette-type="${category.name.toUpperCase()}"][data-colors-id="${paletteIndex}"].favorite-btn`,
-            `[data-palette-type="${getPaletteTypeCode(category.name)}"][data-colors-id="${paletteIndex}"].favorite-btn`,
-            `#${category.prefix}colorPalette_${paletteIndex} + * .favorite-btn`,
+            `[data-harmony-type="${category.harmonyType}"][data-colors-id="${paletteIndex}"].favorite-btn`,
             `.favorite-btn[data-colors-id="${paletteIndex}"]`
         ];
         
@@ -10824,9 +10866,9 @@ function updateStarForPalette(category, paletteIndex, matchingFavorite) {
         console.log(`    🎯 Found button with ID: ${buttonId}`);
     }
     
+    // Rest of the function remains the same...
     if (!favoriteBtn) {
         console.log(`    ❌ Could not find favorite button for ${category.name} palette ${paletteIndex}`);
-        console.log(`    🔍 Tried ID: ${buttonId}`);
         return;
     }
     
@@ -10836,47 +10878,36 @@ function updateStarForPalette(category, paletteIndex, matchingFavorite) {
     if (matchingFavorite) {
         console.log(`    ⭐ Filling star for ${category.name} palette ${paletteIndex}`);
         
-        // Fill the star
         if (icon) {
             icon.classList.remove('bi-star');
             icon.classList.add('bi-star-fill');
         }
         
-        // Update count
         if (countSpan) {
             countSpan.textContent = matchingFavorite.favorites_count || 1;
         }
         
-        // Store palette ID for removal functionality
         favoriteBtn.setAttribute('data-palette-id', matchingFavorite.id);
         favoriteBtn.setAttribute('data-is-favorited', 'true');
-        
-        // Add active class if it exists in the template
         favoriteBtn.classList.add('active');
         
     } else {
         console.log(`    ☆ Emptying star for ${category.name} palette ${paletteIndex}`);
         
-        // Empty the star
         if (icon) {
             icon.classList.remove('bi-star-fill');
             icon.classList.add('bi-star');
         }
         
-        // Reset count
         if (countSpan) {
             countSpan.textContent = '0';
         }
         
-        // Remove attributes
         favoriteBtn.removeAttribute('data-palette-id');
         favoriteBtn.removeAttribute('data-is-favorited');
-        
-        // Remove active class
         favoriteBtn.classList.remove('active');
     }
 }
-
 // Helper function to get the correct palette type code
 function getPaletteTypeCode(categoryName) {
     const typeMap = {
@@ -17093,7 +17124,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Toggle menu on button click
   harmonyButton.addEventListener('click', function(e) {
       e.stopPropagation();
-      harmonyMenu.style.display = harmonyMenu.style.display === 'none' ? 'block' : 'none';
+      harmonyMenu.style.display = harmonyMenu.style.display === 'none' ? 'none' : 'none';
   });
 
   // Handle menu item selection
