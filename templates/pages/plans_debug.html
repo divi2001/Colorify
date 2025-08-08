@@ -1,0 +1,30 @@
+{% extends 'pages/main_base.html' %}
+{% load static %}
+
+{% block title %}Debug - Plans{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold text-center mb-8">Debug - Subscription Plans</h1>
+    
+    <!-- Debug info -->
+    <div class="mb-8 p-4 bg-gray-100 rounded">
+        <h3 class="font-bold mb-2">Debug Information:</h3>
+        <p><strong>Plans count:</strong> {{ plans|length }}</p>
+        <p><strong>User authenticated:</strong> {{ user.is_authenticated }}</p>
+        
+        <h4 class="font-bold mt-4 mb-2">Plans found:</h4>
+        {% for plan in plans %}
+            <div class="mb-2 p-2 bg-white rounded">
+                <p><strong>{{ plan.name }}</strong></p>
+                <p>ID: {{ plan.id }}</p>
+                <p>Active: {{ plan.is_active }}</p>
+                <p>Price: {{ plan.original_price }}</p>
+                <p>Description: {{ plan.description }}</p>
+            </div>
+        {% empty %}
+            <p class="text-red-500">No plans found in context!</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
