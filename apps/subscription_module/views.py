@@ -274,10 +274,6 @@ from .payu_utils import PayUConfig
 
 # apps/subscription_module/views.py
 
-# apps/subscription_module/views.py
-
-# apps/subscription_module/views.py
-
 class SubscriptionPlansView(LoginRequiredMixin, View):
     """View to display available subscription plans"""
     
@@ -308,6 +304,28 @@ class SubscriptionPlansView(LoginRequiredMixin, View):
         
         # Use debug template temporarily
         return render(request, 'pages/plans_debug.html', context)
+    
+# apps/subscription_module/views.py
+
+# class SubscriptionPlansView(LoginRequiredMixin, View):
+#     """View to display available subscription plans"""
+    
+#     def get(self, request):
+#         # Fetch all plans
+#         plans = SubscriptionPlan.objects.all().order_by('original_price')
+        
+#         current_subscription = None
+#         try:
+#             current_subscription = UserSubscription.objects.get(user=request.user)
+#         except UserSubscription.DoesNotExist:
+#             pass
+            
+#         context = {
+#             'plans': plans,
+#             'current_subscription': current_subscription
+#         }
+        
+#         return render(request, 'pages/plans.html', context)
     
 class InitiatePaymentView(LoginRequiredMixin, View):
     """Initiate payment process for subscription"""
