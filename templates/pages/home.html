@@ -782,13 +782,17 @@
             <a href="{% url 'contact' %}"
               class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact
               us</a>
-
+              {% if user.is_authenticated %}
+              <a href="{% url 'account_login' %}"
+              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Login
+              us</a>
+              {% endif %}
          
             {% if user.is_authenticated %}
-                <a href="{% url 'account_logout' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+                <a href="{% url 'account_signup' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
             {% else %}
             
-                <a href="{% url 'account_login' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Get It Started</a>
+                <a href="{% url 'account_login' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try It Now</a>
             {% endif %}
           </div>
 
@@ -1717,6 +1721,14 @@
             <a href="/terms-of-service/"
               class="text-white/80 hover:text-white transition-colors duration-300 font-light">Terms of
               Service</a>
+          </li>
+          <li>
+            <a href="/cancellation-policy/"
+              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Cancellation Policy</a>
+          </li>
+          <li>
+            <a href="/shipping-policy/"
+              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Shipping Policy</a>
           </li>
         </ul>
       </div>
