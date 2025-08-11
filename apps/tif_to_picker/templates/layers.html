@@ -37,6 +37,46 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
 
         
         <script>
+        // Progress Bar Functions
+        function updateProgress(percentage) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            if (progressBar && progressText) {
+                progressBar.style.width = percentage + '%';
+                progressText.textContent = Math.round(percentage) + '%';
+            }
+        }
+
+        function showProgress() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'flex';
+                updateProgress(0);
+            }
+        }
+
+        function hideProgress() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+            }
+        }
+
+        function simulateProgress() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        hideProgress();
+                    }, 500);
+                }
+                updateProgress(progress);
+            }, 200);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Add mockups button handler to the existing navigation structure
             const mockupsButton = document.getElementById('mockupsButton');
@@ -258,6 +298,16 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
       <div class="text-blue-600 font-semibold text-lg">Processing...</div>
       <div class="text-gray-500 text-sm mt-2">Please wait while we prepare your image</div>
+      
+      <!-- Progress Bar -->
+      <div class="mt-6 w-64 mx-auto">
+        <div class="bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+        </div>
+        <div class="mt-2 text-sm text-gray-600">
+          <span id="progress-text">0%</span> Complete
+        </div>
+      </div>
     </div>
   </div>
 
