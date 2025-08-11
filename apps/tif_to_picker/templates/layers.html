@@ -251,9 +251,15 @@ document.addEventListener('DOMContentLoaded', function() {
   </head>
 
   <body>
-    <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50">
-      <div class="loader"></div>
+    <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-95 z-50">
+    <div class="text-center">
+      <div class="mb-4">
+        <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+      </div>
+      <div class="text-blue-600 font-semibold text-lg">Processing...</div>
+      <div class="text-gray-500 text-sm mt-2">Please wait while we prepare your image</div>
     </div>
+  </div>
 
     <!-- Main Content Area  -->
     <main class="d-flex">
