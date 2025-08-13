@@ -7745,9 +7745,97 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         return [r, g, b];
     }
 
-    // FORCE EXTRACT COLORS DIRECTLY FROM CANVAS - IGNORE PASSED COLORS
+    // Color distance function (needed by getDistinctColors)
+    function colorDistance(color1, color2) {
+        const [r1, g1, b1] = color1;
+        const [r2, g2, b2] = color2;
+        
+        // Use weighted Euclidean distance that considers human color perception
+        const rMean = (r1 + r2) / 2;
+        const deltaR = r1 - r2;
+        const deltaG = g1 - g2;
+        const deltaB = b1 - b2;
+        
+        const weightR = 2 + rMean / 256;
+        const weightG = 4;
+        const weightB = 2 + (255 - rMean) / 256;
+        
+        return Math.sqrt(weightR * deltaR * deltaR + weightG * deltaG * deltaG + weightB * deltaB * deltaB);
+    }
+
+    // YOUR getDistinctColors function
+    function getDistinctColors(imageData, threshold = 30, maxColors = 50, minDistance = 40) {
+        const uniqueColors = new Map(); // Changed to Map to track counts
+        const data = imageData.data;
+        const isSingleLayer = totalLayers === 1;
+    
+        // First pass: collect all unique colors and count occurrences
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const a = data[i + 3];
+    
+            // Skip fully transparent pixels
+            if (a === 0) continue;
+            // Skip near-black colors (more lenient check)
+            if (r < 15 && g < 15 && b < 15) continue;
+            
+            const colorKey = `${r},${g},${b}`;
+            if (uniqueColors.has(colorKey)) {
+                uniqueColors.set(colorKey, uniqueColors.get(colorKey) + 1);
+            } else {
+                uniqueColors.set(colorKey, 1);
+            }
+        }
+    
+        // Convert to array and map to RGB arrays with counts
+        const colors = Array.from(uniqueColors.entries()).map(([colorStr, count]) => {
+            const [r, g, b] = colorStr.split(',').map(Number);
+            return {
+                rgb: [r, g, b],
+                count: count,
+                // Add HSL values to help with diversity
+                hsl: rgbToHsl(r, g, b)
+            };
+        });
+    
+        // Sort colors by count (frequency) in descending order
+        colors.sort((a, b) => b.count - a.count);
+        
+        // Collect distinct colors directly, applying the minimum distance requirement
+        const distinctColors = [];
+        
+        // Always include the most frequent color
+        if (colors.length > 0) {
+            distinctColors.push(colors[0].rgb);
+        }
+        
+        // For all remaining colors, check if they meet the minimum distance requirement
+        for (let i = 1; i < colors.length && distinctColors.length < maxColors; i++) {
+            const candidate = colors[i].rgb;
+            let isDistinct = true;
+            
+            for (const existingColor of distinctColors) {
+                const distance = colorDistance(candidate, existingColor);
+                if (distance < minDistance) {
+                    isDistinct = false;
+                    break;
+                }
+            }
+            
+            if (isDistinct) {
+                distinctColors.push(candidate);
+            }
+        }
+        
+        localStorage.setItem('distinctColorsArrayColorPallet', JSON.stringify(distinctColors));
+        return distinctColors;
+    }
+
+    // FORCE EXTRACT COLORS USING YOUR getDistinctColors FUNCTION
     async function forceExtractColorsFromCanvas(totalLayers) {
-        console.log("=== FORCE EXTRACTING COLORS FROM CANVAS ===");
+        console.log("=== FORCE EXTRACTING COLORS FROM CANVAS USING getDistinctColors ===");
         
         try {
             let targetCanvas;
@@ -7768,57 +7856,21 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             
             // Create a working canvas for color extraction
             const workCanvas = document.createElement('canvas');
-            workCanvas.width = Math.min(300, targetCanvas.width);
-            workCanvas.height = Math.min(300, targetCanvas.height);
+            workCanvas.width = targetCanvas.width;
+            workCanvas.height = targetCanvas.height;
             const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
             
-            // Draw the original image scaled to working size
-            workCtx.drawImage(targetCanvas, 0, 0, workCanvas.width, workCanvas.height);
+            // Draw the original image at full size
+            workCtx.drawImage(targetCanvas, 0, 0);
             
             // Get image data
             const imageData = workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
-            const pixels = imageData.data;
             
-            // Extract unique colors with better sampling
-            const colorFrequency = new Map();
-            const sampleStep = 16; // Sample every 16th pixel for speed
+            // Use YOUR getDistinctColors function
+            const extractedColors = getDistinctColors(imageData, 30, 50, 40);
             
-            for (let i = 0; i < pixels.length; i += sampleStep) {
-                const r = pixels[i];
-                const g = pixels[i + 1];
-                const b = pixels[i + 2];
-                const a = pixels[i + 3];
-                
-                // Skip transparent pixels
-                if (a < 128) continue;
-                
-                // Group similar colors (quantize to reduce noise)
-                const quantizedR = Math.floor(r / 8) * 8;
-                const quantizedG = Math.floor(g / 8) * 8;
-                const quantizedB = Math.floor(b / 8) * 8;
-                
-                const colorKey = `${quantizedR}-${quantizedG}-${quantizedB}`;
-                
-                if (colorFrequency.has(colorKey)) {
-                    colorFrequency.set(colorKey, colorFrequency.get(colorKey) + 1);
-                } else {
-                    colorFrequency.set(colorKey, 1);
-                }
-            }
-            
-            // Convert to array and sort by frequency
-            const sortedColors = Array.from(colorFrequency.entries())
-                .sort((a, b) => b[1] - a[1])
-                .map(([colorKey, frequency]) => {
-                    const [r, g, b] = colorKey.split('-').map(Number);
-                    return [r, g, b];
-                });
-            
-            console.log(`Extracted ${sortedColors.length} unique colors from canvas`);
-            console.log("Top 10 colors:", sortedColors.slice(0, 10));
-            
-            // Return top colors, ensuring we have enough
-            const extractedColors = sortedColors.slice(0, Math.max(30, sortedColors.length));
+            console.log(`Extracted ${extractedColors.length} distinct colors using getDistinctColors function`);
+            console.log("Extracted colors:", extractedColors);
             
             if (extractedColors.length === 0) {
                 console.error("CRITICAL: No colors could be extracted from canvas");
@@ -7842,7 +7894,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             return window[cacheKey];
         }
         
-        // FORCE EXTRACT FROM CANVAS INSTEAD OF USING PASSED COLORS
+        // FORCE EXTRACT FROM CANVAS USING getDistinctColors
         const extractedColors = await forceExtractColorsFromCanvas(totalLayers);
         
         if (extractedColors.length === 0) {
@@ -7858,18 +7910,18 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         return extractedColors;
     }
     
-    // SIMPLIFIED: Get colors function that ONLY uses extracted colors
+    // SIMPLIFIED: Get colors function that ONLY uses your getDistinctColors function
     async function getValidColorsFromImage() {
-        console.log("=== GETTING VALID COLORS FROM IMAGE ===");
+        console.log("=== GETTING VALID COLORS FROM IMAGE USING getDistinctColors ===");
         
         // IGNORE the passed colors parameter completely
         console.log("Ignoring passed colors parameter:", colors);
         
-        // Force extract from canvas
+        // Force extract from canvas using YOUR function
         const extractedColors = await forceExtractColorsFromCanvas(totalLayers);
         
         if (extractedColors.length === 0) {
-            console.error("CRITICAL ERROR: Could not extract any colors from canvas");
+            console.error("CRITICAL ERROR: Could not extract any colors from canvas using getDistinctColors");
             return [];
         }
         
@@ -7880,7 +7932,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
         );
         
-        console.log(`Found ${validColors.length} valid colors from canvas extraction`);
+        console.log(`Found ${validColors.length} valid colors from getDistinctColors`);
         
         if (validColors.length === 0) {
             console.error("CRITICAL ERROR: No valid colors after filtering");
@@ -8943,7 +8995,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     };
     
     // =============================================================================
-    // MAIN EXECUTION STARTS HERE - FORCE EXTRACT COLORS FROM CANVAS
+    // MAIN EXECUTION STARTS HERE - USE getDistinctColors FUNCTION
     // =============================================================================
     
     console.log("=== DISPLAYCOLORPALETTE MAIN EXECUTION ===");
@@ -8951,16 +9003,16 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     console.log("Collection:", collection);
     console.log("Total layers:", totalLayers);
     
-    // FORCE extract colors from canvas - ignore passed colors completely
+    // FORCE extract colors from canvas using YOUR getDistinctColors function
     const validatedColors = await getValidColorsFromImage();
     
     // If we STILL don't have valid colors after canvas extraction, STOP THE FUNCTION
     if (!validatedColors || validatedColors.length === 0) {
-        console.error("CRITICAL ERROR: Cannot extract any colors from canvas. Function terminating.");
+        console.error("CRITICAL ERROR: Cannot extract any colors from canvas using getDistinctColors. Function terminating.");
         return; // Exit the function completely
     }
     
-    console.log(`Proceeding with ${validatedColors.length} canvas-extracted colors:`, validatedColors.slice(0, 5));
+    console.log(`Proceeding with ${validatedColors.length} getDistinctColors-extracted colors:`, validatedColors.slice(0, 5));
     
     // EXTRACT AND CACHE ORIGINAL COLORS ONCE AT THE BEGINNING
     const cachedOriginalColors = await extractAndCacheOriginalColors(totalLayers);
