@@ -7808,73 +7808,182 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         }
     }
     
-    // Function to keep trying to get valid colors until successful
-    async function getPersistentColors(inputColors, maxAttempts = 100) {
-      let validColors = [];
-      let attempts = 0;
-      
-      // Keep trying until we get valid colors
-      while (validColors.length === 0 && attempts < maxAttempts) {
-        attempts++;
+    // UPDATED: More persistent function to get valid colors without random generation
+    async function getPersistentColors(inputColors, maxAttempts = 500) {
+        let validColors = [];
+        let attempts = 0;
         
-        // First try the input colors
-        if (attempts === 1 && Array.isArray(inputColors)) {
-          validColors = inputColors.filter(color => 
-            Array.isArray(color) && 
-            color.length === 3 && 
-            color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-          );
-        }
+        console.log("getPersistentColors called with:", inputColors);
         
-        // If we have valid colors, use them
-        if (validColors.length > 0) {
-          break;
-        }
-        
-        // Try to get colors from distinctColorsArrayColorPallet
-        try {
-          if (typeof window.distinctColorsArrayColorPallet === 'function') {
-            // Try to get as function
-            const newColors = await window.distinctColorsArrayColorPallet();
-            if (Array.isArray(newColors)) {
-              validColors = newColors.filter(color => 
-                Array.isArray(color) && 
-                color.length === 3 && 
-                color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-              );
+        // Keep trying until we get valid colors
+        while (validColors.length === 0 && attempts < maxAttempts) {
+            attempts++;
+            
+            // First priority: Use the provided input colors if they're valid
+            if (attempts === 1 && Array.isArray(inputColors) && inputColors.length > 0) {
+                console.log(`Attempt ${attempts}: Checking input colors...`);
+                validColors = inputColors.filter(color => 
+                    Array.isArray(color) && 
+                    color.length === 3 && 
+                    color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+                );
+                
+                if (validColors.length > 0) {
+                    console.log(`Found ${validColors.length} valid input colors:`, validColors);
+                    break;
+                }
             }
-          } else if (window.distinctColorsArrayColorPallet) {
-            // Try to get as variable
-            const newColors = window.distinctColorsArrayColorPallet;
-            if (Array.isArray(newColors)) {
-              validColors = newColors.filter(color => 
-                Array.isArray(color) && 
-                color.length === 3 && 
-                color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-              );
+            
+            // Second priority: Try to get colors from distinctColorsArrayColorPallet function
+            if (attempts <= 50) {
+                try {
+                    if (typeof window.distinctColorsArrayColorPallet === 'function') {
+                        console.log(`Attempt ${attempts}: Trying distinctColorsArrayColorPallet function...`);
+                        const newColors = await window.distinctColorsArrayColorPallet();
+                        if (Array.isArray(newColors) && newColors.length > 0) {
+                            validColors = newColors.filter(color => 
+                                Array.isArray(color) && 
+                                color.length === 3 && 
+                                color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+                            );
+                            
+                            if (validColors.length > 0) {
+                                console.log(`Found ${validColors.length} valid colors from distinctColorsArrayColorPallet function:`, validColors);
+                                break;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log(`Attempt ${attempts}: distinctColorsArrayColorPallet function failed:`, e.message);
+                }
             }
-          }
-        } catch (e) {
-          // Ignore errors and keep trying
+            
+            // Third priority: Try to get colors from distinctColorsArrayColorPallet variable
+            if (attempts <= 100) {
+                try {
+                    if (window.distinctColorsArrayColorPallet && Array.isArray(window.distinctColorsArrayColorPallet)) {
+                        console.log(`Attempt ${attempts}: Trying distinctColorsArrayColorPallet variable...`);
+                        const newColors = window.distinctColorsArrayColorPallet;
+                        validColors = newColors.filter(color => 
+                            Array.isArray(color) && 
+                            color.length === 3 && 
+                            color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+                        );
+                        
+                        if (validColors.length > 0) {
+                            console.log(`Found ${validColors.length} valid colors from distinctColorsArrayColorPallet variable:`, validColors);
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.log(`Attempt ${attempts}: distinctColorsArrayColorPallet variable failed:`, e.message);
+                }
+            }
+            
+            // Fourth priority: Try to extract colors from the canvas directly
+            if (attempts <= 200) {
+                try {
+                    console.log(`Attempt ${attempts}: Trying to extract colors from canvas...`);
+                    const canvas = document.getElementById('layer_canvas_1');
+                    if (canvas) {
+                        // Create a small sample canvas for color extraction
+                        const sampleCanvas = document.createElement('canvas');
+                        sampleCanvas.width = 100;
+                        sampleCanvas.height = 100;
+                        const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+                        
+                        // Draw scaled down version
+                        sampleCtx.drawImage(canvas, 0, 0, 100, 100);
+                        
+                        // Extract colors manually
+                        const imageData = sampleCtx.getImageData(0, 0, 100, 100);
+                        const pixels = imageData.data;
+                        const colorMap = new Map();
+                        
+                        // Sample every 10th pixel to get diverse colors
+                        for (let i = 0; i < pixels.length; i += 40) { // 40 = 4 bytes * 10 pixels
+                            const r = pixels[i];
+                            const g = pixels[i + 1];
+                            const b = pixels[i + 2];
+                            const a = pixels[i + 3];
+                            
+                            // Skip transparent pixels and very similar colors
+                            if (a > 128) {
+                                const colorKey = `${Math.floor(r/10)*10}-${Math.floor(g/10)*10}-${Math.floor(b/10)*10}`;
+                                if (!colorMap.has(colorKey)) {
+                                    colorMap.set(colorKey, [r, g, b]);
+                                }
+                            }
+                        }
+                        
+                        validColors = Array.from(colorMap.values());
+                        
+                        if (validColors.length > 0) {
+                            console.log(`Extracted ${validColors.length} colors from canvas:`, validColors.slice(0, 5));
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.log(`Attempt ${attempts}: Canvas extraction failed:`, e.message);
+                }
+            }
+            
+            // Fifth priority: Check for any global color variables
+            if (attempts <= 300) {
+                try {
+                    console.log(`Attempt ${attempts}: Checking for global color variables...`);
+                    
+                    // Check various possible color variable names
+                    const possibleColorVars = [
+                        'imageColors',
+                        'extractedColors', 
+                        'paletteColors',
+                        'dominantColors',
+                        'colorArray',
+                        'distinctColors'
+                    ];
+                    
+                    for (const varName of possibleColorVars) {
+                        if (window[varName] && Array.isArray(window[varName])) {
+                            const colors = window[varName].filter(color => 
+                                Array.isArray(color) && 
+                                color.length === 3 && 
+                                color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+                            );
+                            
+                            if (colors.length > 0) {
+                                validColors = colors;
+                                console.log(`Found ${validColors.length} colors from ${varName}:`, validColors.slice(0, 5));
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (validColors.length > 0) break;
+                } catch (e) {
+                    console.log(`Attempt ${attempts}: Global variables check failed:`, e.message);
+                }
+            }
+            
+            // Wait before next attempt (shorter wait for first attempts)
+            if (validColors.length === 0) {
+                const waitTime = attempts <= 100 ? 50 : attempts <= 200 ? 100 : 200;
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
         }
         
-        // If still no valid colors, wait a bit and try again
+        // ONLY IF WE ABSOLUTELY CANNOT FIND ANY COLORS, return a basic set
+        // But log this as an error since it shouldn't happen with proper palette extraction
         if (validColors.length === 0) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+            console.error("CRITICAL ERROR: Could not find any valid colors from any source after", attempts, "attempts");
+            console.error("This indicates a problem with the color extraction system");
+            
+            // Return empty array instead of random colors - let the calling function handle this
+            return [];
         }
-      }
-      
-      // If we STILL don't have valid colors after all attempts,
-      // generate completely random ones with good distribution
-      if (validColors.length === 0) {
-        validColors = [];
-        for (let i = 0; i < 9; i++) {
-          const hue = i * 40; // Spread across color wheel
-          validColors.push(hslToRgb(hue, 70 + Math.random() * 25, 45 + Math.random() * 30));
-        }
-      }
-      
-      return validColors;
+        
+        console.log(`Successfully found ${validColors.length} valid colors after ${attempts} attempts`);
+        return validColors;
     }
     
     // Function to convert RGB to HEX
@@ -8000,6 +8109,18 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     
     // UPDATED: Generate 25 thematic palettes with variety
     function generate25HueShiftedPalettesWithShifts(originalColors, collection) {
+        // CRITICAL CHECK: If no original colors, we cannot proceed
+        if (!originalColors || originalColors.length === 0) {
+            console.error("CANNOT GENERATE PALETTES: No original colors provided");
+            return { 
+                palettes: [], 
+                shifts: [],
+                transformations: []
+            };
+        }
+        
+        console.log(`Generating 25 palettes from ${originalColors.length} original colors for ${collection}`);
+        
         const transformedPalettes = [];
         const transformationData = [];
         
@@ -8259,15 +8380,10 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
       );
       
-      // If no valid colors, generate new ones with good distribution
+      // If no valid colors, this is a critical error - don't generate random colors
       if (validColors.length === 0) {
-        validColors = [];
-        for (let i = 0; i < MIN_DISPLAY_COUNT; i++) {
-          // Generate colors with evenly distributed hues
-          const hue = i * (360 / MIN_DISPLAY_COUNT);
-          validColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
-        }
-        return validColors;
+        console.error("CRITICAL: No valid colors to prepare for display");
+        return [];
       }
       
       // Define the color families (hue ranges)
@@ -8417,34 +8533,6 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         for (const { color } of colorDistances) {
           displayColors.push(color);
           if (displayColors.length >= MIN_DISPLAY_COUNT) break;
-        }
-      }
-      
-      // If we still need more colors, generate completely new ones in empty hue regions
-      if (displayColors.length < MIN_DISPLAY_COUNT) {
-        // Find which hue regions are not represented
-        const displayedHues = displayColors.map(color => rgbToHsl(...color)[0]);
-        
-        // Create hue "buckets" of 45 degrees each
-        const hueBuckets = Array(8).fill(0);
-        
-        displayedHues.forEach(hue => {
-          const bucketIndex = Math.floor(hue / 45) % 8;
-          hueBuckets[bucketIndex]++;
-        });
-        
-        // Generate new colors in empty buckets
-        for (let i = 0; i < 8; i++) {
-          if (hueBuckets[i] === 0 && displayColors.length < MIN_DISPLAY_COUNT) {
-            // Generate a color in this empty hue region
-            const baseHue = i * 45 + 22.5; // Middle of the bucket
-            const newColor = hslToRgb(
-              baseHue,
-              70 + Math.random() * 30,
-              45 + Math.random() * 25
-            );
-            displayColors.push(newColor);
-          }
         }
       }
       
@@ -8958,8 +9046,16 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         }
     };
     
-    // Ensure we have valid colors to work with
+    // Ensure we have valid colors to work with - CRITICAL CHANGE HERE
     const validatedColors = await getPersistentColors(colors);
+    
+    // If we STILL don't have valid colors after all attempts, STOP THE FUNCTION
+    if (!validatedColors || validatedColors.length === 0) {
+        console.error("CRITICAL ERROR: Cannot proceed without valid colors. Function terminating.");
+        return; // Exit the function completely
+    }
+    
+    console.log(`Proceeding with ${validatedColors.length} validated colors:`, validatedColors.slice(0, 3));
     
     // EXTRACT AND CACHE ORIGINAL COLORS ONCE AT THE BEGINNING
     const cachedOriginalColors = await extractAndCacheOriginalColors(totalLayers);
@@ -8968,6 +9064,12 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     if (totalLayers === 1) {
         // Generate ALL 25 thematic palettes WITH transformation data
         const { palettes: themedPalettes, shifts: hueShifts, transformations: transformationData } = generate25HueShiftedPalettesWithShifts(validatedColors, collection);
+        
+        // Check if palette generation was successful
+        if (!themedPalettes || themedPalettes.length === 0) {
+            console.error("CRITICAL ERROR: Failed to generate themed palettes. Function terminating.");
+            return;
+        }
         
         // Apply collection adjustments to ALL palettes ONCE and store them
         const allPalettes = themedPalettes.map(palette => applyCollectionAdjustments(palette, collection));
@@ -9043,19 +9145,10 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
             );
             
-            // If somehow we lost all colors, generate new ones
+            // If somehow we lost all colors, this is a critical error - don't generate fallback
             if (paletteColors.length === 0) {
-                console.warn(`No valid colors for palette ${i}, generating fallback`);
-                // Generate new colors with good distribution
-                paletteColors = [];
-                for (let j = 0; j < 9; j++) {
-                    const hue = j * (360 / 9);
-                    paletteColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
-                }
-                // Apply collection adjustments to new colors too
-                paletteColors = applyCollectionAdjustments(paletteColors, collection);
-                // Update storage with adjusted colors
-                window[`${collection}PaletteColors`][i] = [...paletteColors];
+                console.error(`CRITICAL ERROR: No valid colors for palette ${i} after storage and validation`);
+                continue; // Skip this palette completely
             }
             
             // Create container for the palette that includes preview
@@ -9086,6 +9179,12 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             
             // Prepare display colors - ONE FROM EACH COLOR FAMILY
             const displayColors = prepareDisplayColors(paletteColors);
+            
+            // Only proceed if we have display colors
+            if (displayColors.length === 0) {
+                console.error(`No display colors available for palette ${i}`);
+                continue;
+            }
             
             // Display color swatches under the preview
             displayColors.forEach((color, idx) => {
@@ -9123,20 +9222,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 
                 if (!fullPalette || fullPalette.length === 0) {
                     console.error(`No palette found for ${collectionName} index ${paletteIndex}`);
-                    
-                    // Try to regenerate the palette as fallback
-                    const originalColors = window[`${collectionName}_originalColors`] || validatedColors;
-                    if (originalColors && originalColors.length > 0) {
-                        const { palettes } = generate25HueShiftedPalettesWithShifts(originalColors, collectionName);
-                        const fallbackPalette = applyCollectionAdjustments(palettes[paletteIndex] || palettes[0], collectionName);
-                        
-                        console.log("Using fallback palette:", fallbackPalette);
-                        
-                        if (typeof window.processPallet === 'function') {
-                            window.processPallet(null, totalLayers, null, 0, null, fallbackPalette, paletteIndex, collectionName);
-                        }
-                    }
-                    return;
+                    return; // Don't try fallback - this should not happen with proper validation
                 }
                 
                 // Validate all colors in the palette
@@ -9211,6 +9297,12 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         // For multi-layer, use thematic transformations for all 25 layers
         let paletteColors;
         const { palettes: themedPalettes, shifts: hueShifts, transformations: transformationData } = generate25HueShiftedPalettesWithShifts(validatedColors, collection);
+        
+        if (!themedPalettes || themedPalettes.length === 0) {
+            console.error("Failed to generate themed palettes for multi-layer");
+            return;
+        }
+        
         paletteColors = themedPalettes[layerIndex] || [...validatedColors];
         const hueShift = hueShifts[layerIndex] || 0;
         const transformation = transformationData[layerIndex];
@@ -9298,6 +9390,11 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         
         // Prepare display colors - ONE FROM EACH COLOR FAMILY
         const displayColors = prepareDisplayColors(paletteColors);
+        
+        if (displayColors.length === 0) {
+            console.error(`No display colors available for multi-layer ${layerIndex}`);
+            return;
+        }
         
         // Display color swatches under the preview
         displayColors.forEach((color, idx) => {
