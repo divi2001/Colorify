@@ -8492,7 +8492,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         try {
             // ADD 12-SECOND DELAY BEFORE APPLYING PREVIEW
             console.log(`Starting 12-second delay for preview ${paletteIndex}...`);
-            await new Promise(resolve => setTimeout(resolve, 12000));
+            await new Promise(resolve => setTimeout(resolve, 6000));
             console.log(`12-second delay completed for preview ${paletteIndex}. Now generating preview...`);
             
             // Check cache first
