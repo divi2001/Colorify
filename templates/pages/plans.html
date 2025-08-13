@@ -55,13 +55,13 @@
     {% if plans %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-10">
             {% for plan in plans %}
-                <div class="relative 
+                <div class="relative group
                     {% if plan.name == 'Pro' and plan.is_active %}
-                        bg-blue-600 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow transform scale-105
+                        bg-blue-600 rounded-2xl shadow-lg p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300 transform
                     {% elif not plan.is_active or 'Legacy' in plan.name %}
-                        bg-gray-100 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow opacity-75
+                        bg-gray-100 rounded-2xl shadow-lg p-8 hover:shadow-xl hover:scale-102 transition-all duration-300 opacity-75
                     {% else %}
-                        bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow border
+                        bg-white rounded-2xl shadow-lg p-8 hover:shadow-2xl hover:scale-105 hover:-translate-y-2 hover:bg-blue-50 transition-all duration-300 border hover:border-blue-300
                     {% endif %}">
                     
                     <!-- Popular Badge -->
@@ -73,14 +73,14 @@
                     
                     <!-- Plan Header -->
                     <div class="mb-6">
-                        <h3 class="text-sm font-semibold {% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %} uppercase mb-4">{{ plan.name }}</h3>
+                        <h3 class="text-sm font-semibold {% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600 group-hover:text-blue-600{% endif %} uppercase mb-4 transition-colors duration-300">{{ plan.name }}</h3>
                         <div class="flex items-baseline mb-2">
-                            <span class="text-5xl font-bold {% if plan.name == 'Pro' and plan.is_active %}text-white{% endif %}">
+                            <span class="text-5xl font-bold {% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-700 group-hover:text-blue-700{% endif %} transition-colors duration-300">
                                 ₹{% if plan.discounted_price %}{{ plan.discounted_price|floatformat:0 }}{% else %}{{ plan.original_price|floatformat:0 }}{% endif %}
                             </span>
-                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-500{% endif %} ml-2">/ month</span>
+                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-500 group-hover:text-blue-500{% endif %} ml-2 transition-colors duration-300">/ month</span>
                         </div>
-                        <p class="text-sm {% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-500{% endif %}">{{ plan.description }}</p>
+                        <p class="text-sm {% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-500 group-hover:text-blue-600{% endif %} transition-colors duration-300">{{ plan.description }}</p>
                     </div>
                     
                     <!-- Plan Features -->
@@ -90,7 +90,7 @@
                             <svg class="w-5 h-5 {% if plan.name == 'Pro' and plan.is_active %}text-white{% elif not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %}">
+                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600 group-hover:text-blue-600{% endif %} transition-colors duration-300">
                                 {% if plan.storage_limit_mb >= 2147483647 %}
                                     Unlimited Storage
                                 {% elif plan.storage_limit_mb >= 1024 %}
@@ -106,7 +106,7 @@
                             <svg class="w-5 h-5 {% if plan.name == 'Pro' and plan.is_active %}text-white{% elif not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %}">
+                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600 group-hover:text-blue-600{% endif %} transition-colors duration-300">
                                 {% if plan.file_upload_limit >= 2147483647 %}
                                     Unlimited File Uploads
                                 {% else %}
@@ -120,7 +120,7 @@
                             <svg class="w-5 h-5 {% if plan.name == 'Pro' and plan.is_active %}text-white{% elif not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %}">
+                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600 group-hover:text-blue-600{% endif %} transition-colors duration-300">
                                 {% if plan.max_devices >= 2147483647 %}
                                     Unlimited Devices
                                 {% else %}
@@ -134,7 +134,7 @@
                             <svg class="w-5 h-5 {% if plan.name == 'Pro' and plan.is_active %}text-white{% elif not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %}">{{ plan.duration_in_days }} Days Duration</span>
+                            <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600 group-hover:text-blue-600{% endif %} transition-colors duration-300">{{ plan.duration_in_days }} Days Duration</span>
                         </li>
                     </ul>
                     
@@ -144,16 +144,16 @@
                             {% if plan.original_price == 0 %}Free Plan{% else %}Inactive{% endif %}
                         </button>
                     {% elif plan.name == 'Pro' %}
-                        <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full bg-white hover:bg-gray-100 text-blue-600 rounded-full py-3 px-4 transition-colors flex items-center justify-center no-underline">
+                        <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full bg-white hover:bg-gray-100 text-blue-600 rounded-full py-3 px-4 transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center justify-center no-underline">
                             Choose {{ plan.name }}
-                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 ml-2 transform transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </a>
                     {% elif plan.name == 'Enterprise' %}
-                        <button class="w-full bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] text-white rounded-full py-3 px-4 transition-colors flex items-center justify-center">
+                        <button class="w-full bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] text-white rounded-full py-3 px-4 transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center justify-center">
                             Contact Sales
-                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 ml-2 transform transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </button>
