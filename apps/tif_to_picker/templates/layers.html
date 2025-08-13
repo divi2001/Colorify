@@ -8056,7 +8056,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
     
     // UPDATED: Generate 25 thematic palettes with variety
-// UPDATED: Generate 25 truly distinct thematic palettes with comprehensive transformations
+// UPDATED: Generate 25 truly distinct palettes with controlled brightness
 function generate25HueShiftedPalettesWithShifts(originalColors, collection) {
     // CRITICAL CHECK: If no original colors, we cannot proceed
     if (!originalColors || originalColors.length === 0) {
@@ -8068,53 +8068,78 @@ function generate25HueShiftedPalettesWithShifts(originalColors, collection) {
         };
     }
     
-    console.log(`Generating 25 truly distinct palettes from ${originalColors.length} original colors for ${collection}`);
+    console.log(`Generating 25 truly distinct palettes with controlled brightness from ${originalColors.length} original colors for ${collection}`);
     
     const transformedPalettes = [];
     const transformationData = [];
     
-    // Define 25 VERY DISTINCT transformation patterns with comprehensive color adjustments
+    // Define 25 DISTINCT transformation patterns with CONTROLLED BRIGHTNESS
     const transformationPatterns = [
-        // Pattern 0: Original - but slightly enhanced to avoid being too similar to others
-        { name: "Original", hueShift: 0, satMult: 1.05, lightMult: 1.02, tempShift: 0, contrastMult: 1.0, vibrance: 0 },
+        // Pattern 0: Original - slightly enhanced but well-balanced
+        { name: "Original", hueShift: 50, satMult: 1.05, lightMult: 1.0, tempShift: 0, contrastMult: 1.0, vibrance: 0, brightnessAdj: 0 },
         
-        // Pattern 1-5: Primary color family shifts with strong differences
-        { name: "Warm Sunset", hueShift: 25, satMult: 1.4, lightMult: 0.9, tempShift: 35, contrastMult: 1.2, vibrance: 15 },
-        { name: "Cool Ocean", hueShift: 200, satMult: 1.3, lightMult: 1.1, tempShift: -40, contrastMult: 0.9, vibrance: 10 },
-        { name: "Forest Green", hueShift: 120, satMult: 0.8, lightMult: 0.85, tempShift: -15, contrastMult: 1.1, vibrance: -5 },
-        { name: "Royal Purple", hueShift: 280, satMult: 1.6, lightMult: 0.75, tempShift: -25, contrastMult: 1.3, vibrance: 20 },
-        { name: "Golden Yellow", hueShift: 50, satMult: 1.8, lightMult: 1.15, tempShift: 45, contrastMult: 0.8, vibrance: 25 },
+        // Pattern 1-5: Primary color families with controlled brightness
+        { name: "Warm Sunset", hueShift: 25, satMult: 1.4, lightMult: 0.85, tempShift: 35, contrastMult: 1.2, vibrance: 15, brightnessAdj: -5 },
+        { name: "Cool Ocean", hueShift: 200, satMult: 1.3, lightMult: 0.9, tempShift: -40, contrastMult: 0.9, vibrance: 10, brightnessAdj: -3 },
+        { name: "Forest Green", hueShift: 120, satMult: 0.8, lightMult: 0.8, tempShift: -15, contrastMult: 1.1, vibrance: -5, brightnessAdj: -8 },
+        { name: "Royal Purple", hueShift: 280, satMult: 1.6, lightMult: 0.7, tempShift: -25, contrastMult: 1.3, vibrance: 20, brightnessAdj: -10 },
+        { name: "Golden Yellow", hueShift: 50, satMult: 1.8, lightMult: 0.95, tempShift: 45, contrastMult: 0.8, vibrance: 25, brightnessAdj: -8 },
         
-        // Pattern 6-10: Complementary and triadic with extreme differences
-        { name: "Vibrant Spring", hueShift: 80, satMult: 2.0, lightMult: 1.2, tempShift: 30, contrastMult: 1.4, vibrance: 30 },
-        { name: "Autumn Earth", hueShift: 35, satMult: 0.6, lightMult: 0.7, tempShift: 20, contrastMult: 0.7, vibrance: -10 },
-        { name: "Winter Frost", hueShift: 190, satMult: 0.5, lightMult: 1.3, tempShift: -50, contrastMult: 0.6, vibrance: -15 },
-        { name: "Summer Bloom", hueShift: 320, satMult: 1.7, lightMult: 1.05, tempShift: 25, contrastMult: 1.2, vibrance: 18 },
-        { name: "Desert Sand", hueShift: 40, satMult: 0.7, lightMult: 1.25, tempShift: 40, contrastMult: 0.8, vibrance: -8 },
+        // Pattern 6-10: Complementary with balanced brightness
+        { name: "Vibrant Spring", hueShift: 80, satMult: 2.0, lightMult: 0.9, tempShift: 30, contrastMult: 1.4, vibrance: 30, brightnessAdj: -12 },
+        { name: "Autumn Earth", hueShift: 35, satMult: 0.6, lightMult: 0.75, tempShift: 20, contrastMult: 0.7, vibrance: -10, brightnessAdj: -5 },
+        { name: "Winter Frost", hueShift: 190, satMult: 0.5, lightMult: 1.1, tempShift: -50, contrastMult: 0.6, vibrance: -15, brightnessAdj: 5 },
+        { name: "Summer Bloom", hueShift: 320, satMult: 1.7, lightMult: 0.9, tempShift: 25, contrastMult: 1.2, vibrance: 18, brightnessAdj: -7 },
+        { name: "Desert Sand", hueShift: 40, satMult: 0.7, lightMult: 1.0, tempShift: 40, contrastMult: 0.8, vibrance: -8, brightnessAdj: 2 },
         
-        // Pattern 11-15: Extreme artistic interpretations
-        { name: "Neon Nights", hueShift: 140, satMult: 2.2, lightMult: 0.8, tempShift: 10, contrastMult: 1.6, vibrance: 35 },
-        { name: "Arctic Glow", hueShift: 210, satMult: 0.4, lightMult: 1.4, tempShift: -60, contrastMult: 0.5, vibrance: -20 },
-        { name: "Tropical Storm", hueShift: 160, satMult: 1.5, lightMult: 0.6, tempShift: 5, contrastMult: 1.5, vibrance: 12 },
-        { name: "Rose Gold", hueShift: 15, satMult: 1.2, lightMult: 1.3, tempShift: 50, contrastMult: 0.9, vibrance: 8 },
-        { name: "Deep Sea", hueShift: 230, satMult: 0.9, lightMult: 0.5, tempShift: -45, contrastMult: 1.4, vibrance: -12 },
+        // Pattern 11-15: Artistic with controlled extremes
+        { name: "Neon Nights", hueShift: 140, satMult: 2.2, lightMult: 0.7, tempShift: 10, contrastMult: 1.6, vibrance: 35, brightnessAdj: -15 },
+        { name: "Arctic Glow", hueShift: 210, satMult: 0.4, lightMult: 1.15, tempShift: -60, contrastMult: 0.5, vibrance: -20, brightnessAdj: 8 },
+        { name: "Tropical Storm", hueShift: 160, satMult: 1.5, lightMult: 0.65, tempShift: 5, contrastMult: 1.5, vibrance: 12, brightnessAdj: -12 },
+        { name: "Rose Gold", hueShift: 15, satMult: 1.2, lightMult: 1.05, tempShift: 50, contrastMult: 0.9, vibrance: 8, brightnessAdj: 3 },
+        { name: "Deep Sea", hueShift: 230, satMult: 0.9, lightMult: 0.55, tempShift: -45, contrastMult: 1.4, vibrance: -12, brightnessAdj: -15 },
         
-        // Pattern 16-20: Split complementary with strong personality
-        { name: "Lavender Field", hueShift: 290, satMult: 1.1, lightMult: 1.2, tempShift: -20, contrastMult: 0.85, vibrance: 5 },
-        { name: "Citrus Burst", hueShift: 70, satMult: 1.9, lightMult: 1.1, tempShift: 35, contrastMult: 1.1, vibrance: 22 },
-        { name: "Midnight Blue", hueShift: 240, satMult: 1.0, lightMult: 0.6, tempShift: -40, contrastMult: 1.3, vibrance: -5 },
-        { name: "Coral Reef", hueShift: 350, satMult: 1.6, lightMult: 0.95, tempShift: 28, contrastMult: 1.2, vibrance: 15 },
-        { name: "Sage Garden", hueShift: 100, satMult: 0.75, lightMult: 0.9, tempShift: -8, contrastMult: 0.9, vibrance: -3 },
+        // Pattern 16-20: Split complementary with brightness balance
+        { name: "Lavender Field", hueShift: 290, satMult: 1.1, lightMult: 1.0, tempShift: -20, contrastMult: 0.85, vibrance: 5, brightnessAdj: 0 },
+        { name: "Citrus Burst", hueShift: 70, satMult: 1.9, lightMult: 0.85, tempShift: 35, contrastMult: 1.1, vibrance: 22, brightnessAdj: -10 },
+        { name: "Midnight Blue", hueShift: 240, satMult: 1.0, lightMult: 0.6, tempShift: -40, contrastMult: 1.3, vibrance: -5, brightnessAdj: -18 },
+        { name: "Coral Reef", hueShift: 350, satMult: 1.6, lightMult: 0.85, tempShift: 28, contrastMult: 1.2, vibrance: 15, brightnessAdj: -8 },
+        { name: "Sage Garden", hueShift: 100, satMult: 0.75, lightMult: 0.85, tempShift: -8, contrastMult: 0.9, vibrance: -3, brightnessAdj: -5 },
         
-        // Pattern 21-24: Extreme and creative interpretations
-        { name: "Vintage Film", hueShift: 30, satMult: 0.6, lightMult: 0.8, tempShift: 25, contrastMult: 0.7, vibrance: -15 },
-        { name: "Cyberpunk", hueShift: 300, satMult: 2.5, lightMult: 0.7, tempShift: -15, contrastMult: 1.8, vibrance: 40 },
-        { name: "Pastel Dream", hueShift: 180, satMult: 0.3, lightMult: 1.5, tempShift: -25, contrastMult: 0.4, vibrance: -25 },
-        { name: "Bold Modern", hueShift: 150, satMult: 1.8, lightMult: 0.65, tempShift: 15, contrastMult: 1.7, vibrance: 28 },
-        { name: "Monochrome Plus", hueShift: 0, satMult: 0.1, lightMult: 1.0, tempShift: 0, contrastMult: 2.0, vibrance: -30 }
+        // Pattern 21-24: Creative with smart brightness
+        { name: "Vintage Film", hueShift: 30, satMult: 0.6, lightMult: 0.8, tempShift: 25, contrastMult: 0.7, vibrance: -15, brightnessAdj: -3 },
+        { name: "Cyberpunk", hueShift: 300, satMult: 2.5, lightMult: 0.65, tempShift: -15, contrastMult: 1.8, vibrance: 40, brightnessAdj: -20 },
+        { name: "Pastel Dream", hueShift: 180, satMult: 0.3, lightMult: 1.2, tempShift: -25, contrastMult: 0.4, vibrance: -25, brightnessAdj: 10 },
+        { name: "Bold Modern", hueShift: 150, satMult: 1.8, lightMult: 0.6, tempShift: 15, contrastMult: 1.7, vibrance: 28, brightnessAdj: -18 },
+        { name: "Monochrome Plus", hueShift: 0, satMult: 0.1, lightMult: 0.9, tempShift: 0, contrastMult: 2.0, vibrance: -30, brightnessAdj: -5 }
     ];
     
-    // Enhanced helper functions for better color transformations
+    // Enhanced helper functions with brightness control
+    function applyBrightnessAdjustment(color, brightnessAdj) {
+        if (brightnessAdj === 0) return color;
+        
+        const [h, s, l] = rgbToHsl(...color);
+        
+        // Apply brightness adjustment to lightness
+        let newLight = l + brightnessAdj;
+        
+        // Smart clamping - don't let very bright colors get brighter, don't let very dark colors get darker
+        if (brightnessAdj > 0) {
+            // Brightening: reduce effect for already bright colors
+            const brightnessFactor = Math.max(0.3, (100 - l) / 100);
+            newLight = l + (brightnessAdj * brightnessFactor);
+        } else {
+            // Darkening: reduce effect for already dark colors
+            const darknessFactor = Math.max(0.3, l / 100);
+            newLight = l + (brightnessAdj * darknessFactor);
+        }
+        
+        // Clamp to safe ranges - avoid pure black (< 5) and pure white (> 95)
+        newLight = Math.max(5, Math.min(95, newLight));
+        
+        return hslToRgb(h, s, newLight);
+    }
+    
     function applyContrast(color, contrastMult) {
         const [r, g, b] = color;
         
@@ -8125,9 +8150,9 @@ function generate25HueShiftedPalettesWithShifts(originalColors, collection) {
         const newB = Math.round(((b - 128) * factor) + 128);
         
         return [
-            Math.max(0, Math.min(255, newR)),
-            Math.max(0, Math.min(255, newG)),
-            Math.max(0, Math.min(255, newB))
+            Math.max(10, Math.min(245, newR)), // Avoid pure extremes
+            Math.max(10, Math.min(245, newG)),
+            Math.max(10, Math.min(245, newB))
         ];
     }
     
@@ -8151,14 +8176,45 @@ function generate25HueShiftedPalettesWithShifts(originalColors, collection) {
         return hslToRgb(h, newSat, l);
     }
     
+    function smartLightnessControl(color, lightMult) {
+        const [h, s, l] = rgbToHsl(...color);
+        
+        let newLight;
+        
+        if (lightMult > 1.0) {
+            // Brightening: be more conservative with already bright colors
+            if (l > 70) {
+                // For bright colors, limit the brightening effect
+                const adjustedMult = 1.0 + ((lightMult - 1.0) * 0.5);
+                newLight = l * adjustedMult;
+            } else {
+                newLight = l * lightMult;
+            }
+        } else {
+            // Darkening: be more conservative with already dark colors
+            if (l < 30) {
+                // For dark colors, limit the darkening effect
+                const adjustedMult = 1.0 - ((1.0 - lightMult) * 0.5);
+                newLight = l * adjustedMult;
+            } else {
+                newLight = l * lightMult;
+            }
+        }
+        
+        // Ensure we stay within reasonable bounds
+        newLight = Math.max(8, Math.min(92, newLight));
+        
+        return hslToRgb(h, s, newLight);
+    }
+    
     function addColorVariation(color, variationAmount = 5) {
         // Add subtle random variation to prevent exact duplicates
         const [r, g, b] = color;
         const variation = variationAmount;
         
-        const newR = Math.max(0, Math.min(255, r + (Math.random() - 0.5) * variation * 2));
-        const newG = Math.max(0, Math.min(255, g + (Math.random() - 0.5) * variation * 2));
-        const newB = Math.max(0, Math.min(255, b + (Math.random() - 0.5) * variation * 2));
+        const newR = Math.max(15, Math.min(240, r + (Math.random() - 0.5) * variation * 2));
+        const newG = Math.max(15, Math.min(240, g + (Math.random() - 0.5) * variation * 2));
+        const newB = Math.max(15, Math.min(240, b + (Math.random() - 0.5) * variation * 2));
         
         return [Math.round(newR), Math.round(newG), Math.round(newB)];
     }
@@ -8183,14 +8239,17 @@ function generate25HueShiftedPalettesWithShifts(originalColors, collection) {
             // Step 2: Apply saturation multiplier with bounds
             let newSat = Math.min(100, Math.max(0, s * pattern.satMult));
             
-            // Step 3: Apply lightness multiplier with bounds
-            let newLight = Math.min(100, Math.max(0, l * pattern.lightMult));
+            // Step 3: Apply SMART lightness control (instead of simple multiplication)
+            let transformedColor = smartLightnessControl([...color], pattern.lightMult);
             
-            // Step 4: Convert back to RGB
-            let transformedColor = hslToRgb(newHue, newSat, newLight);
+            // Update with new hue and saturation
+            transformedColor = hslToRgb(newHue, newSat, rgbToHsl(...transformedColor)[2]);
             
-            // Step 5: Apply temperature shift
+            // Step 4: Apply temperature shift
             transformedColor = applyTemperatureShift(transformedColor, pattern.tempShift);
+            
+            // Step 5: Apply brightness adjustment (this is separate from lightness)
+            transformedColor = applyBrightnessAdjustment(transformedColor, pattern.brightnessAdj);
             
             // Step 6: Apply contrast adjustment
             transformedColor = applyContrast(transformedColor, pattern.contrastMult);
@@ -8203,7 +8262,17 @@ function generate25HueShiftedPalettesWithShifts(originalColors, collection) {
                 transformedColor = addColorVariation(transformedColor, 3);
             }
             
-            // Step 9: Ensure all values are valid integers
+            // Step 9: Final safety check - ensure reasonable brightness levels
+            const [finalH, finalS, finalL] = rgbToHsl(...transformedColor);
+            if (finalL > 90) {
+                // Too bright - tone it down
+                transformedColor = hslToRgb(finalH, finalS, 85);
+            } else if (finalL < 10) {
+                // Too dark - brighten it up
+                transformedColor = hslToRgb(finalH, finalS, 15);
+            }
+            
+            // Step 10: Ensure all values are valid integers
             return transformedColor.map(val => Math.round(Math.max(0, Math.min(255, val))));
         });
         
@@ -8216,9 +8285,28 @@ function generate25HueShiftedPalettesWithShifts(originalColors, collection) {
         });
     }
     
-    // Verify that all palettes are different
-    console.log("Verifying palette distinctness...");
+    // Enhanced verification that checks brightness levels
+    console.log("Verifying palette distinctness and brightness levels...");
     for (let i = 0; i < transformedPalettes.length; i++) {
+        const palette = transformedPalettes[i];
+        const avgBrightness = palette.reduce((sum, color) => {
+            const [_, __, l] = rgbToHsl(...color);
+            return sum + l;
+        }, 0) / palette.length;
+        
+        console.log(`Palette ${i} (${transformationPatterns[i].name}): avg brightness ${avgBrightness.toFixed(1)}`);
+        
+        // If brightness is still too high, adjust
+        if (avgBrightness > 85) {
+            console.log(`Adjusting overly bright palette ${i}`);
+            transformedPalettes[i] = palette.map(color => {
+                const [h, s, l] = rgbToHsl(...color);
+                const newL = Math.min(80, l - 5);
+                return hslToRgb(h, s, newL);
+            });
+        }
+        
+        // Check similarity with other palettes
         for (let j = i + 1; j < transformedPalettes.length; j++) {
             const palette1 = transformedPalettes[i];
             const palette2 = transformedPalettes[j];
