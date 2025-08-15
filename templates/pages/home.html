@@ -889,7 +889,7 @@
   </style>
   
   <span class="line1 funky-text" style="position: absolute; left: -110%; top: 95%;">
-    SELECT PALLET
+    SELECT PALETTE
     <img style="margin-left: 30px;" width="50px" height="50px" src="{% static 'images/arrow.svg' %}" alt="arrow" />
   </span>
   <span class="line2 funky-text" style="position: relative; left: 70%;">
@@ -1290,7 +1290,7 @@
         </p>
         <button
           class="bg-white text-slate-800 px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 rounded-xl md:rounded-2xl figma-text-base md:figma-text-lg hover:bg-slate-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
-          Explore now
+          Try It Now
         </button>
       </div>
     </div>
@@ -1318,8 +1318,8 @@
           What our <span class="text-gradient">customers</span> say
         </h2>
         <p class="figma-text-xl text-slate-600 max-w-3xl mx-auto">
-          Hear from designers and teams who've transformed their workflow with
-          Colorify
+          Hear from designers and teams who've transformed their workflow with <br>
+          <span class="font-medium">Colorify Studio</span>
         </p>
       </div>
 
@@ -1688,7 +1688,7 @@
  {% endblock %}
 
 
-<footer class="py-16 mt-20 pl-10 pr-10"
+<footer class="py-16 pl-10 pr-10"
   style="background-color:#222831; color: white !important;">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -1738,11 +1738,11 @@
         <h3 class="font-light text-white mb-6 text-lg">PARTNERSHIPS</h3>
         <p class="text-white/90 mb-6 leading-relaxed">
           Join us and start getting paid<br />
-          for all the products you sell
+          for all the subscriptions you sell
         </p>
         <button onclick="window.location.href='/affiliate/'"
           class="btn-secondary bg-white/20 text-white py-3 px-6 rounded-xl font-light hover:bg-white/30 transition-all duration-300 shadow-md border border-white/30">
-          Become an Affiliate
+          Become a Promoter
         </button>
       </div>
 
@@ -1792,7 +1792,7 @@
     </div>
   </div>
   <!-- Horizontal Divider and Credits -->
-  <div class="mt-8 pt-6">
+  <!-- <div class="mt-8 pt-6">
     <div class="flex items-center justify-between">
       <div class="flex-1 border-t border-white/30"></div>
       <div class="flex items-center gap-3 px-6">
@@ -1800,7 +1800,7 @@
         <img src="{% static 'images/3minds.png' %}" alt="3 Minds Digital" class="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
       </div>
     </div>
-  </div>
+  </div> -->
 </footer>
 
   {% block extra_js %}{% endblock %}
