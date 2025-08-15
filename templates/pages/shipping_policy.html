@@ -1,0 +1,147 @@
+<!-- templates/pages/shipping_policy.html -->
+{% extends 'pages/main_base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}Colorify - Shipping Policy{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-r from-purple-100 via-white to-blue-100">
+    <div class="text-center py-28">
+      <div class="relative inline-block">
+          <h1 class="text-5xl font-semibold mb-2 flex flex-wrap justify-center items-center gap-2">
+              <span>Shipping</span>
+              <span class="relative">
+                  <span class="text-blue-600">Policy</span>
+                  <svg class="absolute -bottom-6 right-0 w-32 h-8" viewBox="0 0 1200 100">
+                      <path 
+                          d="M0,50 Q600,-80 1200,50" 
+                          stroke="#FF4500" 
+                          stroke-width="25" 
+                          fill="none"
+                      />
+                  </svg>
+              </span>
+          </h1>
+      </div>
+      <p class="text-gray-600 mt-8 max-w-4xl mx-auto px-4">
+          Understanding our digital service delivery and any physical product shipping policies
+      </p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<main class="pt-14 pb-16 px-4 max-w-4xl mx-auto">
+    <!-- Content Sections -->
+    <div class="space-y-12">
+        <section class="text-center space-y-2">
+        <h2 class="text-3xl font-semibold mb-4">
+            Digital <span class="text-blue-600">Service Delivery</span>
+        </h2>
+        <p class="text-gray-600 leading-relaxed">
+            Colorify primarily operates as a digital platform, providing AI-powered color intelligence services through our web-based 
+            application. Upon successful subscription activation, you'll receive immediate access to our comprehensive color palette 
+            generation tools, design resources, and AI-powered color recommendations.
+        </p>
+        <p class="text-gray-600 leading-relaxed mt-4">
+            Your account credentials and access links will be sent to your registered email address within minutes of payment confirmation. 
+            No physical shipping is required for our core digital services, ensuring instant access to Colorify's powerful color tools.
+        </p>
+        </section>
+
+        <section class="text-center space-y-2">
+        <h2 class="text-3xl font-semibold mb-4">
+            Physical <span class="text-blue-600">Products</span>
+        </h2>
+        <p class="text-gray-600 leading-relaxed">
+            For any physical products, merchandise, or promotional materials that may be offered by Colorify, we partner with 
+            reliable shipping carriers to ensure safe and timely delivery. Shipping costs, delivery times, and tracking information 
+            will be clearly communicated at the time of purchase.
+        </p>
+        <p class="text-gray-600 leading-relaxed mt-4">
+            Standard shipping typically takes 3-5 business days for domestic orders and 7-14 business days for international orders. 
+            Express shipping options are available for an additional fee, with delivery times of 1-2 business days domestically and 
+            3-5 business days internationally.
+        </p>
+        </section>
+
+        <section class="text-center space-y-2">
+        <h2 class="text-3xl font-semibold mb-4">
+            Shipping <span class="text-blue-600">Destinations</span>
+        </h2>
+        <p class="text-gray-600 leading-relaxed">
+            We currently ship physical products to most countries worldwide. However, some restrictions may apply based on local 
+            regulations, customs requirements, or carrier limitations. During checkout, you'll be able to see if shipping is available 
+            to your location.
+        </p>
+        <p class="text-gray-600 leading-relaxed mt-4">
+            For international orders, customers are responsible for any applicable customs duties, taxes, or import fees. These 
+            charges are not included in our shipping costs and will be collected by your local customs authority upon delivery.
+        </p>
+        </section>
+
+        <section class="text-center space-y-2">
+        <h2 class="text-3xl font-semibold mb-4">
+            Order <span class="text-blue-600">Tracking</span>
+        </h2>
+        <p class="text-gray-600 leading-relaxed">
+            Once your physical order ships, you'll receive a confirmation email with tracking information and estimated delivery date. 
+            You can track your package in real-time through our website or directly with the shipping carrier using the provided tracking number.
+        </p>
+        <p class="text-gray-600 leading-relaxed mt-4">
+            For digital services, you'll receive regular updates about new features, updates, and account status through email notifications 
+            and in-app announcements. Our platform is continuously updated to provide you with the latest color intelligence tools.
+        </p>
+        </section>
+
+        <section class="text-center space-y-2">
+        <h2 class="text-3xl font-semibold mb-4">
+            Delivery <span class="text-blue-600">Issues</span>
+        </h2>
+        <p class="text-gray-600 leading-relaxed">
+            If you experience any issues with delivery of physical products or access to digital services, our customer support team 
+            is here to help. Common issues and solutions include:
+        </p>
+        <div class="mt-6 space-y-3 text-left max-w-2xl mx-auto">
+            <div class="flex items-start gap-3">
+                <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-1">📧</span>
+                <p class="text-gray-600">Email delivery issues - Check spam folder and add support@colorify.com to contacts</p>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-1">📦</span>
+                <p class="text-gray-600">Package delivery problems - Contact shipping carrier or our support team</p>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-1">🔑</span>
+                <p class="text-gray-600">Account access issues - Reset password or contact support for assistance</p>
+            </div>
+        </div>
+        </section>
+
+        <section class="text-center space-y-2">
+        <h2 class="text-3xl font-semibold mb-4">
+            Contact <span class="text-blue-600">Support</span>
+        </h2>
+        <p class="text-gray-600 leading-relaxed">
+            For questions about our shipping policy, delivery status, or any shipping-related concerns, please contact our 
+            customer support team:
+        </p>
+        <div class="mt-6 space-y-3 text-left max-w-2xl mx-auto">
+            <div class="flex items-center gap-3">
+                <span class="text-blue-600">📧</span>
+                <p class="text-gray-600">Email: shipping@colorify.com</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-blue-600">💬</span>
+                <p class="text-gray-600">Live Chat: Available on our website</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-blue-600">📞</span>
+                <p class="text-gray-600">Phone: +1 (555) 123-4567</p>
+            </div>
+        </div>
+        </section>
+    </div>
+</main>
+
+{% endblock %}

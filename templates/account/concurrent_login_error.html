@@ -8,7 +8,7 @@
 {% block extra_head %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static "js/talwind3.14.js" %}"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -28,11 +28,6 @@
         <div class="bg-white p-8 rounded-3xl shadow-lg">
             <!-- Logo -->
             <div class="flex flex-col items-center mb-8">
-                <div class="flex items-center gap-2 mb-4">
-                    <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-orange-400 rotate-45"></div>
-                    <div class="text-xl font-semibold text-gray-800">COLORIFY</div>
-                </div>
-
                 <!-- Session Active Message -->
                 <div class="text-center">
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Session Active Elsewhere</h2>

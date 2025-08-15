@@ -31,6 +31,12 @@ def privacy_policy_view(request):
 def terms_of_service_view(request):
     return render(request, 'pages/terms_of_service.html')
 
+def cancellation_policy_view(request):
+    return render(request, 'pages/cancellation_policy.html')
+
+def shipping_policy_view(request):
+    return render(request, 'pages/shipping_policy.html')
+
 def affiliate_view(request):
     return render(request, 'pages/affiliate.html')
 
