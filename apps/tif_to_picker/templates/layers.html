@@ -739,32 +739,34 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <hr />
 
-        <div class="zoom-wrapper" id="zoomWrapper">
-          <div class="canvas-container">
-            {% for layer in layers %}
-              <div
-                class="layer"
-                id="layer_{{ forloop.counter }}"
-                style="top: {{ layer.layer_position_from_top }}px; left: {{ layer.layer_position_from_left }}px;"
-                {% if layer.ml_label is not None %}data-ml-label="{{ layer.ml_label }}"{% endif %}
-                data-dpi-x="{{ layer.dpi_x|default:300 }}"
-                data-dpi-y="{{ layer.dpi_y|default:300 }}"
-              >
-                <canvas 
-                  id="layer_canvas_{{ forloop.counter }}" 
-                  data-original-src="{{ layer.path }}"
-                  data-original-width="{{ layer.original_width }}"
-                  data-original-height="{{ layer.original_height }}"
-                  data-dpi-x="{{ layer.dpi_x|default:500 }}"
-                  data-dpi-y="{{ layer.dpi_y|default:500 }}"
-                  data-original-physical-width-inches="{{ layer.physical_width_inches }}"
-                  data-original-physical-height-inches="{{ layer.physical_height_inches }}"
-                ></canvas>
-                <!-- Removed the visible ml-label-indicator div -->
-              </div>
-            {% endfor %}
-          </div>
-        </div>
+<div class="zoom-wrapper" id="zoomWrapper">
+  <div class="canvas-container">
+    {% for layer in layers %}
+      <div
+        class="layer"
+        id="layer_{{ forloop.counter }}"
+        style="top: {{ layer.layer_position_from_top }}px; left: {{ layer.layer_position_from_left }}px;"
+        {% if layer.ml_label is not None %}data-ml-label="{{ layer.ml_label }}"{% endif %}
+        data-dpi-x="{{ layer.dpi_x|default:300 }}"
+        data-dpi-y="{{ layer.dpi_y|default:300 }}"
+      >
+        <canvas 
+          id="layer_canvas_{{ forloop.counter }}" 
+          data-original-src="{{ layer.path }}"
+          data-original-path="{{ layer.original_path }}"
+          data-original-width="{{ layer.original_width }}"
+          data-original-height="{{ layer.original_height }}"
+          data-display-width="{{ layer.width }}"
+          data-display-height="{{ layer.height }}"
+          data-dpi-x="{{ layer.dpi_x|default:500 }}"
+          data-dpi-y="{{ layer.dpi_y|default:500 }}"
+          data-original-physical-width-inches="{{ layer.physical_width_inches }}"
+          data-original-physical-height-inches="{{ layer.physical_height_inches }}"
+        ></canvas>
+      </div>
+    {% endfor %}
+  </div>
+</div>
       </div>
 
      
@@ -18741,6 +18743,46 @@ function showFormatSelectionDialog() {
         });
     });
 }
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        z-index: 10001;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    // Add slide-in animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideIn 0.3s ease-out reverse';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 3000);
+}
 
 function exportFile(format = 'tiff') {
     return new Promise((resolve, reject) => {
@@ -18758,34 +18800,63 @@ function exportFile(format = 'tiff') {
                 return indexA - indexB;
             });
         
-        // Collect all layer data matching the read format
+        // Collect all layer data for high-resolution export
         layerCanvases.forEach((canvas) => {
-            // Get the actual positions from the canvas or its wrapper
-            const wrapper = canvas.closest('.layer-wrapper') || canvas.parentElement;
+            const wrapper = canvas.closest('.layer') || canvas.parentElement;
             const position_top = parseInt(wrapper.style.top) || 0;
             const position_left = parseInt(wrapper.style.left) || 0;
             
-            // Get original dimensions from data attributes
+            // Get dimensions from data attributes
+            const display_width = parseInt(canvas.getAttribute('data-display-width')) || canvas.width;
+            const display_height = parseInt(canvas.getAttribute('data-display-height')) || canvas.height;
             const original_width = parseInt(canvas.getAttribute('data-original-width') || 0);
             const original_height = parseInt(canvas.getAttribute('data-original-height') || 0);
-
+            const original_path = canvas.getAttribute('data-original-path');
+            const dpi_x = parseInt(canvas.getAttribute('data-dpi-x') || 300);
+            const dpi_y = parseInt(canvas.getAttribute('data-dpi-y') || 300);
+            const physical_width = parseFloat(canvas.getAttribute('data-original-physical-width-inches') || 0);
+            const physical_height = parseFloat(canvas.getAttribute('data-original-physical-height-inches') || 0);
+            
+            // Calculate scale factors for transforming changes to original resolution
+            const scale_x = original_width / display_width;
+            const scale_y = original_height / display_height;
+            
             const layerData = {
                 name: canvas.getAttribute('data-layer-name') || canvas.id,
-                position_top: position_top,
-                position_left: position_left,
-                width: canvas.width,
-                height: canvas.height,
+                position_top: Math.round(position_top * scale_y), // Scale position to original resolution
+                position_left: Math.round(position_left * scale_x), // Scale position to original resolution
+                display_width: display_width,
+                display_height: display_height,
                 original_width: original_width,
                 original_height: original_height,
-                imageData: canvas.toDataURL('image/png', 1.0)
+                original_path: original_path, // Path to high-res original file
+                dpi_x: dpi_x,
+                dpi_y: dpi_y,
+                physical_width_inches: physical_width,
+                physical_height_inches: physical_height,
+                scale_x: scale_x,
+                scale_y: scale_y,
+                // Include current canvas state for any edits made
+                current_canvas_data: canvas.toDataURL('image/png', 1.0)
             };
             
-            console.log(`Exporting Layer: ${layerData.name}, Position: (${layerData.position_left}, ${layerData.position_top}), Size: ${layerData.width}x${layerData.height}, Original Size: ${layerData.original_width}x${layerData.original_height}`);
+            console.log(`Exporting Layer: ${layerData.name}`);
+            console.log(`  Original: ${layerData.original_width}x${layerData.original_height}`);
+            console.log(`  Display: ${layerData.display_width}x${layerData.display_height}`);
+            console.log(`  Scale: ${layerData.scale_x.toFixed(2)}x${layerData.scale_y.toFixed(2)}`);
+            console.log(`  Original Path: ${layerData.original_path}`);
+            
             layers.push(layerData);
         });
         
+        if (layers.length === 0) {
+            reject(new Error('No layers found to export'));
+            return;
+        }
+        
         formData.append('layers_data', JSON.stringify(layers));
         formData.append('export_format', format);
+        formData.append('use_original_resolution', 'true'); // Flag to use original high-res images
         
         // Send data to server
         fetch('export_file/', {
@@ -18813,14 +18884,14 @@ function exportFile(format = 'tiff') {
             const a = document.createElement('a');
             a.href = url;
             
-            // Set appropriate file extension based on format
             const extensions = {
                 'tiff': 'tif',
                 'png': 'png',
                 'jpg': 'jpg'
             };
             
-            a.download = `exported.${extensions[format] || 'tif'}`;
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+            a.download = `exported_highres_${timestamp}.${extensions[format] || 'tif'}`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -18884,7 +18955,7 @@ function getCookie(name) {
 
       {% comment %} fav sections ends  {% endcomment %}
       
-      function changeHueWithHueAndLightnessTolerance(ctx, targetColor, newColor, hueTolerance, lightnessTolerance) {
+function changeHueWithHueAndLightnessTolerance(ctx, targetColor, newColor, hueTolerance, lightnessTolerance) {
   console.info('Processing Layer with target color:', targetColor, 'and new color:', newColor);
   const canvasWidth = ctx.canvas.width;
   const canvasHeight = ctx.canvas.height;
