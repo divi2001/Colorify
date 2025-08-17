@@ -767,6 +767,52 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endfor %}
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Loading canvas images...');
+    loadCanvasImages();
+});
+
+function loadCanvasImages() {
+    const canvases = document.querySelectorAll('canvas[data-original-src]');
+    console.log(`Found ${canvases.length} canvases to load`);
+    
+    canvases.forEach(function(canvas, index) {
+        const imageSrc = canvas.getAttribute('data-original-src');
+        const displayWidth = parseInt(canvas.getAttribute('data-display-width'));
+        const displayHeight = parseInt(canvas.getAttribute('data-display-height'));
+        
+        console.log(`Loading canvas ${index + 1}: ${imageSrc} (${displayWidth}x${displayHeight})`);
+        
+        // Set canvas dimensions
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
+        
+        // Create and load image
+        const img = new Image();
+        img.onload = function() {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
+            console.log(`✓ Successfully loaded image ${index + 1}`);
+        };
+        
+        img.onerror = function() {
+            console.error(`✗ Failed to load image: ${imageSrc}`);
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, displayWidth, displayHeight);
+            ctx.fillStyle = '#666';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Image failed to load', displayWidth/2, displayHeight/2);
+        };
+        
+        img.src = imageSrc;
+    });
+}
+</script>
       </div>
 
      
