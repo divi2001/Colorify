@@ -770,16 +770,191 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Loading canvas images...');
+    console.log('=== TIFF EDITOR: Starting canvas initialization ===');
+    
+    // Show loading indicator
+    showGlobalLoadingIndicator();
+    
+    // Add debug information
+    debugCanvasEnvironment();
+    
+    // Start loading canvas images
     loadCanvasImages();
 });
 
+function debugCanvasEnvironment() {
+    console.log('=== DEBUG: Canvas Environment ===');
+    
+    // Check all canvas elements
+    const allCanvases = document.querySelectorAll('canvas');
+    console.log(`Total canvas elements found: ${allCanvases.length}`);
+    
+    // Check canvases with data-original-src
+    const canvasesWithSrc = document.querySelectorAll('canvas[data-original-src]');
+    console.log(`Canvases with data-original-src: ${canvasesWithSrc.length}`);
+    
+    // Check if layers div exists
+    const layers = document.querySelectorAll('.layer');
+    console.log(`Layer divs found: ${layers.length}`);
+    
+    // Check canvas container
+    const container = document.querySelector('.canvas-container');
+    console.log('Canvas container exists:', !!container);
+    
+    // Log each canvas for debugging
+    canvasesWithSrc.forEach((canvas, index) => {
+        console.log(`Canvas ${index + 1}:`, {
+            id: canvas.id,
+            src: canvas.getAttribute('data-original-src'),
+            width: canvas.getAttribute('data-display-width'),
+            height: canvas.getAttribute('data-display-height')
+        });
+    });
+}
+
+function showGlobalLoadingIndicator() {
+    const existingIndicator = document.getElementById('global-loading-indicator');
+    if (existingIndicator) {
+        existingIndicator.style.display = 'block';
+        return;
+    }
+    
+    const indicator = document.createElement('div');
+    indicator.id = 'global-loading-indicator';
+    indicator.innerHTML = `
+        <div class="loading-backdrop">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <h3>Loading Images...</h3>
+                <p id="loading-progress">Preparing to load images...</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    indicator.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10000;
+        display: block;
+    `;
+    
+    const style = document.createElement('style');
+    style.textContent = `
+        .loading-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .loading-content h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .loading-content p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(indicator);
+}
+
+function hideGlobalLoadingIndicator() {
+    const indicator = document.getElementById('global-loading-indicator');
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
+}
+
+function updateLoadingProgress(current, total, message) {
+    const progressText = document.getElementById('loading-progress');
+    const progressFill = document.getElementById('progress-fill');
+    
+    if (progressText) {
+        progressText.textContent = message || `Loading image ${current} of ${total}...`;
+    }
+    
+    if (progressFill) {
+        const percentage = total > 0 ? (current / total) * 100 : 0;
+        progressFill.style.width = `${percentage}%`;
+    }
+}
+
 function loadCanvasImages() {
+    console.log('=== Starting loadCanvasImages function ===');
+    
     const canvases = document.querySelectorAll('canvas[data-original-src]');
     console.log(`Found ${canvases.length} canvases to load`);
     
+    if (canvases.length === 0) {
+        console.error('❌ No canvases found! This indicates a template or data issue.');
+        hideGlobalLoadingIndicator();
+        showError('No images found to load. Please check if the file was processed correctly.');
+        return;
+    }
+    
     let loadedCount = 0;
+    let errorCount = 0;
     const totalCanvases = canvases.length;
+    
+    updateLoadingProgress(0, totalCanvases, 'Starting image loading...');
     
     canvases.forEach(function(canvas, index) {
         const imageSrc = canvas.getAttribute('data-original-src');
@@ -788,90 +963,262 @@ function loadCanvasImages() {
         
         console.log(`Loading canvas ${index + 1}: ${imageSrc} (${displayWidth}x${displayHeight})`);
         
+        // Validate canvas attributes
+        if (!imageSrc || !displayWidth || !displayHeight) {
+            console.error(`❌ Invalid canvas attributes for canvas ${index + 1}:`, {
+                src: imageSrc,
+                width: displayWidth,
+                height: displayHeight
+            });
+            handleCanvasError(canvas, index, 'Invalid canvas attributes');
+            return;
+        }
+        
         // Set canvas dimensions
         canvas.width = displayWidth;
         canvas.height = displayHeight;
         
         // Add loading state
         canvas.setAttribute('data-loading', 'true');
+        canvas.setAttribute('data-load-start', Date.now());
+        
+        // Show individual canvas loading state
+        showCanvasLoadingState(canvas);
         
         // Create and load image
         const img = new Image();
-        img.onload = function() {
+        
+        // Success handler
+        const handleSuccess = function() {
             try {
+                const loadTime = Date.now() - parseInt(canvas.getAttribute('data-load-start'));
+                console.log(`Loading image ${index + 1} took ${loadTime}ms`);
+                
                 const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    throw new Error('Could not get canvas 2D context');
+                }
+                
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
                 
                 // Mark as loaded
                 canvas.setAttribute('data-loaded', 'true');
                 canvas.removeAttribute('data-loading');
+                canvas.removeAttribute('data-load-start');
+                
+                // Hide individual loading state
+                hideCanvasLoadingState(canvas);
                 
                 loadedCount++;
                 console.log(`✓ Successfully loaded image ${index + 1} (${loadedCount}/${totalCanvases})`);
                 
-                // Check if all canvases are loaded
-                if (loadedCount === totalCanvases) {
-                    console.log('All canvases loaded successfully');
-                    // Trigger any post-load functions here
-                    onAllCanvasesLoaded();
+                updateLoadingProgress(loadedCount + errorCount, totalCanvases, 
+                    `Loaded ${loadedCount} of ${totalCanvases} images`);
+                
+                // Check if all canvases are processed
+                if (loadedCount + errorCount >= totalCanvases) {
+                    console.log(`All canvases processed: ${loadedCount} loaded, ${errorCount} errors`);
+                    hideGlobalLoadingIndicator();
+                    onAllCanvasesLoaded(loadedCount, errorCount);
                 }
             } catch (error) {
                 console.error(`Error drawing image ${index + 1}:`, error);
-                handleCanvasError(canvas, index);
+                handleCanvasError(canvas, index, `Drawing error: ${error.message}`);
             }
         };
         
-        img.onerror = function() {
+        // Error handler
+        const handleError = function() {
             console.error(`✗ Failed to load image: ${imageSrc}`);
-            handleCanvasError(canvas, index);
+            handleCanvasError(canvas, index, 'Failed to load image');
         };
         
-        // Add timeout for very slow loading images
+        // Timeout handler
         const timeout = setTimeout(() => {
-            if (!canvas.getAttribute('data-loaded')) {
-                console.warn(`Timeout loading image ${index + 1}`);
-                handleCanvasError(canvas, index);
+            if (canvas.getAttribute('data-loading') === 'true') {
+                console.warn(`Timeout loading image ${index + 1} after 30 seconds`);
+                handleCanvasError(canvas, index, 'Loading timeout (30s)');
             }
         }, 30000); // 30 second timeout
         
+        // Set up image event handlers
         img.onload = function() {
             clearTimeout(timeout);
-            img.onload(); // Call the original onload
+            handleSuccess();
         };
         
+        img.onerror = function() {
+            clearTimeout(timeout);
+            handleError();
+        };
+        
+        // Start loading
         img.src = imageSrc;
     });
 }
 
-function handleCanvasError(canvas, index) {
-    const displayWidth = parseInt(canvas.getAttribute('data-display-width'));
-    const displayHeight = parseInt(canvas.getAttribute('data-display-height'));
+function showCanvasLoadingState(canvas) {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'canvas-loading-overlay';
+    loadingDiv.innerHTML = `
+        <div class="canvas-spinner"></div>
+        <div class="canvas-loading-text">Loading...</div>
+    `;
+    
+    loadingDiv.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(245, 245, 245, 0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #666;
+        pointer-events: none;
+    `;
+    
+    const spinnerStyle = document.createElement('style');
+    spinnerStyle.textContent = `
+        .canvas-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 8px;
+        }
+        
+        .canvas-loading-text {
+            font-size: 11px;
+            color: #888;
+        }
+    `;
+    
+    if (!document.querySelector('#canvas-loading-styles')) {
+        spinnerStyle.id = 'canvas-loading-styles';
+        document.head.appendChild(spinnerStyle);
+    }
+    
+    canvas.parentNode.style.position = 'relative';
+    canvas.parentNode.appendChild(loadingDiv);
+    canvas.setAttribute('data-loading-overlay', 'true');
+}
+
+function hideCanvasLoadingState(canvas) {
+    if (canvas.getAttribute('data-loading-overlay') === 'true') {
+        const overlay = canvas.parentNode.querySelector('.canvas-loading-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+        canvas.removeAttribute('data-loading-overlay');
+    }
+}
+
+function handleCanvasError(canvas, index, errorMessage) {
+    const displayWidth = parseInt(canvas.getAttribute('data-display-width')) || 300;
+    const displayHeight = parseInt(canvas.getAttribute('data-display-height')) || 200;
+    
+    console.error(`Canvas ${index + 1} error: ${errorMessage}`);
     
     canvas.removeAttribute('data-loading');
+    canvas.removeAttribute('data-load-start');
     canvas.setAttribute('data-error', 'true');
+    canvas.setAttribute('data-error-message', errorMessage);
     
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#f0f0f0';
-    ctx.fillRect(0, 0, displayWidth, displayHeight);
-    ctx.fillStyle = '#666';
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Image failed to load', displayWidth/2, displayHeight/2);
-    ctx.fillText('Click to retry', displayWidth/2, displayHeight/2 + 25);
+    // Hide loading overlay
+    hideCanvasLoadingState(canvas);
+    
+    // Set canvas dimensions if not already set
+    canvas.width = displayWidth;
+    canvas.height = displayHeight;
+    
+    try {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f8f8f8';
+        ctx.fillRect(0, 0, displayWidth, displayHeight);
+        
+        // Error border
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, displayWidth - 2, displayHeight - 2);
+        
+        // Error icon (simple X)
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 3;
+        const centerX = displayWidth / 2;
+        const centerY = displayHeight / 2;
+        const size = 20;
+        
+        ctx.beginPath();
+        ctx.moveTo(centerX - size, centerY - size);
+        ctx.lineTo(centerX + size, centerY + size);
+        ctx.moveTo(centerX + size, centerY - size);
+        ctx.lineTo(centerX - size, centerY + size);
+        ctx.stroke();
+        
+        // Error text
+        ctx.fillStyle = '#666';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Failed to load', centerX, centerY + 35);
+        ctx.fillText('Click to retry', centerX, centerY + 50);
+        
+        // Error details (smaller text)
+        ctx.font = '10px Arial';
+        ctx.fillStyle = '#999';
+        const shortMessage = errorMessage.length > 30 ? errorMessage.substring(0, 27) + '...' : errorMessage;
+        ctx.fillText(shortMessage, centerX, centerY + 65);
+    } catch (drawError) {
+        console.error(`Error drawing error state for canvas ${index + 1}:`, drawError);
+    }
     
     // Add click to retry
     canvas.style.cursor = 'pointer';
     canvas.onclick = function() {
         retryCanvasLoad(canvas, index);
     };
+    
+    // Update error count
+    if (!window.canvasErrorCount) window.canvasErrorCount = 0;
+    window.canvasErrorCount++;
+    
+    // Update global progress
+    const totalCanvases = document.querySelectorAll('canvas[data-original-src]').length;
+    const loadedCount = document.querySelectorAll('canvas[data-loaded="true"]').length;
+    const errorCount = window.canvasErrorCount;
+    
+    updateLoadingProgress(loadedCount + errorCount, totalCanvases, 
+        `${loadedCount} loaded, ${errorCount} errors`);
+    
+    // Check if all canvases are processed
+    if (loadedCount + errorCount >= totalCanvases) {
+        hideGlobalLoadingIndicator();
+        onAllCanvasesLoaded(loadedCount, errorCount);
+    }
 }
 
 function retryCanvasLoad(canvas, index) {
     console.log(`Retrying canvas ${index + 1}`);
+    
+    // Reset canvas state
     canvas.removeAttribute('data-error');
+    canvas.removeAttribute('data-error-message');
     canvas.onclick = null;
     canvas.style.cursor = 'default';
+    
+    // Update error count
+    if (window.canvasErrorCount > 0) window.canvasErrorCount--;
+    
+    // Show loading state
+    canvas.setAttribute('data-loading', 'true');
+    canvas.setAttribute('data-load-start', Date.now());
+    showCanvasLoadingState(canvas);
     
     // Retry loading
     const imageSrc = canvas.getAttribute('data-original-src');
@@ -879,23 +1226,218 @@ function retryCanvasLoad(canvas, index) {
     const displayHeight = parseInt(canvas.getAttribute('data-display-height'));
     
     const img = new Image();
+    
+    const timeout = setTimeout(() => {
+        if (canvas.getAttribute('data-loading') === 'true') {
+            handleCanvasError(canvas, index, 'Retry timeout (30s)');
+        }
+    }, 30000);
+    
     img.onload = function() {
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
-        canvas.setAttribute('data-loaded', 'true');
-        console.log(`✓ Retry successful for canvas ${index + 1}`);
+        clearTimeout(timeout);
+        try {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
+            
+            canvas.setAttribute('data-loaded', 'true');
+            canvas.removeAttribute('data-loading');
+            canvas.removeAttribute('data-load-start');
+            
+            hideCanvasLoadingState(canvas);
+            
+            console.log(`✓ Retry successful for canvas ${index + 1}`);
+            
+            // Check if this was the last canvas
+            const totalCanvases = document.querySelectorAll('canvas[data-original-src]').length;
+            const loadedCount = document.querySelectorAll('canvas[data-loaded="true"]').length;
+            const errorCount = window.canvasErrorCount || 0;
+            
+            if (loadedCount + errorCount >= totalCanvases) {
+                onAllCanvasesLoaded(loadedCount, errorCount);
+            }
+        } catch (error) {
+            clearTimeout(timeout);
+            handleCanvasError(canvas, index, `Retry drawing error: ${error.message}`);
+        }
     };
     
-    img.src = imageSrc + '?retry=' + Date.now(); // Add cache buster
+    img.onerror = function() {
+        clearTimeout(timeout);
+        handleCanvasError(canvas, index, 'Retry failed to load image');
+    };
+    
+    // Add cache buster and retry
+    img.src = imageSrc + (imageSrc.includes('?') ? '&' : '?') + 'retry=' + Date.now();
 }
 
-function onAllCanvasesLoaded() {
-    // This function is called when all canvases are loaded
+function onAllCanvasesLoaded(loadedCount, errorCount) {
+    console.log(`=== Canvas loading completed ===`);
+    console.log(`✓ Successfully loaded: ${loadedCount}`);
+    console.log(`❌ Failed to load: ${errorCount}`);
+    
+    if (loadedCount === 0) {
+        showError('No images could be loaded. Please check your file and try again.');
+        return;
+    }
+    
+    if (errorCount > 0) {
+        showWarning(`${errorCount} image(s) failed to load. You can click on failed images to retry.`);
+    } else {
+        showSuccess('All images loaded successfully!');
+    }
+    
+    // Enable any functionality that depends on loaded canvases
+    enableCanvasDependentFeatures();
+    
     console.log('All canvases ready for preview generation');
-    // You can trigger preview generation here if needed
 }
 
+function enableCanvasDependentFeatures() {
+    // Enable palette preview generation
+    const paletteButtons = document.querySelectorAll('[data-palette-preview]');
+    paletteButtons.forEach(button => {
+        button.disabled = false;
+        button.style.opacity = '1';
+    });
+    
+    // Enable any other features that need loaded canvases
+    console.log('Canvas-dependent features enabled');
+}
+
+function showError(message) {
+    showNotification(message, 'error');
+}
+
+function showWarning(message) {
+    showNotification(message, 'warning');
+}
+
+function showSuccess(message) {
+    showNotification(message, 'success');
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    const colors = {
+        error: { bg: '#ffebee', border: '#f44336', text: '#c62828' },
+        warning: { bg: '#fff3e0', border: '#ff9800', text: '#f57c00' },
+        success: { bg: '#e8f5e8', border: '#4caf50', text: '#2e7d32' }
+    };
+    
+    const color = colors[type] || colors.error;
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${color.bg};
+        border: 1px solid ${color.border};
+        color: ${color.text};
+        padding: 12px 16px;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        z-index: 10001;
+        max-width: 350px;
+        font-size: 14px;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    
+    if (!document.querySelector('#notification-styles')) {
+        style.id = 'notification-styles';
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideIn 0.3s ease reverse';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 5000);
+}
+
+// Enhanced preview generation function with canvas validation
+function generateAndShowPreview(paletteData) {
+    console.log('Starting preview generation...');
+    
+    // Find the original canvas - with better error handling
+    const originalCanvas = findOriginalCanvas();
+    
+    if (!originalCanvas) {
+        console.error('No original canvas found for preview');
+        showError('No original canvas found. Please wait for images to load completely.');
+        return;
+    }
+    
+    if (originalCanvas.getAttribute('data-loading') === 'true') {
+        console.warn('Canvas still loading, retrying in 2 seconds...');
+        showWarning('Images are still loading, please wait...');
+        setTimeout(() => generateAndShowPreview(paletteData), 2000);
+        return;
+    }
+    
+    if (originalCanvas.getAttribute('data-error') === 'true') {
+        const errorMessage = originalCanvas.getAttribute('data-error-message') || 'Canvas failed to load';
+        console.error('Canvas has error state:', errorMessage);
+        showError(`Canvas error: ${errorMessage}. Please try refreshing the page.`);
+        return;
+    }
+    
+    // Continue with preview generation...
+    console.log('Canvas validated, proceeding with preview generation');
+    // Your existing preview generation code here
+}
+
+function findOriginalCanvas() {
+    // Try different methods to find a valid canvas
+    const canvases = document.querySelectorAll('canvas[data-original-src]');
+    
+    if (canvases.length === 0) {
+        console.error('No canvases with data-original-src found');
+        return null;
+    }
+    
+    // First, try to find a loaded canvas
+    for (let canvas of canvases) {
+        if (canvas.getAttribute('data-loaded') === 'true') {
+            console.log('Found loaded canvas:', canvas.id);
+            return canvas;
+        }
+    }
+    
+    // If no loaded canvas, try to find any canvas that's not in error state
+    for (let canvas of canvases) {
+        if (canvas.getAttribute('data-error') !== 'true' && 
+            canvas.getAttribute('data-loading') !== 'true') {
+            console.log('Found available canvas:', canvas.id);
+            return canvas;
+        }
+    }
+    
+    console.error('No suitable canvas found');
+    return null;
+}
+
+// Initialize error count
+window.canvasErrorCount = 0;
 </script>
       </div>
 

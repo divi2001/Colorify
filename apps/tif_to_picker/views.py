@@ -1104,14 +1104,7 @@ def is_color_fill_layer(layer):
 def extract_layers(file_path, output_dir, output_format='PNG', quality=100, display_max_dimension=1200, optimize=True):
     """
     Extract layers from image files, creating both original and display versions.
-    
-    Parameters:
-    file_path (str): Path to input image file (TIFF, JPEG, PNG)
-    output_dir (str): Directory to save extracted layers
-    output_format (str): Output format ('PNG', 'JPEG', 'WEBP')
-    quality (int): Compression quality (1-100) for JPEG/WEBP
-    display_max_dimension (int): Maximum dimension for display version (maintains aspect ratio)
-    optimize (bool): Apply additional optimization
+    Enhanced with better memory management and error handling.
     """
     import tifffile
     from PIL import Image, ExifTags
@@ -1123,9 +1116,26 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
     import json
     import struct
     from fractions import Fraction
+    import gc
+    import logging
 
+    # Setup logging
+    logger = logging.getLogger(__name__)
+    
     # Increase PIL's maximum image size limit
     Image.MAX_IMAGE_PIXELS = 500000000
+    
+    # Memory management for large files
+    file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+    if file_size_mb > 50:  # If file is larger than 50MB
+        display_max_dimension = 800
+        logger.info(f"Large file detected ({file_size_mb:.1f}MB), using display size: {display_max_dimension}px")
+    elif file_size_mb > 100:  # If file is larger than 100MB
+        display_max_dimension = 600
+        logger.info(f"Very large file detected ({file_size_mb:.1f}MB), using smaller display size: {display_max_dimension}px")
+    elif file_size_mb > 200:  # If file is larger than 200MB
+        display_max_dimension = 400
+        logger.info(f"Extremely large file detected ({file_size_mb:.1f}MB), using minimal display size: {display_max_dimension}px")
     
     def get_dpi_and_physical_size(file_path):
         """Extract both DPI and physical dimensions (in inches) from an image file"""
@@ -1173,7 +1183,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                             physical_height_inches = pixel_height / y_dpi
                             physical_size_inches = (physical_width_inches, physical_height_inches)
                             
-                            print(f"TIFF physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
+                            logger.info(f"TIFF physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
                             return dpi, physical_size_inches
             
             # For other formats, use PIL
@@ -1191,7 +1201,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                     physical_height_inches = pixel_height / y_dpi
                     physical_size_inches = (physical_width_inches, physical_height_inches)
                     
-                    print(f"PIL physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
+                    logger.info(f"PIL physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
                     return dpi, physical_size_inches
                 
                 # For JPEGs, try EXIF data
@@ -1226,21 +1236,21 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                                 physical_height_inches = pixel_height / y_dpi
                                 physical_size_inches = (physical_width_inches, physical_height_inches)
                                 
-                                print(f"EXIF physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
+                                logger.info(f"EXIF physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
                                 return dpi, physical_size_inches
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Error reading EXIF data: {e}")
             
             # If we couldn't determine physical size, use default DPI
             physical_width_inches = pixel_width / default_dpi[0]
             physical_height_inches = pixel_height / default_dpi[1]
             physical_size_inches = (physical_width_inches, physical_height_inches)
             
-            print(f"Default physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {default_dpi} DPI")
+            logger.info(f"Default physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {default_dpi} DPI")
             return default_dpi, physical_size_inches
             
         except Exception as e:
-            print(f"Error measuring physical size: {str(e)}")
+            logger.error(f"Error measuring physical size: {str(e)}")
             return default_dpi, None
     
     def get_dpi_from_tiff_page(page):
@@ -1282,10 +1292,10 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                 physical_height_inches = pixel_height / y_dpi
                 physical_size_inches = (physical_width_inches, physical_height_inches)
                 
-                print(f"TIFF page physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
+                logger.info(f"TIFF page physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\" at {dpi} DPI")
                 return dpi, physical_size_inches
             else:
-                print(f"No resolution tags found, using default {default_dpi} DPI")
+                logger.info(f"No resolution tags found, using default {default_dpi} DPI")
                 
                 # Calculate physical size using default DPI
                 physical_width_inches = pixel_width / default_dpi[0]
@@ -1295,15 +1305,23 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                 return default_dpi, physical_size_inches
                 
         except Exception as e:
-            print(f"Error getting physical size from TIFF page: {str(e)}")
+            logger.error(f"Error getting physical size from TIFF page: {str(e)}")
             return default_dpi, None
     
-    def save_image_version(image_array, output_path, original_size=None, dpi=(300, 300), physical_size_inches=None, is_display_version=False, original_dimensions=None):
+    def save_image_version(image_array, output_path, original_size=None, dpi=(300, 300), 
+                          physical_size_inches=None, is_display_version=False, original_dimensions=None):
         """Save image with proper metadata, handling both original and display versions"""
         try:
-            # Convert numpy array to PIL Image
+            # Force garbage collection before processing
+            gc.collect()
+            
+            # Convert numpy array to PIL Image with memory optimization
             if isinstance(image_array, np.ndarray):
-                # Handle different array types and shapes
+                # For very large arrays, log memory usage
+                array_size_mb = image_array.nbytes / (1024 * 1024)
+                if array_size_mb > 100:  # 100MB
+                    logger.info(f"Processing large array ({array_size_mb:.1f}MB)")
+                
                 if image_array.dtype == np.float32 or image_array.dtype == np.float64:
                     image_array = (image_array * 255).astype(np.uint8)
                 elif image_array.dtype == bool:  # Handle binary masks
@@ -1322,6 +1340,11 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
             else:
                 img = image_array
 
+            # Clear the original array from memory
+            if isinstance(image_array, np.ndarray):
+                del image_array
+                gc.collect()
+
             # Store original dimensions before any processing
             if original_dimensions is None:
                 original_dimensions = img.size
@@ -1337,7 +1360,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                         new_height = display_max_dimension
                         new_width = int((orig_width * display_max_dimension) / orig_height)
                     
-                    print(f"Resizing display version to: {new_width}x{new_height}")
+                    logger.info(f"Resizing display version to: {new_width}x{new_height}")
                     img = img.resize((new_width, new_height), Resampling.LANCZOS)
                     
                     # Recalculate DPI for display version to maintain physical size
@@ -1346,7 +1369,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                         new_x_dpi = new_width / physical_width_inches
                         new_y_dpi = new_height / physical_height_inches
                         display_dpi = (int(new_x_dpi), int(new_y_dpi))
-                        print(f"Display version DPI: {display_dpi}")
+                        logger.info(f"Display version DPI: {display_dpi}")
                     else:
                         display_dpi = dpi
                 else:
@@ -1366,9 +1389,9 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                 physical_width_inches, physical_height_inches = physical_size_inches
             
             version_type = "display" if is_display_version else "original"
-            print(f"{version_type.capitalize()} version - Current: {current_width}x{current_height}, "
-                  f"Original: {original_dimensions[0]}x{original_dimensions[1]}, "
-                  f"Physical: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\"")
+            logger.info(f"{version_type.capitalize()} version - Current: {current_width}x{current_height}, "
+                       f"Original: {original_dimensions[0]}x{original_dimensions[1]}, "
+                       f"Physical: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\"")
             
             # Set ML label to 1 (hardcoded)
             ml_label = 1
@@ -1404,8 +1427,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                         png_info = PngImagePlugin.PngInfo()
                         png_info.add_text("Software", "Python PIL")
                         png_info.add(b'pHYs', struct.pack('>IIB', ppm_x, ppm_y, 1))
-                    except:
-                        print("Warning: Could not create PNG info")
+                    except Exception as e:
+                        logger.warning(f"Could not create PNG info: {e}")
                     
                     img.save(output_path, 
                            'PNG',
@@ -1440,7 +1463,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                         exif_bytes = piexif.dump(exif_dict)
                         piexif.insert(exif_bytes, output_path)
                     except Exception as exif_err:
-                        print(f"Warning: Could not add EXIF resolution: {str(exif_err)}")
+                        logger.warning(f"Could not add EXIF resolution: {str(exif_err)}")
                 
                 elif output_format.upper() == 'WEBP':
                     img.save(output_path, 
@@ -1455,223 +1478,257 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
                 if original_size:
                     new_size = os.path.getsize(output_path)
                     reduction = ((original_size - new_size) / original_size) * 100
-                    print(f"{version_type.capitalize()} size: {original_size/1024/1024:.1f}MB -> {new_size/1024/1024:.1f}MB ({reduction:.1f}% reduction)")
+                    logger.info(f"{version_type.capitalize()} size: {original_size/1024/1024:.1f}MB -> {new_size/1024/1024:.1f}MB ({reduction:.1f}% reduction)")
+
+                # Clear image from memory
+                del img
+                gc.collect()
 
                 return img.size, original_dimensions, ml_label, save_dpi, physical_size_inches
 
             except Exception as save_error:
-                print(f"Error saving {version_type} image: {str(save_error)}")
+                logger.error(f"Error saving {version_type} image: {str(save_error)}")
                 if os.path.exists(output_path):
-                    os.remove(output_path)
+                    try:
+                        os.remove(output_path)
+                    except:
+                        pass
                 return None, None, None, None, None
 
+        except MemoryError as e:
+            logger.error(f"Memory error processing {version_type} image: {str(e)}")
+            gc.collect()
+            return None, None, None, None, None
         except Exception as e:
-            print(f"Error processing {version_type} image: {str(e)}")
+            logger.error(f"Error processing {version_type} image: {str(e)}")
             return None, None, None, None, None
 
-    # Check file extension
-    file_extension = os.path.splitext(file_path)[1].lower()
-    
-    if file_extension in ['.jpg', '.jpeg', '.png']:
-        # Handle JPEG/PNG files
-        try:
-            original_size = os.path.getsize(file_path)
-            
-            # Get both DPI and physical size from the file
-            dpi, physical_size_inches = get_dpi_and_physical_size(file_path)
-            print(f"Using DPI {dpi} and physical size {physical_size_inches} for {file_path}")
-            
-            with Image.open(file_path) as img:
-                full_image = np.array(img)
-                original_dimensions = img.size
-            
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
-            
-            base_filename = os.path.splitext(os.path.basename(file_path))[0]
-            
-            # Create both original and display versions
-            original_output_path = os.path.join(output_dir, f"{base_filename}_original.{output_format.lower()}")
-            display_output_path = os.path.join(output_dir, f"{base_filename}.{output_format.lower()}")
-            
-            # Save original version (no resizing)
-            orig_size, orig_dims, ml_label, orig_dpi, physical_size = save_image_version(
-                full_image, original_output_path, original_size, dpi=dpi, 
-                physical_size_inches=physical_size_inches, is_display_version=False,
-                original_dimensions=original_dimensions
-            )
-            
-            # Save display version (resized)
-            display_size, _, _, display_dpi, _ = save_image_version(
-                full_image, display_output_path, original_size, dpi=dpi,
-                physical_size_inches=physical_size_inches, is_display_version=True,
-                original_dimensions=original_dimensions
-            )
-            
-            if display_size is None or orig_size is None:
-                return []
-            
-            display_width, display_height = display_size
-            orig_width, orig_height = orig_dims
-            physical_width_inches, physical_height_inches = physical_size
-            
-            # Save metadata
-            metadata_path = os.path.join(output_dir, f"{base_filename}.metadata.json")
-            metadata = {
-                'original_width': orig_width,
-                'original_height': orig_height,
-                'display_width': display_width,
-                'display_height': display_height,
-                'dpi_x': orig_dpi[0],
-                'dpi_y': orig_dpi[1],
-                'physical_width_inches': physical_width_inches,
-                'physical_height_inches': physical_height_inches,
-                'ml_label': ml_label,
-                'original_path': original_output_path,
-                'display_path': display_output_path
-            }
-            
-            with open(metadata_path, 'w') as metadata_file:
-                json.dump(metadata, metadata_file)
-            
-            return [{
-                'name': base_filename,
-                'path': display_output_path,  # Browser uses display version
-                'original_path': original_output_path,  # Keep reference to original
-                'layer_position_from_top': 0,
-                'layer_position_from_left': 0,
-                'width': display_width,
-                'height': display_height,
-                'original_width': orig_width,
-                'original_height': orig_height,
-                'dpi_x': orig_dpi[0],
-                'dpi_y': orig_dpi[1],
-                'physical_width_inches': physical_width_inches,
-                'physical_height_inches': physical_height_inches,
-                'ml_label': ml_label
-            }]
-            
-        except Exception as e:
-            print(f"Error processing {file_extension} file: {str(e)}")
-            return []
+    # Main processing logic
+    try:
+        logger.info(f"Starting extract_layers for {file_path}")
+        logger.info(f"Output directory: {output_dir}")
+        logger.info(f"File size: {file_size_mb:.2f}MB")
         
-    elif file_extension in ['.tiff', '.tif']:
-        try:
-            # Read TIFF file
-            with tifffile.TiffFile(file_path) as tif:
-                n_pages = len(tif.pages)
-                original_size = os.path.getsize(file_path) // max(1, n_pages)
+        # Check file extension
+        file_extension = os.path.splitext(file_path)[1].lower()
+        logger.info(f"File extension: {file_extension}")
+        
+        if file_extension in ['.jpg', '.jpeg', '.png']:
+            # Handle JPEG/PNG files
+            try:
+                original_size = os.path.getsize(file_path)
                 
-                print(f"Processing TIFF file with {n_pages} pages")
+                # Get both DPI and physical size from the file
+                dpi, physical_size_inches = get_dpi_and_physical_size(file_path)
+                logger.info(f"Using DPI {dpi} and physical size {physical_size_inches} for {file_path}")
+                
+                with Image.open(file_path) as img:
+                    full_image = np.array(img)
+                    original_dimensions = img.size
                 
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
                 
-                layers_info = []
+                base_filename = os.path.splitext(os.path.basename(file_path))[0]
                 
-                # Process each page as a layer
-                for i, page in enumerate(tif.pages, 1):
-                    try:
-                        # Get the image data
-                        image = page.asarray()
-                        original_dimensions = (page.imagewidth, page.imagelength)
-                        
-                        # Extract both DPI and physical dimensions
-                        dpi, physical_size_inches = get_dpi_from_tiff_page(page)
-                        print(f"Layer {i} - DPI: {dpi}, Physical size: {physical_size_inches}")
-                        
-                        # Create layer name
-                        layer_name = f"layer_{i}"
-                        
-                        # Try to get better name from metadata
+                # Create both original and display versions
+                original_output_path = os.path.join(output_dir, f"{base_filename}_original.{output_format.lower()}")
+                display_output_path = os.path.join(output_dir, f"{base_filename}.{output_format.lower()}")
+                
+                # Save original version (no resizing)
+                orig_size, orig_dims, ml_label, orig_dpi, physical_size = save_image_version(
+                    full_image, original_output_path, original_size, dpi=dpi, 
+                    physical_size_inches=physical_size_inches, is_display_version=False,
+                    original_dimensions=original_dimensions
+                )
+                
+                # Save display version (resized)
+                display_size, _, _, display_dpi, _ = save_image_version(
+                    full_image, display_output_path, original_size, dpi=dpi,
+                    physical_size_inches=physical_size_inches, is_display_version=True,
+                    original_dimensions=original_dimensions
+                )
+                
+                if display_size is None or orig_size is None:
+                    logger.error("Failed to save image versions")
+                    return []
+                
+                display_width, display_height = display_size
+                orig_width, orig_height = orig_dims
+                physical_width_inches, physical_height_inches = physical_size
+                
+                # Save metadata
+                metadata_path = os.path.join(output_dir, f"{base_filename}.metadata.json")
+                metadata = {
+                    'original_width': orig_width,
+                    'original_height': orig_height,
+                    'display_width': display_width,
+                    'display_height': display_height,
+                    'dpi_x': orig_dpi[0],
+                    'dpi_y': orig_dpi[1],
+                    'physical_width_inches': physical_width_inches,
+                    'physical_height_inches': physical_height_inches,
+                    'ml_label': ml_label,
+                    'original_path': original_output_path,
+                    'display_path': display_output_path
+                }
+                
+                with open(metadata_path, 'w') as metadata_file:
+                    json.dump(metadata, metadata_file)
+                
+                result = [{
+                    'name': base_filename,
+                    'path': display_output_path,  # Browser uses display version
+                    'original_path': original_output_path,  # Keep reference to original
+                    'layer_position_from_top': 0,
+                    'layer_position_from_left': 0,
+                    'width': display_width,
+                    'height': display_height,
+                    'original_width': orig_width,
+                    'original_height': orig_height,
+                    'dpi_x': orig_dpi[0],
+                    'dpi_y': orig_dpi[1],
+                    'physical_width_inches': physical_width_inches,
+                    'physical_height_inches': physical_height_inches,
+                    'ml_label': ml_label
+                }]
+                
+                logger.info(f"Successfully processed {file_extension} file, returning {len(result)} layers")
+                return result
+                
+            except Exception as e:
+                logger.error(f"Error processing {file_extension} file: {str(e)}")
+                return []
+            
+        elif file_extension in ['.tiff', '.tif']:
+            try:
+                # Read TIFF file
+                with tifffile.TiffFile(file_path) as tif:
+                    n_pages = len(tif.pages)
+                    original_size = os.path.getsize(file_path) // max(1, n_pages)
+                    
+                    logger.info(f"Processing TIFF file with {n_pages} pages")
+                    
+                    if not os.path.exists(output_dir):
+                        os.makedirs(output_dir)
+                    
+                    layers_info = []
+                    
+                    # Process each page as a layer
+                    for i, page in enumerate(tif.pages, 1):
                         try:
-                            if hasattr(page, 'description') and page.description:
-                                better_name = page.description.strip()
-                                if better_name:
-                                    layer_name = better_name
-                                    print(f"Using description as layer name: {layer_name}")
-                        except:
-                            pass
-                        
-                        # Create output paths for both versions
-                        original_output_path = os.path.join(output_dir, f"{layer_name}_original.{output_format.lower()}")
-                        display_output_path = os.path.join(output_dir, f"{layer_name}.{output_format.lower()}")
-                        
-                        print(f"Processing layer {i}/{n_pages}: {layer_name}")
-                        
-                        # Save original version
-                        orig_size, orig_dims, ml_label, orig_dpi, physical_size = save_image_version(
-                            image, original_output_path, original_size, dpi=dpi,
-                            physical_size_inches=physical_size_inches, is_display_version=False,
-                            original_dimensions=original_dimensions
-                        )
-                        
-                        # Save display version
-                        display_size, _, _, display_dpi, _ = save_image_version(
-                            image, display_output_path, original_size, dpi=dpi,
-                            physical_size_inches=physical_size_inches, is_display_version=True,
-                            original_dimensions=original_dimensions
-                        )
-                        
-                        if display_size is None or orig_size is None:
+                            # Get the image data
+                            image = page.asarray()
+                            original_dimensions = (page.imagewidth, page.imagelength)
+                            
+                            # Extract both DPI and physical dimensions
+                            dpi, physical_size_inches = get_dpi_from_tiff_page(page)
+                            logger.info(f"Layer {i} - DPI: {dpi}, Physical size: {physical_size_inches}")
+                            
+                            # Create layer name
+                            layer_name = f"layer_{i}"
+                            
+                            # Try to get better name from metadata
+                            try:
+                                if hasattr(page, 'description') and page.description:
+                                    better_name = page.description.strip()
+                                    if better_name:
+                                        layer_name = better_name
+                                        logger.info(f"Using description as layer name: {layer_name}")
+                            except:
+                                pass
+                            
+                            # Create output paths for both versions
+                            original_output_path = os.path.join(output_dir, f"{layer_name}_original.{output_format.lower()}")
+                            display_output_path = os.path.join(output_dir, f"{layer_name}.{output_format.lower()}")
+                            
+                            logger.info(f"Processing layer {i}/{n_pages}: {layer_name}")
+                            
+                            # Save original version
+                            orig_size, orig_dims, ml_label, orig_dpi, physical_size = save_image_version(
+                                image, original_output_path, original_size, dpi=dpi,
+                                physical_size_inches=physical_size_inches, is_display_version=False,
+                                original_dimensions=original_dimensions
+                            )
+                            
+                            # Save display version
+                            display_size, _, _, display_dpi, _ = save_image_version(
+                                image, display_output_path, original_size, dpi=dpi,
+                                physical_size_inches=physical_size_inches, is_display_version=True,
+                                original_dimensions=original_dimensions
+                            )
+                            
+                            if display_size is None or orig_size is None:
+                                logger.warning(f"Failed to process layer {i}, skipping")
+                                continue
+                            
+                            display_width, display_height = display_size
+                            orig_width, orig_height = orig_dims
+                            physical_width_inches, physical_height_inches = physical_size
+                            
+                            # Save metadata
+                            metadata_path = os.path.join(output_dir, f"{layer_name}.metadata.json")
+                            metadata = {
+                                'original_width': orig_width,
+                                'original_height': orig_height,
+                                'display_width': display_width,
+                                'display_height': display_height,
+                                'dpi_x': orig_dpi[0],
+                                'dpi_y': orig_dpi[1],
+                                'physical_width_inches': physical_width_inches,
+                                'physical_height_inches': physical_height_inches,
+                                'ml_label': ml_label,
+                                'original_path': original_output_path,
+                                'display_path': display_output_path
+                            }
+                            
+                            with open(metadata_path, 'w') as metadata_file:
+                                json.dump(metadata, metadata_file)
+                            
+                            # Add layer info
+                            layer_info = {
+                                'name': layer_name,
+                                'path': display_output_path,  # Browser uses display version
+                                'original_path': original_output_path,  # Keep reference to original
+                                'layer_position_from_top': 0,
+                                'layer_position_from_left': 0,
+                                'width': display_width,
+                                'height': display_height,
+                                'original_width': orig_width,
+                                'original_height': orig_height,
+                                'dpi_x': orig_dpi[0],
+                                'dpi_y': orig_dpi[1],
+                                'physical_width_inches': physical_width_inches,
+                                'physical_height_inches': physical_height_inches,
+                                'ml_label': ml_label
+                            }
+                            
+                            layers_info.append(layer_info)
+                            
+                            # Force garbage collection after each layer
+                            gc.collect()
+                            
+                        except Exception as e:
+                            logger.error(f"Error processing layer {i}: {str(e)}")
                             continue
-                        
-                        display_width, display_height = display_size
-                        orig_width, orig_height = orig_dims
-                        physical_width_inches, physical_height_inches = physical_size
-                        
-                        # Save metadata
-                        metadata_path = os.path.join(output_dir, f"{layer_name}.metadata.json")
-                        metadata = {
-                            'original_width': orig_width,
-                            'original_height': orig_height,
-                            'display_width': display_width,
-                            'display_height': display_height,
-                            'dpi_x': orig_dpi[0],
-                            'dpi_y': orig_dpi[1],
-                            'physical_width_inches': physical_width_inches,
-                            'physical_height_inches': physical_height_inches,
-                            'ml_label': ml_label,
-                            'original_path': original_output_path,
-                            'display_path': display_output_path
-                        }
-                        
-                        with open(metadata_path, 'w') as metadata_file:
-                            json.dump(metadata, metadata_file)
-                        
-                        # Add layer info
-                        layer_info = {
-                            'name': layer_name,
-                            'path': display_output_path,  # Browser uses display version
-                            'original_path': original_output_path,  # Keep reference to original
-                            'layer_position_from_top': 0,
-                            'layer_position_from_left': 0,
-                            'width': display_width,
-                            'height': display_height,
-                            'original_width': orig_width,
-                            'original_height': orig_height,
-                            'dpi_x': orig_dpi[0],
-                            'dpi_y': orig_dpi[1],
-                            'physical_width_inches': physical_width_inches,
-                            'physical_height_inches': physical_height_inches,
-                            'ml_label': ml_label
-                        }
-                        
-                        layers_info.append(layer_info)
-                        
-                    except Exception as e:
-                        print(f"Error processing layer {i}: {str(e)}")
-                        continue
-                
-                return layers_info
-                
-        except Exception as e:
-            print(f"Error processing TIFF file: {str(e)}")
-            return []
-    else:
-        raise ValueError(f"Unsupported file format: {file_extension}")
+                    
+                    logger.info(f"Successfully processed TIFF file, returning {len(layers_info)} layers")
+                    return layers_info
+                    
+            except Exception as e:
+                logger.error(f"Error processing TIFF file: {str(e)}")
+                return []
+        else:
+            raise ValueError(f"Unsupported file format: {file_extension}")
+            
+    except Exception as e:
+        logger.error(f"Fatal error in extract_layers: {str(e)}")
+        return []
+    finally:
+        # Final cleanup
+        gc.collect()
 
-
+        
 def extractColors():
     print("testing")
 
