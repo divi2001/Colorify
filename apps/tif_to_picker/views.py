@@ -406,6 +406,9 @@ def upload_tiff(request, user_id=None, project_id=None):
         tiff_file = request.FILES['tiff_file']
         
         try:
+            print(f"🔍 DEBUG: Processing file: {tiff_file.name}")
+            print(f"🔍 DEBUG: File size: {tiff_file.size} bytes")
+            
             # Calculate file size in MB (more accurate than request.FILES size)
             file_size_bytes = tiff_file.size
             file_size_mb = file_size_bytes / (1024 * 1024)
@@ -437,6 +440,8 @@ def upload_tiff(request, user_id=None, project_id=None):
             file_path = os.path.join('media', 'uploads', filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             
+            print(f"🔍 DEBUG: File will be saved to: {file_path}")
+            
             # Generate unique temporary path
             temp_path = None
             counter = 0
@@ -445,10 +450,14 @@ def upload_tiff(request, user_id=None, project_id=None):
                 temp_path = f"{file_path}.temp{temp_suffix}"
                 counter += 1
 
+            print(f"🔍 DEBUG: Using temporary path: {temp_path}")
+
             # Save file temporarily to get exact size
             with open(temp_path, 'wb+') as destination:
                 for chunk in tiff_file.chunks():
                     destination.write(chunk)
+            
+            print(f"🔍 DEBUG: File saved temporarily")
             
             # Get precise file size after save
             precise_file_size_mb = os.path.getsize(temp_path) / (1024 * 1024)
@@ -466,11 +475,14 @@ def upload_tiff(request, user_id=None, project_id=None):
             output_dir = os.path.join('media', 'output', str(project_id) if project else 'demo')
             os.makedirs(output_dir, exist_ok=True)
             
+            print(f"🔍 DEBUG: Output directory: {output_dir}")
+            
             # Handle existing file
             if os.path.exists(file_path):
                 try:
                     # Remove existing file
                     os.remove(file_path)
+                    print(f"🔍 DEBUG: Removed existing file: {file_path}")
                 except OSError as e:
                     logger.error(f"Error removing existing file: {e}")
                     messages.error(request, "Error updating existing file. Please try again.")
@@ -480,6 +492,7 @@ def upload_tiff(request, user_id=None, project_id=None):
             # Rename temp file to final location
             try:
                 os.rename(temp_path, file_path)
+                print(f"🔍 DEBUG: File moved to final location: {file_path}")
             except OSError as e:
                 logger.error(f"Error moving file to final location: {e}")
                 os.remove(temp_path)
@@ -488,17 +501,29 @@ def upload_tiff(request, user_id=None, project_id=None):
             
             # Extract layers
             try:
+                print(f"🔍 DEBUG: Starting layer extraction...")
                 layers = extract_layers(file_path, output_dir)
+                print(f"🔍 DEBUG: Extracted {len(layers)} layers")
+                
+                for i, layer in enumerate(layers):
+                    print(f"🔍 DEBUG: Layer {i+1}: {layer}")
+                    
             except Exception as e:
                 logger.error(f"Error extracting layers: {e}")
+                print(f"🔍 DEBUG: Layer extraction failed: {e}")
                 os.remove(file_path)
                 messages.error(request, "Error processing TIFF layers. Please check the file format.")
                 return redirect(request.path)
             
             # Convert paths for template
-            for layer in layers:
+            print(f"🔍 DEBUG: Converting paths for template...")
+            print(f"🔍 DEBUG: MEDIA_URL: {settings.MEDIA_URL}")
+            
+            for i, layer in enumerate(layers):
+                original_path = layer['path']
                 rel_path = layer['path'].replace('\\', '/').split('media/')[-1]
-                layer['path'] = os.path.join(settings.MEDIA_URL, rel_path)
+                layer['path'] = os.path.join(settings.MEDIA_URL, rel_path).replace('\\', '/')
+                print(f"🔍 DEBUG: Layer {i+1} path: {original_path} -> {layer['path']}")
             
             # Update subscription metrics
             try:
@@ -514,6 +539,7 @@ def upload_tiff(request, user_id=None, project_id=None):
             try:
                 with Image.open(file_path) as img:
                     width, height = img.size
+                print(f"🔍 DEBUG: Image dimensions: {width}x{height}")
             except Exception as e:
                 logger.error(f"Error getting image dimensions: {e}")
                 width, height = 0, 0  # Default values if dimensions can't be read
@@ -529,17 +555,25 @@ def upload_tiff(request, user_id=None, project_id=None):
                 'success_message': 'File uploaded successfully!'
             }
             
+            print(f"🔍 DEBUG: Template context prepared:")
+            print(f"    - layer_count: {context['layer_count']}")
+            print(f"    - layers: {len(context['layers'])} items")
+            print(f"    - MEDIA_URL: {context['MEDIA_URL']}")
+            
             if project:
                 context.update({
                     'user': request.user,
                     'project': project,
                     'is_edit_mode': True
                 })
+                print(f"🔍 DEBUG: Added project context for project {project.id}")
             
+            print(f"🔍 DEBUG: Rendering template with context")
             return render(request, 'layers.html', context)
             
         except Exception as e:
             logger.error(f"Error processing TIFF upload: {str(e)}", exc_info=True)
+            print(f"🔍 DEBUG: Exception in upload processing: {str(e)}")
             messages.error(request, f"Error processing file: {str(e)}")
             # Clean up any temporary files
             if 'temp_path' in locals() and os.path.exists(temp_path):
@@ -547,6 +581,10 @@ def upload_tiff(request, user_id=None, project_id=None):
                     os.remove(temp_path)
                 except OSError as cleanup_error:
                     logger.error(f"Error cleaning up temporary file: {cleanup_error}")
+    else:
+        print(f"🔍 DEBUG: GET request or form invalid")
+        if request.method == 'POST':
+            print(f"🔍 DEBUG: Form errors: {form.errors}")
     
     # Prepare context for GET requests or failed POST
     context = {
@@ -560,7 +598,10 @@ def upload_tiff(request, user_id=None, project_id=None):
             'project': project
         })
     
+    print(f"🔍 DEBUG: Rendering upload template")
     return render(request, 'upload.html', context)
+
+
 
 import traceback
 
@@ -1728,7 +1769,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
         # Final cleanup
         gc.collect()
 
-        
+
 def extractColors():
     print("testing")
 
