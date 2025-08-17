@@ -1228,9 +1228,23 @@ def process_single_image_file(file_path, output_dir, base_filename, display_max_
             original_width, original_height = img.size
             print(f"🔍 PROCESS_SINGLE: Original dimensions: {original_width}x{original_height}")
             
-            # Get DPI info
-            dpi = img.info.get('dpi', (300, 300))
-            print(f"🔍 PROCESS_SINGLE: DPI: {dpi}")
+            # Get DPI info and handle Fraction objects
+            dpi_raw = img.info.get('dpi', (300, 300))
+            print(f"🔍 PROCESS_SINGLE: Raw DPI: {dpi_raw} (type: {type(dpi_raw)})")
+            
+            # Convert DPI to integers, handling Fraction objects
+            try:
+                if isinstance(dpi_raw, (tuple, list)) and len(dpi_raw) == 2:
+                    dpi_x = float(dpi_raw[0]) if hasattr(dpi_raw[0], 'numerator') else float(dpi_raw[0])
+                    dpi_y = float(dpi_raw[1]) if hasattr(dpi_raw[1], 'numerator') else float(dpi_raw[1])
+                    dpi = (int(dpi_x), int(dpi_y))
+                else:
+                    dpi = (300, 300)  # fallback
+            except Exception as dpi_error:
+                print(f"⚠️ PROCESS_SINGLE: DPI conversion error: {dpi_error}")
+                dpi = (300, 300)  # fallback
+            
+            print(f"🔍 PROCESS_SINGLE: Converted DPI: {dpi}")
             
             # Calculate physical size
             physical_width_inches = original_width / dpi[0]
@@ -1278,46 +1292,49 @@ def process_single_image_file(file_path, output_dir, base_filename, display_max_
             display_img.save(display_output_path, output_format, quality=quality, dpi=dpi)
             print(f"🔍 PROCESS_SINGLE: Saved display version")
             
-            # Save metadata
-            metadata_path = os.path.join(output_dir, f"{base_filename}.metadata.json")
+            # Save metadata - ensure all values are JSON serializable
             metadata = {
-                'original_width': original_width,
-                'original_height': original_height,
-                'display_width': new_width,
-                'display_height': new_height,
+                'original_width': int(original_width),
+                'original_height': int(original_height),
+                'display_width': int(new_width),
+                'display_height': int(new_height),
                 'dpi_x': int(dpi[0]),
                 'dpi_y': int(dpi[1]),
-                'physical_width_inches': physical_width_inches,
-                'physical_height_inches': physical_height_inches,
+                'physical_width_inches': float(physical_width_inches),
+                'physical_height_inches': float(physical_height_inches),
                 'ml_label': 1,
-                'original_path': original_output_path,
-                'display_path': display_output_path
+                'original_path': str(original_output_path),
+                'display_path': str(display_output_path)
             }
             
+            print(f"🔍 PROCESS_SINGLE: Metadata prepared: {metadata}")
+            
+            metadata_path = os.path.join(output_dir, f"{base_filename}.metadata.json")
             with open(metadata_path, 'w') as f:
                 json.dump(metadata, f, indent=2)
             
             print(f"🔍 PROCESS_SINGLE: Saved metadata")
             
-            # Create layer info
+            # Create layer info - ensure all values are the right type
             layer_info = {
-                'name': base_filename,
-                'path': display_output_path,
-                'original_path': original_output_path,
+                'name': str(base_filename),
+                'path': str(display_output_path),
+                'original_path': str(original_output_path),
                 'layer_position_from_top': 0,
                 'layer_position_from_left': 0,
-                'width': new_width,
-                'height': new_height,
-                'original_width': original_width,
-                'original_height': original_height,
+                'width': int(new_width),
+                'height': int(new_height),
+                'original_width': int(original_width),
+                'original_height': int(original_height),
                 'dpi_x': int(dpi[0]),
                 'dpi_y': int(dpi[1]),
-                'physical_width_inches': physical_width_inches,
-                'physical_height_inches': physical_height_inches,
+                'physical_width_inches': float(physical_width_inches),
+                'physical_height_inches': float(physical_height_inches),
                 'ml_label': 1
             }
             
             print(f"🔍 PROCESS_SINGLE: Created layer info: {layer_info}")
+            print(f"🔍 PROCESS_SINGLE: Returning 1 layer")
             return [layer_info]
             
     except Exception as e:
@@ -1325,6 +1342,7 @@ def process_single_image_file(file_path, output_dir, base_filename, display_max_
         import traceback
         traceback.print_exc()
         return []
+
 
 def process_tiff_file(file_path, output_dir, base_filename, display_max_dimension, output_format, quality):
     """Process TIFF files (can have multiple pages/layers)"""
@@ -1356,27 +1374,35 @@ def process_tiff_file(file_path, output_dir, base_filename, display_max_dimensio
                     print(f"🔍 PROCESS_TIFF: Page {i+1} array shape: {image_data.shape}")
                     print(f"🔍 PROCESS_TIFF: Page {i+1} array dtype: {image_data.dtype}")
                     
-                    # Get DPI from TIFF page
-                    dpi = (300, 300)  # default
+                    # Get DPI from TIFF page and handle Fraction objects
+                    dpi = [300, 300]  # default as list to ensure we can modify
                     try:
                         if 'XResolution' in page.tags and 'YResolution' in page.tags:
                             x_res = page.tags['XResolution'].value
                             y_res = page.tags['YResolution'].value
                             
-                            if isinstance(x_res, tuple):
-                                x_dpi = x_res[0] / x_res[1]
-                            else:
-                                x_dpi = x_res
-                                
-                            if isinstance(y_res, tuple):
-                                y_dpi = y_res[0] / y_res[1]
-                            else:
-                                y_dpi = y_res
+                            print(f"🔍 PROCESS_TIFF: Raw resolution - X: {x_res} (type: {type(x_res)}), Y: {y_res} (type: {type(y_res)})")
                             
-                            dpi = (int(x_dpi), int(y_dpi))
-                            print(f"🔍 PROCESS_TIFF: Page {i+1} DPI: {dpi}")
+                            # Handle different resolution formats
+                            if isinstance(x_res, tuple) and len(x_res) == 2:
+                                x_dpi = float(x_res[0]) / float(x_res[1])
+                            elif hasattr(x_res, 'numerator'):  # Fraction object
+                                x_dpi = float(x_res)
+                            else:
+                                x_dpi = float(x_res)
+                                
+                            if isinstance(y_res, tuple) and len(y_res) == 2:
+                                y_dpi = float(y_res[0]) / float(y_res[1])
+                            elif hasattr(y_res, 'numerator'):  # Fraction object
+                                y_dpi = float(y_res)
+                            else:
+                                y_dpi = float(y_res)
+                            
+                            dpi = [int(x_dpi), int(y_dpi)]
+                            print(f"🔍 PROCESS_TIFF: Page {i+1} converted DPI: {dpi}")
                     except Exception as dpi_error:
                         print(f"⚠️ PROCESS_TIFF: Could not get DPI for page {i+1}: {dpi_error}")
+                        dpi = [300, 300]  # fallback
                     
                     # Convert numpy array to PIL Image
                     if image_data.dtype == np.float32 or image_data.dtype == np.float64:
@@ -1431,7 +1457,7 @@ def process_tiff_file(file_path, output_dir, base_filename, display_max_dimensio
                     print(f"    Display: {display_output_path}")
                     
                     # Save original version
-                    img.save(original_output_path, output_format, quality=quality, dpi=dpi)
+                    img.save(original_output_path, output_format, quality=quality, dpi=tuple(dpi))
                     print(f"🔍 PROCESS_TIFF: Page {i+1} saved original")
                     
                     # Create display version
@@ -1451,49 +1477,49 @@ def process_tiff_file(file_path, output_dir, base_filename, display_max_dimensio
                         print(f"🔍 PROCESS_TIFF: Page {i+1} no resize needed")
                     
                     # Save display version
-                    display_img.save(display_output_path, output_format, quality=quality, dpi=dpi)
+                    display_img.save(display_output_path, output_format, quality=quality, dpi=tuple(dpi))
                     print(f"🔍 PROCESS_TIFF: Page {i+1} saved display")
                     
                     # Calculate physical size
-                    physical_width_inches = original_width / dpi[0]
-                    physical_height_inches = original_height / dpi[1]
+                    physical_width_inches = float(original_width) / float(dpi[0])
+                    physical_height_inches = float(original_height) / float(dpi[1])
                     
-                    # Save metadata
-                    metadata_path = os.path.join(output_dir, f"{layer_name}.metadata.json")
+                    # Save metadata - ensure all values are JSON serializable
                     metadata = {
-                        'original_width': original_width,
-                        'original_height': original_height,
-                        'display_width': new_width,
-                        'display_height': new_height,
-                        'dpi_x': dpi[0],
-                        'dpi_y': dpi[1],
-                        'physical_width_inches': physical_width_inches,
-                        'physical_height_inches': physical_height_inches,
+                        'original_width': int(original_width),
+                        'original_height': int(original_height),
+                        'display_width': int(new_width),
+                        'display_height': int(new_height),
+                        'dpi_x': int(dpi[0]),
+                        'dpi_y': int(dpi[1]),
+                        'physical_width_inches': float(physical_width_inches),
+                        'physical_height_inches': float(physical_height_inches),
                         'ml_label': 1,
-                        'original_path': original_output_path,
-                        'display_path': display_output_path
+                        'original_path': str(original_output_path),
+                        'display_path': str(display_output_path)
                     }
                     
+                    metadata_path = os.path.join(output_dir, f"{layer_name}.metadata.json")
                     with open(metadata_path, 'w') as f:
                         json.dump(metadata, f, indent=2)
                     
                     print(f"🔍 PROCESS_TIFF: Page {i+1} saved metadata")
                     
-                    # Create layer info
+                    # Create layer info - ensure all values are the right type
                     layer_info = {
-                        'name': layer_name,
-                        'path': display_output_path,
-                        'original_path': original_output_path,
+                        'name': str(layer_name),
+                        'path': str(display_output_path),
+                        'original_path': str(original_output_path),
                         'layer_position_from_top': 0,
                         'layer_position_from_left': 0,
-                        'width': new_width,
-                        'height': new_height,
-                        'original_width': original_width,
-                        'original_height': original_height,
-                        'dpi_x': dpi[0],
-                        'dpi_y': dpi[1],
-                        'physical_width_inches': physical_width_inches,
-                        'physical_height_inches': physical_height_inches,
+                        'width': int(new_width),
+                        'height': int(new_height),
+                        'original_width': int(original_width),
+                        'original_height': int(original_height),
+                        'dpi_x': int(dpi[0]),
+                        'dpi_y': int(dpi[1]),
+                        'physical_width_inches': float(physical_width_inches),
+                        'physical_height_inches': float(physical_height_inches),
                         'ml_label': 1
                     }
                     
@@ -1514,6 +1540,7 @@ def process_tiff_file(file_path, output_dir, base_filename, display_max_dimensio
         import traceback
         traceback.print_exc()
         return []
+
 
 def extractColors():
     print("testing")
