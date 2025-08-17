@@ -778,6 +778,9 @@ function loadCanvasImages() {
     const canvases = document.querySelectorAll('canvas[data-original-src]');
     console.log(`Found ${canvases.length} canvases to load`);
     
+    let loadedCount = 0;
+    const totalCanvases = canvases.length;
+    
     canvases.forEach(function(canvas, index) {
         const imageSrc = canvas.getAttribute('data-original-src');
         const displayWidth = parseInt(canvas.getAttribute('data-display-width'));
@@ -789,29 +792,110 @@ function loadCanvasImages() {
         canvas.width = displayWidth;
         canvas.height = displayHeight;
         
+        // Add loading state
+        canvas.setAttribute('data-loading', 'true');
+        
         // Create and load image
         const img = new Image();
         img.onload = function() {
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
-            console.log(`✓ Successfully loaded image ${index + 1}`);
+            try {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
+                
+                // Mark as loaded
+                canvas.setAttribute('data-loaded', 'true');
+                canvas.removeAttribute('data-loading');
+                
+                loadedCount++;
+                console.log(`✓ Successfully loaded image ${index + 1} (${loadedCount}/${totalCanvases})`);
+                
+                // Check if all canvases are loaded
+                if (loadedCount === totalCanvases) {
+                    console.log('All canvases loaded successfully');
+                    // Trigger any post-load functions here
+                    onAllCanvasesLoaded();
+                }
+            } catch (error) {
+                console.error(`Error drawing image ${index + 1}:`, error);
+                handleCanvasError(canvas, index);
+            }
         };
         
         img.onerror = function() {
             console.error(`✗ Failed to load image: ${imageSrc}`);
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#f0f0f0';
-            ctx.fillRect(0, 0, displayWidth, displayHeight);
-            ctx.fillStyle = '#666';
-            ctx.font = '16px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Image failed to load', displayWidth/2, displayHeight/2);
+            handleCanvasError(canvas, index);
+        };
+        
+        // Add timeout for very slow loading images
+        const timeout = setTimeout(() => {
+            if (!canvas.getAttribute('data-loaded')) {
+                console.warn(`Timeout loading image ${index + 1}`);
+                handleCanvasError(canvas, index);
+            }
+        }, 30000); // 30 second timeout
+        
+        img.onload = function() {
+            clearTimeout(timeout);
+            img.onload(); // Call the original onload
         };
         
         img.src = imageSrc;
     });
 }
+
+function handleCanvasError(canvas, index) {
+    const displayWidth = parseInt(canvas.getAttribute('data-display-width'));
+    const displayHeight = parseInt(canvas.getAttribute('data-display-height'));
+    
+    canvas.removeAttribute('data-loading');
+    canvas.setAttribute('data-error', 'true');
+    
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, displayWidth, displayHeight);
+    ctx.fillStyle = '#666';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Image failed to load', displayWidth/2, displayHeight/2);
+    ctx.fillText('Click to retry', displayWidth/2, displayHeight/2 + 25);
+    
+    // Add click to retry
+    canvas.style.cursor = 'pointer';
+    canvas.onclick = function() {
+        retryCanvasLoad(canvas, index);
+    };
+}
+
+function retryCanvasLoad(canvas, index) {
+    console.log(`Retrying canvas ${index + 1}`);
+    canvas.removeAttribute('data-error');
+    canvas.onclick = null;
+    canvas.style.cursor = 'default';
+    
+    // Retry loading
+    const imageSrc = canvas.getAttribute('data-original-src');
+    const displayWidth = parseInt(canvas.getAttribute('data-display-width'));
+    const displayHeight = parseInt(canvas.getAttribute('data-display-height'));
+    
+    const img = new Image();
+    img.onload = function() {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
+        canvas.setAttribute('data-loaded', 'true');
+        console.log(`✓ Retry successful for canvas ${index + 1}`);
+    };
+    
+    img.src = imageSrc + '?retry=' + Date.now(); // Add cache buster
+}
+
+function onAllCanvasesLoaded() {
+    // This function is called when all canvases are loaded
+    console.log('All canvases ready for preview generation');
+    // You can trigger preview generation here if needed
+}
+
 </script>
       </div>
 
