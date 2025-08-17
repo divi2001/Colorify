@@ -13,6 +13,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1000 * 1024 * 1024  # 100MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5000 * 1024 * 1024   # 50MB
 
 # Application definition
 
@@ -407,7 +409,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Media
 MEDIA_URL = '/tif-editor/media/'  # This adds a leading slash
 MEDIA_ROOT = BASE_DIR / 'media'
-DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 10000  # 10 MB
+
 STRIPE_PUBLIC_KEY = 'your_public_key_here'
 STRIPE_SECRET_KEY = 'your_secret_key_here'
 

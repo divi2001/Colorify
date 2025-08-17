@@ -366,7 +366,6 @@ def process_svg_upload(request):
 
 
 @login_required
-@login_required
 def upload_tiff(request, user_id=None, project_id=None):
     """
     Handles TIFF file uploads with subscription limit enforcement
@@ -1126,7 +1125,7 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
     from fractions import Fraction
 
     # Increase PIL's maximum image size limit
-    Image.MAX_IMAGE_PIXELS = None
+    Image.MAX_IMAGE_PIXELS = 500000000
     
     def get_dpi_and_physical_size(file_path):
         """Extract both DPI and physical dimensions (in inches) from an image file"""
@@ -1671,6 +1670,8 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
             return []
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
+
+
 def extractColors():
     print("testing")
 
