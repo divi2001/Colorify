@@ -646,14 +646,37 @@ def export_file(request):
             
             print(f"Processing {len(layers_data)} layers for export (use_original: {use_original_resolution})")
             
-            # Process layers - use original images if available
+            # Process layers - prioritize processed canvas data if available
             for layer_data in layers_data:
                 try:
                     img = None
                     layer_name = layer_data.get('name', 'unknown')
+                    palette_applied = layer_data.get('palette_applied', False)
                     
-                    # Try to use original high-resolution image first
-                    if use_original_resolution and 'original_path' in layer_data and layer_data['original_path']:
+                    print(f"Processing layer {layer_name}, palette_applied: {palette_applied}")
+                    
+                    # IMPORTANT CHANGE: Check if we have processed canvas data first
+                    # This takes priority over original files when transformations have been applied
+                    if 'current_canvas_data' in layer_data and layer_data['current_canvas_data']:
+                        print(f"Using processed canvas data for {layer_name} (palette applied: {palette_applied})")
+                        
+                        # Use the processed canvas data (with palette transformations)
+                        base64_str = layer_data['current_canvas_data'].split(',')[1]
+                        img_data = base64.b64decode(base64_str)
+                        img = Image.open(io.BytesIO(img_data))
+                        
+                        if img.mode != 'RGBA':
+                            img = img.convert('RGBA')
+                        
+                        # The processed image should already be at the correct resolution
+                        # Get scaled positions (these should already be scaled in the frontend)
+                        left_pos = int(layer_data.get('position_left', 0))
+                        top_pos = int(layer_data.get('position_top', 0))
+                        
+                        print(f"Loaded processed image: {img.width}x{img.height}")
+                        
+                    # Fallback: Try to use original high-resolution image if no processed data
+                    elif use_original_resolution and 'original_path' in layer_data and layer_data['original_path']:
                         original_path = layer_data['original_path']
                         print(f"Loading original image for {layer_name}: {original_path}")
                         
@@ -674,42 +697,46 @@ def export_file(request):
                         else:
                             print(f"Original image not found: {original_path}")
                     
-                    # Fallback to display canvas data if original not available
+                    # Final fallback to display canvas data
                     if img is None:
-                        print(f"Using display canvas data for {layer_name}")
+                        print(f"Using display canvas data fallback for {layer_name}")
                         
-                        # Use current canvas data or display canvas data
-                        image_data_key = 'current_canvas_data' if 'current_canvas_data' in layer_data else 'imageData'
-                        base64_str = layer_data[image_data_key].split(',')[1]
-                        img_data = base64.b64decode(base64_str)
-                        img = Image.open(io.BytesIO(img_data))
-                        
-                        if img.mode != 'RGBA':
-                            img = img.convert('RGBA')
-                        
-                        # Use original positions without scaling
-                        left_pos = int(layer_data.get('position_left', 0))
-                        top_pos = int(layer_data.get('position_top', 0))
-                        
-                        # If we have original dimensions and we're using original resolution,
-                        # scale up the display canvas
-                        if use_original_resolution:
-                            original_width = int(layer_data.get('original_width', 0))
-                            original_height = int(layer_data.get('original_height', 0))
+                        # Use imageData as final fallback
+                        image_data_key = 'imageData' if 'imageData' in layer_data else None
+                        if image_data_key:
+                            base64_str = layer_data[image_data_key].split(',')[1]
+                            img_data = base64.b64decode(base64_str)
+                            img = Image.open(io.BytesIO(img_data))
                             
-                            if original_width > 0 and original_height > 0:
-                                print(f"Scaling up display canvas to original size: {original_width}x{original_height}")
+                            if img.mode != 'RGBA':
+                                img = img.convert('RGBA')
+                            
+                            # Use original positions without scaling
+                            left_pos = int(layer_data.get('position_left', 0))
+                            top_pos = int(layer_data.get('position_top', 0))
+                            
+                            # If we have original dimensions and we're using original resolution,
+                            # scale up the display canvas
+                            if use_original_resolution:
+                                original_width = int(layer_data.get('original_width', 0))
+                                original_height = int(layer_data.get('original_height', 0))
                                 
-                                # Calculate scale factors
-                                scale_x = original_width / img.width
-                                scale_y = original_height / img.height
-                                
-                                # Scale the image
-                                img = img.resize((original_width, original_height), Image.LANCZOS)
-                                
-                                # Scale positions
-                                left_pos = int(left_pos * scale_x)
-                                top_pos = int(top_pos * scale_y)
+                                if original_width > 0 and original_height > 0:
+                                    print(f"Scaling up display canvas to original size: {original_width}x{original_height}")
+                                    
+                                    # Calculate scale factors
+                                    scale_x = original_width / img.width
+                                    scale_y = original_height / img.height
+                                    
+                                    # Scale the image
+                                    img = img.resize((original_width, original_height), Image.LANCZOS)
+                                    
+                                    # Scale positions
+                                    left_pos = int(left_pos * scale_x)
+                                    top_pos = int(top_pos * scale_y)
+                        else:
+                            print(f"No image data found for layer {layer_name}")
+                            continue
                     
                     # Get physical dimensions and DPI
                     dpi_x = int(layer_data.get('dpi_x', 300))
@@ -761,6 +788,7 @@ def export_file(request):
                     print(f"  Position: ({left_pos}, {top_pos})")
                     print(f"  DPI: {dpi}")
                     print(f"  Physical size: {physical_width_inches:.4f}\" × {physical_height_inches:.4f}\"")
+                    print(f"  Palette applied: {palette_applied}")
                     
                     # Update maximum dimensions
                     max_width = max(max_width, left_pos + img.width)
@@ -777,7 +805,8 @@ def export_file(request):
                         'PhysicalHeightInches': physical_height_inches,
                         'OriginalWidth': int(layer_data.get('original_width', img.width)),
                         'OriginalHeight': int(layer_data.get('original_height', img.height)),
-                        'UseOriginalResolution': use_original_resolution
+                        'UseOriginalResolution': use_original_resolution,
+                        'PaletteApplied': palette_applied
                     }
                     
                     # Store both PIL Image and numpy array
@@ -852,7 +881,8 @@ def export_file(request):
                     'DPI': document_dpi,
                     'PhysicalWidthInches': document_physical_width,
                     'PhysicalHeightInches': document_physical_height,
-                    'UseOriginalResolution': use_original_resolution
+                    'UseOriginalResolution': use_original_resolution,
+                    'PaletteApplied': any(layer['metadata'].get('PaletteApplied', False) for layer in processed_layers)
                 }
                 
                 # Write multi-page TIFF with high quality settings
@@ -943,6 +973,10 @@ def export_file(request):
             return JsonResponse({'error': error_msg}, status=500)
             
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+
+
 def get_layer_image(layer):
     try:
         channels_data = []
