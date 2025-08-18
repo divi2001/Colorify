@@ -54,6 +54,11 @@ logger = logging.getLogger(__name__)
 
 from .models import Mockup
 
+import base64
+import os
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.conf import settings
 @require_http_methods(["GET"])
 def get_mockups_api(request):
     try:
@@ -62,13 +67,15 @@ def get_mockups_api(request):
         
         mockups_data = []
         for mockup in mockups:
-            mockups_data.append({
+            mockup_data = {
                 'id': mockup.id,
                 'name': mockup.name,
-                'image_url': mockup.image.url if mockup.image else None,
                 'description': mockup.description,
                 'created_at': mockup.created_at.isoformat(),
-            })
+                'has_image': bool(mockup.image_base64),
+                'image_data_url': mockup.get_image_data_url()  # Complete data URL ready for img src
+            }
+            mockups_data.append(mockup_data)
         
         return JsonResponse({
             'success': True,
@@ -77,6 +84,7 @@ def get_mockups_api(request):
         })
         
     except Exception as e:
+        print(f"Error in get_mockups_api: {e}")
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -190,6 +198,8 @@ def get_palettes_for_layers(request, total_layers):
         "generate_more": palettes_needed > 0,
         "palettes_needed": palettes_needed
     })
+
+
 class InspirationView(View):
     def get(self, request):
         pdfs = InspirationPDF.objects.all().order_by('-created_at')
@@ -652,7 +662,8 @@ def upgrade_plan(request):
 
 @csrf_exempt
 
-def export_tiff(request):
+
+def export_file(request):
     if request.method == 'POST':
         try:
             layers_data = json.loads(request.POST.get('layers_data', '[]'))
