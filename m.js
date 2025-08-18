@@ -1,313 +1,237 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-  CircularProgress,
-  Box,
-  TablePagination,
-  Button,
-  TextField,
-  IconButton,
-  Tooltip,
-  Snackbar,
-  Alert
-} from '@mui/material';
-import { Save, Edit, Close, Check } from '@mui/icons-material';
-
-const DataTable = ({ tableName }) => {
-  const [tableData, setTableData] = useState([]);
-  const [originalData, setOriginalData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [editingCell, setEditingCell] = useState(null); // Changed from editingId to editingCell
-  const [changedRows, setChangedRows] = useState(new Set());
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-
-  useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/table/${tableName}`, {
-          headers: {
-            Authorization: 'Bearer dummy-token'
-          }
-        });
-
-        const data = response.data?.data ?? response.data ?? [];
-        setTableData(data);
-        setOriginalData(JSON.parse(JSON.stringify(data)));
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch table data: ' + err.message);
-        setLoading(false);
-      }
-    };
-
-    fetchTableData();
-  }, [tableName]);
-
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  // Edit specific cell instead of entire row
-  const handleEditCell = (rowId, fieldName) => {
-    setEditingCell({ rowId, fieldName });
-  };
-
-  // Cancel editing specific cell
-  const handleCancelEdit = (rowId, fieldName) => {
-    // Revert changes for this specific field if it was modified
-    if (changedRows.has(rowId)) {
-      const originalRow = originalData.find(row => row.id === rowId);
-      setTableData(prev => prev.map(row =>
-        row.id === rowId ? { ...row, [fieldName]: originalRow[fieldName] } : row
-      ));
-      
-      // Check if row still has changes after reverting this field
-      const updatedRow = { ...tableData.find(row => row.id === rowId), [fieldName]: originalRow[fieldName] };
-      const originalRow2 = originalData.find(row => row.id === rowId);
-      
-      if (JSON.stringify(originalRow2) === JSON.stringify(updatedRow)) {
-        setChangedRows(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(rowId);
-          return newSet;
-        });
-      }
-    }
-    setEditingCell(null);
-  };
-
-  // Save specific cell
-  const handleSaveCell = () => {
-    setEditingCell(null);
-  };
-
-  const handleFieldChange = (id, field, value) => {
-    const updatedData = tableData.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    );
-    setTableData(updatedData);
-
-    // Track changed rows
-    const originalItem = originalData.find(item => item.id === id);
-    const currentItem = updatedData.find(item => item.id === id);
-
-    if (JSON.stringify(originalItem) !== JSON.stringify(currentItem)) {
-      setChangedRows(prev => new Set(prev).add(id));
-    } else {
-      setChangedRows(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
-    }
-  };
-
-  const handleSaveChanges = async () => {
-    try {
-      const changes = Array.from(changedRows).map(id => {
-        const currentItem = tableData.find(item => item.id === id);
-        const originalItem = originalData.find(item => item.id === id);
-        return { id, ...currentItem };
-      });
-
-      if (changes.length === 0) {
-        showSnackbar('No changes to save', 'warning');
-        return;
-      }
-
-      await axios.put(
-        `http://localhost:5000/table/${tableName}/bulk-update`,
-        changes,
-        { headers: { Authorization: 'Bearer dummy-token' } }
-      );
-
-      // Update original data
-      setOriginalData(JSON.parse(JSON.stringify(tableData)));
-      setChangedRows(new Set());
-      setEditingCell(null);
-      showSnackbar(`${changes.length} records updated successfully`);
-    } catch (err) {
-      setError('Failed to save changes: ' + err.message);
-      showSnackbar('Failed to save changes', 'error');
-    }
-  };
-
-  if (loading) return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-      <CircularProgress />
-    </Box>
-  );
-
-  if (error) return (
-    <Typography color="error" variant="body1" sx={{ p: 2 }}>
-      {error}
-    </Typography>
-  );
-
-  return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5" component="h2" gutterBottom>
-          Data for: {tableName}
-        </Typography>
-
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSaveChanges}
-          disabled={changedRows.size === 0}
-        >
-          Submit Changes ({changedRows.size})
-        </Button>
-      </Box>
-
-      {Array.isArray(tableData) && tableData.length > 0 ? (
-        <Paper elevation={3} sx={{ overflow: 'hidden' }}>
-          <TableContainer sx={{ maxHeight: 'calc(100vh - 200px)', maxWidth: '100%' }}>
-            <Table stickyHeader aria-label="sticky table">
-              <TableHead>
-                <TableRow>
-                  {Object.keys(tableData[0]).map((col, idx) => (
-                    <TableCell
-                      key={idx}
-                      sx={{
-                        fontWeight: 'bold',
-                        backgroundColor: 'primary.main',
-                        color: 'primary.contrastText'
-                      }}
-                    >
-                      {col}
-                    </TableCell>
-                  ))}
-                  <TableCell
-                    sx={{
-                      fontWeight: 'bold',
-                      backgroundColor: 'primary.main',
-                      color: 'primary.contrastText'
-                    }}
-                  >
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tableData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      sx={{
-                        '&:nth-of-type(even)': { backgroundColor: 'action.hover' },
-                        ...(changedRows.has(row.id) && { backgroundColor: '#fffde7' })
-                      }}
-                    >
-                      {Object.keys(row).map((key) => {
-                        const isEditing = editingCell?.rowId === row.id && editingCell?.fieldName === key;
-                        const isIdField = key === 'id';
-                        
-                        return (
-                          <TableCell key={`${row.id}-${key}`}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {isEditing ? (
-                                <>
-                                  <TextField
-                                    value={row[key] !== null && row[key] !== undefined ? String(row[key]) : ''}
-                                    onChange={(e) => handleFieldChange(row.id, key, e.target.value)}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{ flex: 1 }}
-                                  />
-                                  <IconButton size="small" onClick={handleSaveCell}>
-                                    <Check color="primary" />
-                                  </IconButton>
-                                  <IconButton size="small" onClick={() => handleCancelEdit(row.id, key)}>
-                                    <Close color="error" />
-                                  </IconButton>
-                                </>
-                              ) : (
-                                <>
-                                  <Box sx={{ flex: 1 }}>
-                                    {row[key] !== null && row[key] !== undefined ? String(row[key]) : 'NULL'}
-                                  </Box>
-                                  {!isIdField && (
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleEditCell(row.id, key)}
-                                      disabled={editingCell !== null}
-                                    >
-                                      <Edit color={changedRows.has(row.id) ? "primary" : "action"} />
-                                    </IconButton>
-                                  )}
-                                </>
-                              )}
-                            </Box>
-                          </TableCell>
-                        );
-                      })}
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {changedRows.has(row.id) ? 'Modified' : 'Unchanged'}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))
+async function displayColorPalette(layerIndex, colors, collection = 'trending', maxVisibleColors = 6, totalLayers = 1) {
+    const prefix = collection + '_';
+    const MAX_DISPLAY_COUNT = 8; // Maximum number of colors to display
+    const MIN_DISPLAY_COUNT = 4; // Minimum number of colors to display
+    
+    // ... [keep all your existing helper functions unchanged] ...
+    
+    // Main processing logic for single layer
+    if (totalLayers === 1) {
+        // NEW: Generate special palettes for first 5 (hue-shifted) and regular for the rest
+        let allPalettes = [];
+        
+        // First 5 palettes: Use hue shifting
+        const hueShiftedPalettes = generateHueShiftedPalettes(validatedColors, collection);
+        allPalettes = [...hueShiftedPalettes];
+        
+        // FIXED: Generate diverse palettes ONCE and reuse them
+        const diversePalettes = generateDiversePalettes(validatedColors);
+        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 20)];
+        
+        // Initialize the storage if needed BEFORE creating containers
+        window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
+        window[`${collection}PaletteHueShifted`] = window[`${collection}PaletteHueShifted`] || {};
+        
+        // STORE ALL PALETTES FIRST before creating UI
+        for (let i = 0; i < 25; i++) {
+            let paletteColors = allPalettes[i] || allPalettes[0];
+            
+            // Verify that all colors are valid
+            paletteColors = paletteColors.filter(color => 
+                Array.isArray(color) && 
+                color.length === 3 && 
+                color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+            );
+            
+            // If somehow we lost all colors, generate new ones
+            if (paletteColors.length === 0) {
+                paletteColors = [];
+                for (let j = 0; j < 9; j++) {
+                    const hue = j * (360 / 9);
+                    paletteColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
                 }
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            component="div"
-            count={tableData.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        </Paper>
-      ) : (
-        <Typography variant="body1" color="text.secondary">
-          No data available in this table.
-        </Typography>
-      )}
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
-  );
-};
-
-export default DataTable;
+            }
+            
+            // Store ALL colors in the palette data structure
+            window[`${collection}PaletteColors`][i] = [...paletteColors];
+            
+            // Mark hue-shifted palettes with special flag
+            if (i < 5) {
+                window[`${collection}PaletteHueShifted`][i] = true;
+            }
+        }
+        
+        // Initialize preview cache if needed
+        if (!window.palettePreviewCache) {
+            window.palettePreviewCache = {};
+        }
+        if (!window.palettePreviewCache[collection]) {
+            window.palettePreviewCache[collection] = {};
+        }
+        
+        // Create preview canvases if they don't exist
+        if (!window.previewCanvases) {
+            window.previewCanvases = {};
+            
+            // Generate a smaller version of the original image for preview
+            const originalCanvas = document.getElementById('layer_canvas_1');
+            if (originalCanvas) {
+                const previewCanvas = document.createElement('canvas');
+                previewCanvas.width = 200;
+                previewCanvas.height = 200;
+                const previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
+                
+                // Draw the original image scaled down
+                previewCtx.drawImage(originalCanvas, 0, 0, 200, 200);
+                
+                // Store the preview canvas data URL for future use
+                window.previewCanvases['original'] = previewCanvas.toDataURL();
+            }
+        }
+        
+        // Create all palette containers
+        const paletteContainers = [];
+        
+        for (let i = 0; i < 25; i++) {
+            const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
+            if (!paletteContainer) continue;
+            
+            paletteContainer.innerHTML = '';
+            
+            // FIXED: Get palette colors from STORED data, not generating new ones
+            const paletteColors = window[`${collection}PaletteColors`][i];
+            
+            if (!paletteColors || paletteColors.length === 0) {
+                console.error(`No stored palette found for ${collection}[${i}]`);
+                continue;
+            }
+            
+            // Create container for the palette that includes preview
+            const clickableContainer = document.createElement('div');
+            clickableContainer.classList.add('palette-clickable-container');
+            paletteContainer.appendChild(clickableContainer);
+            
+            // Add data attribute to store the palette index
+            clickableContainer.dataset.paletteIndex = i;
+            clickableContainer.dataset.collection = collection;
+            
+            // Add preview image container
+            const previewContainer = document.createElement('div');
+            previewContainer.classList.add('palette-preview-container');
+            clickableContainer.appendChild(previewContainer);
+            
+            // Create small preview canvas
+            const previewCanvas = document.createElement('canvas');
+            previewCanvas.width = 200;
+            previewCanvas.height = 200;
+            previewCanvas.classList.add('palette-preview-canvas');
+            previewContainer.appendChild(previewCanvas);
+            
+            // Display the representative colors underneath the preview
+            const swatchContainer = document.createElement('div');
+            swatchContainer.classList.add('swatch-container');
+            clickableContainer.appendChild(swatchContainer);
+            
+            // Prepare display colors - ONE FROM EACH COLOR FAMILY
+            const displayColors = prepareDisplayColors(paletteColors);
+            
+            // Display color swatches under the preview
+            displayColors.forEach((color, idx) => {
+                const swatch = document.createElement('div');
+                swatch.classList.add('color-swatch');
+                swatch.style.backgroundColor = `rgb(${color.join(',')})`;
+                
+                // Updated tooltip with HEX value instead of RGB
+                const hexValue = rgbToHex(color[0], color[1], color[2]);
+                swatch.title = ` ${hexValue}`;
+                
+                if (collection === 'ss') {
+                    swatch.classList.add('ss-swatch');
+                } else if (collection === 'aw') {
+                    swatch.classList.add('aw-swatch');
+                }
+                
+                swatchContainer.appendChild(swatch);
+            });
+            
+            // Click handler to use the FULL palette
+            clickableContainer.addEventListener('click', function() {
+                const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
+                const collectionName = this.dataset.collection;
+                
+                // Get the FULL palette from storage
+                const fullPalette = window[`${collectionName}PaletteColors`] && 
+                                  window[`${collectionName}PaletteColors`][paletteIndex];
+                
+                // Call processPallet with the FULL palette from storage
+                if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
+                    window.processPallet(null, totalLayers, null, 0, null, fullPalette, paletteIndex, collectionName);
+                }
+            });
+            
+            // Add "Show All" button
+            const showAllButton = document.createElement('div');
+            showAllButton.classList.add('show-all-colors-btn');
+            showAllButton.innerHTML = '+';
+            showAllButton.title = 'Show all colors in palette';
+            clickableContainer.appendChild(showAllButton);
+            
+            // Add event listener to show all colors in a modal
+            showAllButton.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent triggering the parent container's click
+                
+                const fullPalette = window[`${collection}PaletteColors`][i];
+                if (!fullPalette || fullPalette.length === 0) {
+                    return;
+                }
+                
+                showFullPaletteModal(fullPalette, collection, i);
+            });
+            
+            // Store the palette info for preview generation using STORED palette
+            paletteContainers.push({
+                index: i,
+                canvas: previewCanvas,
+                colors: paletteColors // Use the stored palette colors
+            });
+        }
+        
+        // Generate previews one by one with small delays between each to avoid overloading the browser
+        for (let i = 0; i < paletteContainers.length; i++) {
+            const item = paletteContainers[i];
+            
+            // Use setTimeout to stagger the preview generation
+            setTimeout(() => {
+                generateAndShowPreview(item.canvas, item.colors, item.index, collection);
+            }, i * 50); // Small delay between each preview start (50ms per palette)
+        }
+    } else {
+        // Multi-layer logic - ALSO NEEDS THE SAME FIX
+        const paletteContainer = document.getElementById(`${prefix}colorPalette_${layerIndex}`);
+        if (!paletteContainer) return;
+        
+        // Initialize storage first
+        window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
+        window[`${collection}PaletteHueShifted`] = window[`${collection}PaletteHueShifted`] || {};
+        
+        // FIXED: Check if palette is already stored, if not generate and store it
+        let paletteColors;
+        if (window[`${collection}PaletteColors`][layerIndex]) {
+            // Use existing stored palette
+            paletteColors = window[`${collection}PaletteColors`][layerIndex];
+        } else {
+            // Generate and store new palette
+            if (layerIndex < 5) {
+                // Use hue shifting for first 5 layers
+                const hueShiftedPalettes = generateHueShiftedPalettes(validatedColors, collection);
+                paletteColors = hueShiftedPalettes[layerIndex] || [...validatedColors];
+                
+                // Mark this as hue-shifted
+                window[`${collection}PaletteHueShifted`][layerIndex] = true;
+            } else {
+                // Use family replacement for layers 5+
+                const diversePalettes = generateDiversePalettes(validatedColors);
+                paletteColors = diversePalettes[layerIndex % diversePalettes.length] || [...validatedColors];
+            }
+            
+            // Store the palette
+            window[`${collection}PaletteColors`][layerIndex] = [...paletteColors];
+        }
+        
+        // ... rest of multi-layer logic remains the same ...
+    }
+    
+    setTimeout(() => {
+        syncFavoriteStarsWithAllCategories();
+    }, 500);
+}

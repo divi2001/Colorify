@@ -564,7 +564,7 @@ header {
     margin-right: 10px;
     border-radius: 10px;
     height: auto;
-    max-height: 100vh;
+    max-height: 90vh;
     overflow-y: auto;
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 }
@@ -1146,9 +1146,9 @@ h1 {
 .adjustment-panel {
     position: fixed;
     /* Changed to fixed positioning */
-    left: 60px;
+    /* left: 60px; */
     /* Offset from left to not overlap with the button */
-    bottom: 20px;
+    padding-bottom: 30vh;
     /* Position from bottom */
     background: white;
     padding: 15px;
