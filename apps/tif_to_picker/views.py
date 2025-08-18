@@ -54,11 +54,6 @@ logger = logging.getLogger(__name__)
 
 from .models import Mockup
 
-import base64
-import os
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.conf import settings
 @require_http_methods(["GET"])
 def get_mockups_api(request):
     try:
@@ -67,15 +62,13 @@ def get_mockups_api(request):
         
         mockups_data = []
         for mockup in mockups:
-            mockup_data = {
+            mockups_data.append({
                 'id': mockup.id,
                 'name': mockup.name,
+                'image_url': mockup.image.url if mockup.image else None,
                 'description': mockup.description,
                 'created_at': mockup.created_at.isoformat(),
-                'has_image': bool(mockup.image_base64),
-                'image_data_url': mockup.get_image_data_url()  # Complete data URL ready for img src
-            }
-            mockups_data.append(mockup_data)
+            })
         
         return JsonResponse({
             'success': True,
@@ -84,7 +77,6 @@ def get_mockups_api(request):
         })
         
     except Exception as e:
-        print(f"Error in get_mockups_api: {e}")
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -1003,7 +995,8 @@ def is_color_fill_layer(layer):
         return False
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
-def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=1200, optimize=True):
+
+def extract_layers(file_path, output_dir, output_format='PNG', quality=100, max_dimension=3500, optimize=True, model_path="resnet50_model_scripted.pt"):
     """
     Extract and compress layers from image files, with optional ML labeling.
     
