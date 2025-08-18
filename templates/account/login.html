@@ -7,7 +7,7 @@
 {% block extra_head %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static "js/talwind3.14.js" %}"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -26,12 +26,6 @@
     <div class="w-full flex flex-col lg:flex-row gap-6">
         <!-- Left Section - 60% -->
         <div class="w-full lg:w-[65%] p-8 bg-gray-50 rounded-3xl shadow-lg">
-            <!-- Logo -->
-            <div class="flex items-center gap-2 mb-8">
-                <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-orange-400 rotate-45"></div>
-                <div class="text-xl font-semibold text-gray-800">COLORIFY</div>
-            </div>
-
             <!-- Hero Text -->
             <div class="mb-8 text-center">
                 <h1 class="text-5xl font-bold mb-1 flex flex-wrap justify-center items-center gap-3">
@@ -74,7 +68,7 @@
                         <span class="text-sm">Log in with Google</span>
                     </button>
                     <button class="flex-1 flex items-center justify-center pr-2 gap-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <img src="{% static 'images/apple-logo.png' %}" alt="Apple" class="w-8 h-9" />
+                        <img src="{% static 'images/apple-logo.png' %}" alt="Apple" class="w-8 h-9 ml-4" />
                         <span class="text-sm">Log in with Apple ID</span>
                     </button>
                 </div>

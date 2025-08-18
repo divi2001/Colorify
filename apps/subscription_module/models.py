@@ -74,6 +74,38 @@ class SubscriptionPlan(models.Model):
             elif self.subscription_type == 'yearly':
                 self.duration_in_days = 365
         super().save(*args, **kwargs)
+    
+    def get_storage_display(self):
+        """Convert storage from MB to human readable format"""
+        if self.storage_limit_mb >= 2147483647:  # Max int value indicates unlimited
+            return "Unlimited Storage"
+        elif self.storage_limit_mb >= 1024:
+            return f"{self.storage_limit_mb // 1024} GB Storage"
+        else:
+            return f"{self.storage_limit_mb} MB Storage"
+    
+    def get_file_upload_display(self):
+        """Format file upload limit for display"""
+        if self.file_upload_limit >= 2147483647:
+            return "Unlimited File Uploads"
+        else:
+            return f"{self.file_upload_limit} File Uploads/month"
+    
+    def get_device_display(self):
+        """Format device limit for display"""
+        if self.max_devices >= 2147483647:
+            return "Unlimited Devices"
+        else:
+            device_word = "Device" if self.max_devices == 1 else "Devices"
+            return f"Login upto {self.max_devices} {device_word}"
+    
+    def get_price_display(self):
+        """Get the current price to display"""
+        return self.discounted_price if self.discounted_price else self.original_price
+    
+    def is_popular(self):
+        """Determine if this plan should be marked as popular"""
+        return self.name.lower() == 'pro'  # You can customize this logic
 
 class UserSubscription(models.Model):
     user = models.OneToOneField(
@@ -446,6 +478,7 @@ class Palette(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
 class Color(models.Model):
     name = models.CharField(max_length=50, blank=True)
     palette = models.ForeignKey(Palette, on_delete=models.CASCADE, related_name='colors')

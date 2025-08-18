@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_protect
 from allauth.account.views import SignupView
 from allauth.account.forms import SignupForm
 from apps.core.models import Project
+from django.shortcuts import redirect
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ def about_view(request):
     return render(request, 'pages/about.html')
 
 def plans_view(request):
-    return render(request, 'pages/plans.html')
+    return redirect('subscription_module:subscription_plans')
 
 def contact_view(request):
     return render(request, 'pages/contact.html')
@@ -29,6 +30,12 @@ def privacy_policy_view(request):
 
 def terms_of_service_view(request):
     return render(request, 'pages/terms_of_service.html')
+
+def cancellation_policy_view(request):
+    return render(request, 'pages/cancellation_policy.html')
+
+def shipping_policy_view(request):
+    return render(request, 'pages/shipping_policy.html')
 
 def affiliate_view(request):
     return render(request, 'pages/affiliate.html')

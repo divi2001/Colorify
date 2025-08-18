@@ -6,135 +6,340 @@
 {% block title %}Colorify - About{% endblock %}
 {% block navbar_class %}{% endblock %}
 
-
 {% block content %}
-    <div class="">
-        <div class="text-center py-28">
-        <div class="relative inline-block">
-            <h1 class="text-5xl font-semibold mb-2 flex flex-wrap justify-center items-center gap-2">
+<!-- Hero Section with Gradient Background -->
+<div class="bg-gradient-to-br from-slate-50 via-white to-blue-50 py-28">
+    <div class="text-center">
+        <div class="relative inline-block max-w-6xl mx-auto px-4">
+            <h1 class="text-4xl md:text-5xl font-semibold mb-6 flex flex-wrap justify-center items-center gap-2">
                 <span>About Colorify Studio: </span>
+                <span>Empowering Designers with Trends</span>
             </h1>
-            <span class="text-5xl font-semibold">Empowering Designers with Trends</span>
-        </div>
-        <p class="text-gray-600 mt-8 max-w-4xl mx-auto px-4">
-            Colorify Studio is a trailblazing design software company dedicated to revolutionizing the way creative professionals work with color. Founded in 2025 by a team of visionary designers and AI experts, our mission is to empower designers worldwide by providing cutting-edge tools that simplify and accelerate the color design process. Based in the heart of the design innovation hub, Colorify Studio leverages advanced AI technology to deliver instant access to the latest global color trends, enabling users to transform complex, professional-grade designs with unparalleled ease and precision. We envision a future where every designer can effortlessly create trendsetting, impactful designs, breaking free from time-consuming manual processes and unlocking limitless creative potential. Our core values—innovation, efficiency, and creativity—drive us to continually push the boundaries of design technology, ensuring our users stay ahead of the curve in an ever-evolving industry.        </p>
+            <p class="text-gray-600 text-lg md:text-xl mt-8 max-w-4xl mx-auto px-4 leading-relaxed">
+                Colorify Studio is a trailblazing design software company dedicated to revolutionizing the way creative professionals work with color. Founded in 2025 by a team of visionary designers and AI experts, our mission is to empower designers worldwide by providing cutting-edge tools that simplify and accelerate the color design process. Based in the heart of the design innovation hub, Colorify Studio leverages advanced AI technology to deliver instant access to the latest global color trends, enabling users to transform complex, professional-grade designs with unparalleled ease and precision.
+            </p>
         </div>
     </div>
-  
-  <!-- Main Content -->
- <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-  <div class="container mx-auto p-4">
-      <div class="relative rounded-2xl overflow-hidden h-[400px] md:h-[600px] grid grid-cols-12">
-          <!-- Left Purple Section with Number -->
-          <div class="col-span-12 md:col-span-3 bg-[#5D5FEF] p-4 md:p-8">
-              <div class="text-white text-4xl md:text-5xl font-bold">14+</div>
-              <div class="text-white text-lg md:text-xl">Praesent<br>utelit</div>
-          </div>
-  
-          <!-- Right Background Image Section -->
-          <div class="col-span-12 md:col-span-9 relative hidden md:block">
-              <img src="{% static "images\d226f3da73926f53fa4e123d7268b40b.jpg" %}" alt="People working" class="w-full h-full object-cover">
-              <div class="absolute bottom-8 right-8 text-white text-3xl md:text-7xl font-bold text-right leading-tight">
-                  It's all<br>about<br>the<br> Color
-              </div>
-          </div>
-  
-          <!-- Overlapping Content -->
-          <div class="absolute bottom-0 left-0 grid grid-cols-12 w-full">
-              <!-- Left Image Section -->
-              <div class="col-span-12 md:col-span-3 h-[200px] md:h-[250px] relative">
-                  <div class="w-full h-full overflow-hidden">
-                      <img 
-                          src="{% static "images\girlwithbook.jpg" %}"
-                          alt="Designer with color palette" 
-                          class="w-full h-full object-cover object-center"
-                          style="object-position: top center;"
-                      >
-                  </div>
-              </div>
-  
-              <!-- Purple Info Box -->
-              <div class="col-span-12 md:col-span-4 bg-[#5D5FEF] p-4 md:p-8 md:rounded-tr-2xl">
-                  <p class="text-white uppercase tracking-wider text-sm mb-2">WHAT WE DO</p>
-                  <h2 class="text-white text-xl md:text-2xl font-bold mb-4">
-                      Ut efficitur<br>bibendum felis sit<br>amet scelerisque
-                  </h2>
-                  <button class="text-white flex items-center gap-2">
-                      Learn More
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <line x1="12" y1="5" x2="12" y2="19"></line>
-                          <polyline points="19 12 12 19 5 12"></polyline>
-                      </svg>
-                  </button>
-              </div>
-          </div>
-      </div>
-  </div>
-  <div class="container mx-auto my-10 px-4 py-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Left Column - Heading and Palette Image -->
-          <div class="space-y-6">
-              <div class="mb-8 text-2xl md:text-5xl">
-                  <h1 class=" font-bold mb-2">
+</div>
+
+<!-- Main Visual Section with Orange Background -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style="background-color: #FFF4E5;">
+    <div class="container mx-auto p-4">
+        <div class="relative rounded-2xl overflow-hidden h-[400px] md:h-[600px] grid grid-cols-12">
+            <!-- Left Purple Section with Number -->
+            <div class="col-span-12 md:col-span-3 bg-[#5D5FEF] p-4 md:p-8">
+                <div class="text-white text-4xl md:text-5xl font-bold">14+</div>
+                <div class="text-white text-lg md:text-xl">Years of<br>Excellence</div>
+            </div>
+
+            <!-- Right Background Image Section -->
+            <div class="col-span-12 md:col-span-9 relative hidden md:block">
+                <img src="{% static 'images/d226f3da73926f53fa4e123d7268b40b.jpg' %}" alt="People working" class="w-full h-full object-cover">
+                <div class="absolute bottom-8 right-8 text-white text-3xl md:text-7xl font-bold text-right leading-tight">
+                    It's all<br>about<br>the<br>Color
+                </div>
+            </div>
+
+            <!-- Overlapping Content -->
+            <div class="absolute bottom-0 left-0 grid grid-cols-12 w-full">
+                <!-- Left Image Section -->
+                <div class="col-span-12 md:col-span-3 h-[200px] md:h-[250px] relative">
+                    <div class="w-full h-full overflow-hidden">
+                        <img src="{% static 'images/girlwithbook.jpg' %}" alt="Designer with color palette" class="w-full h-full object-cover object-center" style="object-position: top center;">
+                    </div>
+                </div>
+
+                <!-- Purple Info Box -->
+                <div class="col-span-12 md:col-span-4 bg-[#5D5FEF] p-4 md:p-8 md:rounded-tr-2xl">
+                    <p class="text-white uppercase tracking-wider text-sm mb-2">WHAT WE DO</p>
+                    <h2 class="text-white text-xl md:text-2xl font-bold mb-4">
+                        Revolutionizing<br>Color Matching with<br>AI Innovation
+                    </h2>
+                    <button class="text-white flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        Learn More
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <polyline points="19 12 12 19 5 12"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Product Features Section with Teal Background -->
+<div class="py-20 px-4" style="background-color: #E0F7F5;">
+    <div class="container mx-auto my-10 px-4 py-8 max-w-7xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <!-- Left Column - Heading and Palette Image -->
+            <div class="space-y-6">
+                <div class="mb-8 text-2xl md:text-5xl">
+                    <h1 class="font-bold mb-2">
                         Create Trending Color Options With
-                      <br/>
-                      <span class="text-blue-600">Just One Click</span>
-                  </h1>
-              </div>
-              
-              <!-- Palette Image -->
-              <div class="bg-pink-50 p-6 rounded-3xl w-fit">
-                  <img 
-                      src="{% static "images/fav_pallete.png" %}" 
-                      alt="Favorite Color Palette" 
-                      class="w-[400px] h-[400px] object-contain"
-                  >
-              </div>
-          </div>
-  
-          <!-- Right Column - Text and Pattern Images -->
-          <div class="space-y-6">
-              <!-- Top Text -->
-              <p class="text-gray-600">
-                Colorify Studio is a groundbreaking software solution that empowers designers to generate stunning, trend-aligned color palettes for complex designs in just one click. Unlike any tool before it, Colorify Studio uses advanced AI to analyze real-time global color trends, instantly transforming heavy, professional-grade design files with precision and speed.              
-            <p class="text-gray-600">
-                Key features include seamless integration with intricate design workflows, effortless creation of diverse color options, and access to seasonal trend insights, all designed to save time, reduce costs, and boost creative output.              </p>
-  
-              <!-- Pattern Images -->
-              <div class="flex gap-4">
-                  <div class="rounded-xl overflow-hidden flex-1">
-                      <img 
-                          src="{% static "images\image (1).png" %}"
-                          alt="Pattern Design 1" 
-                          class="w-full h-full object-cover"
-                      >
-                  </div>
-                  <div class="rounded-xl overflow-hidden w-1/3">
-                      <img 
-                      src="{% static "images\image.png" %}"
-                      alt="Pattern Design 2" 
-                      class="w-full h-full object-cover"
-                      >
-                  </div>
-              </div>
-  
-              <!-- Bottom Text -->
-              <p class="text-gray-600">
-                Whether you’re a graphic designer, textile designer, or fashion designer, Colorify Studio is your ultimate partner in crafting innovative, market-leading designs that captivate audiences and drive success.              </p>
-          </div>
-      </div>
-  </div>
-  <div class="w-full rounded-3xl bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] p-16 text-center">
-      <h1 class="text-4xl md:text-5xl font-semibold text-white mb-4">
-          Transform Your Design Vision with<br>
-          Stunning Color Palettes!
-      </h1>
-      <p class="text-white/90 mb-8">
-          Your Gateway to Stunning Palettes and Limitless Creativity!
-      </p>
-      <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-medium hover:bg-opacity-90 transition duration-300">
-          Explore now
-      </button>
+                        <br/>
+                        <span class="text-blue-600">Just One Click</span>
+                    </h1>
+                </div>
+                
+                <!-- Palette Image -->
+                <div class="bg-pink-50 p-6 rounded-3xl w-fit">
+                    <img src="{% static 'images/fav_pallete.png' %}" alt="Favorite Color Palette" class="w-[400px] h-[400px] object-contain">
+                </div>
+            </div>
+
+            <!-- Right Column - Text and Pattern Images -->
+            <div class="space-y-6">
+                <!-- Top Text -->
+                <p class="text-gray-600 text-lg leading-relaxed">
+                    Colorify Studio is a groundbreaking software solution that empowers designers to generate stunning, trend-aligned color palettes for complex designs in just one click. Unlike any tool before it, Colorify Studio uses advanced AI to analyze real-time global color trends, instantly transforming heavy, professional-grade design files with precision and speed.
+                </p>
+                
+                <p class="text-gray-600 text-lg leading-relaxed">
+                    Key features include seamless integration with intricate design workflows, effortless creation of diverse color options, and access to seasonal trend insights, all designed to save time, reduce costs, and boost creative output.
+                </p>
+
+                <!-- Pattern Images -->
+                <div class="flex gap-4">
+                    <div class="rounded-xl overflow-hidden flex-1">
+                        <img src="{% static 'images/image (1).png' %}" alt="Pattern Design 1" class="w-full h-full object-cover">
+                    </div>
+                    <div class="rounded-xl overflow-hidden w-1/3">
+                        <img src="{% static 'images/image.png' %}" alt="Pattern Design 2" class="w-full h-full object-cover">
+                    </div>
+                </div>
+
+                <!-- Bottom Text -->
+                <p class="text-gray-600 text-lg leading-relaxed">
+                    Whether you're a graphic designer, textile designer, or fashion designer, Colorify Studio is your ultimate partner in crafting innovative, market-leading designs that captivate audiences and drive success.
+                </p>
+            </div>
+        </div>
     </div>
- </main>
+</div>
+
+<!-- Mission & Vision Section with Purple Gradient Background -->
+<!-- <section class="py-20 px-4" style="background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold text-white mb-8">
+                Our Vision & Mission
+            </h2>
+            <p class="text-white/90 text-xl max-w-3xl mx-auto">
+                Driving innovation in design technology to unlock limitless creative potential
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12"> -->
+            <!-- Vision Card -->
+            <!-- <div class="bg-white/10 backdrop-blur-md rounded-3xl p-8 hover:bg-white/20 transition-all duration-300">
+                <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-4">Our Vision</h3>
+                <p class="text-white/90 leading-relaxed">
+                    We envision a future where every designer can effortlessly create trendsetting, impactful designs, breaking free from time-consuming manual processes and unlocking limitless creative potential through AI-powered innovation.
+                </p>
+            </div> -->
+
+            <!-- Mission Card -->
+            <!-- <div class="bg-white/10 backdrop-blur-md rounded-3xl p-8 hover:bg-white/20 transition-all duration-300">
+                <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-4">Our Mission</h3>
+                <p class="text-white/90 leading-relaxed">
+                    To empower designers worldwide by providing cutting-edge tools that simplify and accelerate the color design process, delivering instant access to global color trends with unparalleled ease and precision.
+                </p>
+            </div>
+        </div>
+    </div>
+</section> -->
+
+
+
+
+
+<!-- Core Values Section with Light Yellow Background -->
+<!-- <section class="py-20 px-4" style="background-color: #FFFBE6;">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
+                Our Core <span class="text-gradient">Values</span>
+            </h2>
+            <p class="text-gray-600 text-xl max-w-3xl mx-auto">
+                The principles that guide everything we do at Colorify Studio
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8"> -->
+            <!-- Innovation -->
+            <!-- <div class="bg-white rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 group">
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Innovation</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    We continuously push the boundaries of design technology, leveraging cutting-edge AI to create revolutionary solutions that transform how designers work with color.
+                </p>
+            </div> -->
+
+            <!-- Efficiency -->
+            <!-- <div class="bg-white rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 group">
+                <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Efficiency</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    We believe in simplifying complex processes, enabling designers to achieve professional results faster than ever before while maintaining the highest quality standards.
+                </p>
+            </div> -->
+
+            <!-- Creativity -->
+            <!-- <div class="bg-white rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 group">
+                <div class="w-16 h-16 bg-gradient-to-r from-pink-500 to-orange-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Creativity</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    We foster unlimited creative expression by removing technical barriers, allowing designers to focus on what they do best - creating beautiful, impactful designs.
+                </p>
+            </div>
+        </div>
+    </div>
+</section> -->
+
+<!-- Team Section with Dark Blue Background -->
+<!-- <section class="py-20 px-4" style="background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
+                Meet Our Visionary Team
+            </h2>
+            <p class="text-white/90 text-xl max-w-3xl mx-auto">
+                The brilliant minds behind Colorify Studio's revolutionary AI technology
+            </p>
+        </div> -->
+
+        <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-8"> -->
+            <!-- Team Member 1 -->
+            <!-- <div class="bg-white/10 backdrop-blur-md rounded-3xl p-8 text-center hover:bg-white/20 transition-all duration-300">
+                <div class="w-24 h-24 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mx-auto mb-6 flex items-center justify-center">
+                    <span class="text-white text-2xl font-bold">AI</span>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">AI Experts</h3>
+                <p class="text-blue-200 mb-4">Machine Learning & Computer Vision</p>
+                <p class="text-white/90 leading-relaxed">
+                    Our AI specialists develop cutting-edge algorithms that understand color theory, trend analysis, and design aesthetics at unprecedented levels.
+                </p>
+            </div> -->
+
+            <!-- Team Member 2 -->
+            <!-- <div class="bg-white/10 backdrop-blur-md rounded-3xl p-8 text-center hover:bg-white/20 transition-all duration-300">
+                <div class="w-24 h-24 bg-gradient-to-r from-green-400 to-teal-400 rounded-full mx-auto mb-6 flex items-center justify-center">
+                    <span class="text-white text-2xl font-bold">DX</span>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Design Experts</h3>
+                <p class="text-blue-200 mb-4">Color Theory & Visual Design</p>
+                <p class="text-white/90 leading-relaxed">
+                    Our design team brings decades of experience in color theory, ensuring our AI solutions align perfectly with real-world design needs.
+                </p>
+            </div> -->
+
+            <!-- Team Member 3 -->
+            <!-- <div class="bg-white/10 backdrop-blur-md rounded-3xl p-8 text-center hover:bg-white/20 transition-all duration-300">
+                <div class="w-24 h-24 bg-gradient-to-r from-orange-400 to-red-400 rounded-full mx-auto mb-6 flex items-center justify-center">
+                    <span class="text-white text-2xl font-bold">TX</span>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Tech Innovators</h3>
+                <p class="text-blue-200 mb-4">Software Engineering & UX</p>
+                <p class="text-white/90 leading-relaxed">
+                    Our technology team creates intuitive, powerful tools that make advanced color matching accessible to designers of all skill levels.
+                </p>
+            </div>
+        </div>
+    </div>
+</section> -->
+
+<!-- Call-to-Action Section with Gradient Background -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="w-full rounded-3xl bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] p-8 md:p-16 text-center">
+        <h1 class="text-3xl md:text-4xl lg:text-5xl font-semibold text-white mb-6">
+            Transform Your Design Vision with<br>
+            Stunning Color Palettes!
+        </h1>
+        <p class="text-white/90 text-lg md:text-xl mb-8 max-w-3xl mx-auto">
+            Join thousands of designers who trust Colorify Studio to bring their creative visions to life with perfect color harmony.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button class="bg-white text-blue-600 px-8 py-4 rounded-2xl font-medium hover:bg-opacity-90 transition duration-300 text-lg">
+                Start Your Free Trial
+            </button>
+            <button class="bg-transparent border-2 border-white text-white px-8 py-4 rounded-2xl font-medium hover:bg-white hover:text-blue-600 transition duration-300 text-lg">
+                View Pricing Plans
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+
+/* Hover Animations */
+.hover-scale {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Card Animations */
+.feature-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.feature-card:hover {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+    border-color: rgba(102, 126, 234, 0.3);
+    transform: translateY(-8px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .text-4xl, .text-5xl {
+        font-size: 2.5rem;
+        line-height: 1.2;
+    }
+    
+    .py-20 {
+        padding: 3rem 0;
+    }
+    
+    .px-8 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .text-4xl, .text-5xl {
+        font-size: 2rem;
+        line-height: 1.1;
+    }
+}
+</style>
 {% endblock %}

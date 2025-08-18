@@ -9,7 +9,10 @@ urlpatterns = [
     path('contact/', views.contact_view, name='contact'),
     path('privacy-policy/', views.privacy_policy_view, name='privacy_policy'),
     path('terms-of-service/', views.terms_of_service_view, name='terms_of_service'),
+    path('cancellation-policy/', views.cancellation_policy_view, name='cancellation_policy'),
+    path('shipping-policy/', views.shipping_policy_view, name='shipping_policy'),
     path('affiliate/', views.affiliate_view, name='affiliate'),
     path('profile-dashboard/', views.profile_dashboard_view, name='profile-dashboard'),
     path('projects/<int:user_id>/<int:project_id>/edit/', views.edit_project_view, name='edit-project'),
 ]
+

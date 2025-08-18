@@ -23,3 +23,4 @@ urlpatterns = [
     path('payment/success/', PaymentSuccessView.as_view(), name='subscription_payment_success'),
     path('payment/failure/', PaymentFailureView.as_view(), name='subscription_payment_failure'),
 ]
+

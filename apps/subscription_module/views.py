@@ -251,8 +251,6 @@ def premium_feature(request):
     return redirect('subscribe')
 
 
-
-
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -274,13 +272,26 @@ def access_premium_content(request):
 from .models import SubscriptionPlan, UserSubscription, PaymentTransaction
 from .payu_utils import PayUConfig
 
+# apps/subscription_module/views.py
+
 class SubscriptionPlansView(LoginRequiredMixin, View):
     """View to display available subscription plans"""
     
     def get(self, request):
-        plans = SubscriptionPlan.objects.all()
-        current_subscription = None
+        # Debug: Check all plans first
+        all_plans = SubscriptionPlan.objects.all()
         
+        print(f"DEBUG: Total plans in database: {all_plans.count()}")
+        
+        for plan in all_plans:
+            print(f"DEBUG: Plan - {plan.name}, Active: {plan.is_active}, Price: {plan.original_price}")
+        
+        # Fetch all plans for debugging
+        plans = SubscriptionPlan.objects.all().order_by('original_price')
+        
+        print(f"DEBUG: Plans queryset count: {plans.count()}")
+        
+        current_subscription = None
         try:
             current_subscription = UserSubscription.objects.get(user=request.user)
         except UserSubscription.DoesNotExist:
@@ -291,8 +302,31 @@ class SubscriptionPlansView(LoginRequiredMixin, View):
             'current_subscription': current_subscription
         }
         
-        return render(request, 'subscription_module/plans.html', context)
+        # Use debug template temporarily
+        return render(request, 'pages/plans_debug.html', context)
+    
+# apps/subscription_module/views.py
 
+# class SubscriptionPlansView(LoginRequiredMixin, View):
+#     """View to display available subscription plans"""
+    
+#     def get(self, request):
+#         # Fetch all plans
+#         plans = SubscriptionPlan.objects.all().order_by('original_price')
+        
+#         current_subscription = None
+#         try:
+#             current_subscription = UserSubscription.objects.get(user=request.user)
+#         except UserSubscription.DoesNotExist:
+#             pass
+            
+#         context = {
+#             'plans': plans,
+#             'current_subscription': current_subscription
+#         }
+        
+#         return render(request, 'pages/plans.html', context)
+    
 class InitiatePaymentView(LoginRequiredMixin, View):
     """Initiate payment process for subscription"""
     
