@@ -2656,7 +2656,7 @@ function loadInspirationContent() {
                             <div class="pdf-info">
                                 <span class="pdf-name">${pdf.title}</span>
                                 <div class="pdf-actions">
-                                    <button class="btn btn-sm btn-primary download-btn" onclick="downloadPDF('${pdf.pdf_url}', '${pdf.title}')">
+                                    <button class="btn btn-sm btn-primary download-btn" onclick="downloadPDF(${pdf.id}, '${pdf.title}')">
                                         <i class="bi bi-download"></i> Download
                                     </button>
                                 </div>
@@ -2680,17 +2680,43 @@ function loadInspirationContent() {
         });
 }
 
-function downloadPDF(pdfUrl, title) {
-    // Create a temporary anchor element and trigger download
-    const a = document.createElement('a');
-    a.href = pdfUrl;
-    a.download = `${title}.pdf`;
-    a.target = '_blank'; // This ensures it opens in a new tab if download fails
+function downloadPDF(pdfId, title) {
+    // Create a proper download URL
+    const downloadUrl = `inspiration-pdfs/download/${pdfId}/`;
     
-    // Append to body, click, and remove
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    fetch(downloadUrl, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Download failed');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        // Create a temporary URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element and trigger download
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `${title}.pdf`;
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    })
+    .catch(error => {
+        console.error('Download error:', error);
+        alert('Failed to download PDF. Please try again.');
+    });
 }
 
 function toggleLike(pdfId, element) {
