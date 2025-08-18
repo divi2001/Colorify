@@ -7239,13 +7239,14 @@ function applyMockupOverlay(mockupId, mockupUrl, mockupName) {
   }
   
   // Function to create floating element
+  // Function to create floating element
   function createFloatingElement(canvas, mockupName, mockupId) {
     // Check if there's already a floating mockup with the same ID
     const existingMockup = document.getElementById(`floating-mockup-${mockupId}`);
     if (existingMockup) {
       existingMockup.remove();
     }
-  
+
     // Create container for the floating mockup
     const floatingMockup = document.createElement('div');
     floatingMockup.id = `floating-mockup-${mockupId}`;
@@ -7261,7 +7262,7 @@ function applyMockupOverlay(mockupId, mockupUrl, mockupName) {
     floatingMockup.style.maxWidth = '90%';
     floatingMockup.style.maxHeight = '90%';
     floatingMockup.style.userSelect = 'none';
-  
+
     // Create the image from canvas
     const img = document.createElement('img');
     img.src = canvas.toDataURL('image/png');
@@ -7270,60 +7271,38 @@ function applyMockupOverlay(mockupId, mockupUrl, mockupName) {
     img.style.height = '100%';
     img.style.objectFit = 'contain';
     img.style.pointerEvents = 'none';
-  
+
     // Create controls bar
     const controlsBar = document.createElement('div');
     controlsBar.className = 'mockup-controls';
     controlsBar.style.position = 'absolute';
     controlsBar.style.top = '0';
     controlsBar.style.right = '0';
-    controlsBar.style.backgroundColor = 'rgba(0,0,0,0.5)';
-    controlsBar.style.padding = '5px';
+    controlsBar.style.backgroundColor = 'rgba(0,0,0,0.7)';
+    controlsBar.style.padding = '8px';
     controlsBar.style.borderBottomLeftRadius = '4px';
     controlsBar.style.display = 'flex';
-    controlsBar.style.gap = '5px';
-  
+    controlsBar.style.flexDirection = 'column'; // Changed to vertical stack
+    controlsBar.style.alignItems = 'center'; // Center align items
+    controlsBar.style.gap = '8px'; // Increased gap for better spacing
+
     // Add title
     const title = document.createElement('div');
     title.textContent = mockupName;
     title.style.color = 'white';
-    title.style.padding = '0 8px';
     title.style.fontSize = '12px';
-    title.style.lineHeight = '24px';
+    title.style.textAlign = 'center';
     title.style.whiteSpace = 'nowrap';
     title.style.overflow = 'hidden';
     title.style.textOverflow = 'ellipsis';
-    title.style.maxWidth = '150px';
-  
-    // Add add-to-canvas button
-    const addButton = document.createElement('button');
-    addButton.innerHTML = '<i class="fas fa-plus"></i> Add';
-    addButton.title = 'Add to canvas';
-    addButton.style.backgroundColor = '#4CAF50';
-    addButton.style.color = 'white';
-    addButton.style.border = 'none';
-    addButton.style.padding = '2px 8px';
-    addButton.style.borderRadius = '3px';
-    addButton.style.cursor = 'pointer';
-    addButton.style.fontSize = '12px';
+    title.style.maxWidth = '120px';
+    title.style.marginBottom = '4px';
 
-  
-    // Add close button
-    const closeButton = document.createElement('button');
-    closeButton.innerHTML = '<i class="fas fa-times"></i>';
-    closeButton.title = 'Close';
-    closeButton.style.backgroundColor = '#F44336';
-    closeButton.style.color = 'white';
-    closeButton.style.border = 'none';
-    closeButton.style.padding = '2px 8px';
-    closeButton.style.borderRadius = '3px';
-    closeButton.style.cursor = 'pointer';
-    closeButton.style.fontSize = '12px';
-    closeButton.onclick = function(e) {
-      e.stopPropagation();
-      floatingMockup.remove();
-    };
-  
+    // Create button container for horizontal layout of buttons
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.gap = '4px';
+
     // Add download button
     const downloadButton = document.createElement('button');
     downloadButton.innerHTML = '<i class="fas fa-download"></i>';
@@ -7331,7 +7310,7 @@ function applyMockupOverlay(mockupId, mockupUrl, mockupName) {
     downloadButton.style.backgroundColor = '#2196F3';
     downloadButton.style.color = 'white';
     downloadButton.style.border = 'none';
-    downloadButton.style.padding = '2px 8px';
+    downloadButton.style.padding = '4px 8px';
     downloadButton.style.borderRadius = '3px';
     downloadButton.style.cursor = 'pointer';
     downloadButton.style.fontSize = '12px';
@@ -7346,26 +7325,43 @@ function applyMockupOverlay(mockupId, mockupUrl, mockupName) {
       link.click();
       document.body.removeChild(link);
     };
-  
+
+    // Add close button
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '<i class="fas fa-times"></i>';
+    closeButton.title = 'Close';
+    closeButton.style.backgroundColor = '#F44336';
+    closeButton.style.color = 'white';
+    closeButton.style.border = 'none';
+    closeButton.style.padding = '4px 8px';
+    closeButton.style.borderRadius = '3px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.fontSize = '12px';
+    closeButton.onclick = function(e) {
+      e.stopPropagation();
+      floatingMockup.remove();
+    };
+
     // Assemble the controls
+    buttonContainer.appendChild(downloadButton);
+    buttonContainer.appendChild(closeButton);
+    
     controlsBar.appendChild(title);
-    controlsBar.appendChild(downloadButton);
-    controlsBar.appendChild(addButton);
-    controlsBar.appendChild(closeButton);
-  
+    controlsBar.appendChild(buttonContainer);
+
     // Add elements to the floating mockup
     floatingMockup.appendChild(img);
     floatingMockup.appendChild(controlsBar);
-  
+
     // Add to DOM - use a parent that persists across different views
     const appRoot = document.getElementById('app') || document.body;
     appRoot.appendChild(floatingMockup);
-  
+
     // Make the floating mockup draggable
     makeDraggable(floatingMockup);
-  
+
     // Show success message
-    showToast('Mockup preview created! Click "Add" to add it to your canvas.', 'success');
+    showToast('Mockup preview created! Download or close when done.', 'success');
   }
   
   // Function to make an element draggable
