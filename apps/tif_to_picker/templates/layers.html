@@ -251,9 +251,9 @@ document.addEventListener('DOMContentLoaded', function() {
   </head>
 
   <body>
-         <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;">
-       <div class="loader"></div>
-     </div>
+ <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;">
+    <div class="loader"></div>
+</div>
 
     <!-- Main Content Area  -->
     <main class="d-flex">
@@ -1289,7 +1289,7 @@ function onAllCanvasesLoaded(loadedCount, errorCount) {
     if (errorCount > 0) {
         showWarning(`${errorCount} image(s) failed to load. You can click on failed images to retry.`);
     } else {
-        showSuccess('All images loaded successfully!');
+        showSuccess('Image loaded successfully!');
     }
     
     // Enable any functionality that depends on loaded canvases
@@ -1380,36 +1380,36 @@ function showNotification(message, type) {
 }
 
 // Enhanced preview generation function with canvas validation
-function generateAndShowPreview(paletteData) {
-    console.log('Starting preview generation...');
-    
-    // Find the original canvas - with better error handling
-    const originalCanvas = findOriginalCanvas();
-    
-    if (!originalCanvas) {
-        console.error('No original canvas found for preview');
-        showError('No original canvas found. Please wait for images to load completely.');
-        return;
-    }
-    
-    if (originalCanvas.getAttribute('data-loading') === 'true') {
-        console.warn('Canvas still loading, retrying in 2 seconds...');
-        showWarning('Images are still loading, please wait...');
-        setTimeout(() => generateAndShowPreview(paletteData), 2000);
-        return;
-    }
-    
-    if (originalCanvas.getAttribute('data-error') === 'true') {
-        const errorMessage = originalCanvas.getAttribute('data-error-message') || 'Canvas failed to load';
-        console.error('Canvas has error state:', errorMessage);
-        showError(`Canvas error: ${errorMessage}. Please try refreshing the page.`);
-        return;
-    }
-    
-    // Continue with preview generation...
-    console.log('Canvas validated, proceeding with preview generation');
-    // Your existing preview generation code here
-}
+  function generateAndShowPreview(paletteData) {
+      console.log('Starting preview generation...');
+      
+      // Find the original canvas - with better error handling
+      const originalCanvas = findOriginalCanvas();
+      
+      if (!originalCanvas) {
+          console.error('No original canvas found for preview');
+          showError('No original canvas found. Please wait for images to load completely.');
+          return;
+      }
+      
+      if (originalCanvas.getAttribute('data-loading') === 'true') {
+          console.warn('Canvas still loading, retrying in 2 seconds...');
+          showWarning('Images are still loading, please wait...');
+          setTimeout(() => generateAndShowPreview(paletteData), 2000);
+          return;
+      }
+      
+      if (originalCanvas.getAttribute('data-error') === 'true') {
+          const errorMessage = originalCanvas.getAttribute('data-error-message') || 'Canvas failed to load';
+          console.error('Canvas has error state:', errorMessage);
+          showError(`Canvas error: ${errorMessage}. Please try refreshing the page.`);
+          return;
+      }
+      
+      // Continue with preview generation...
+      console.log('Canvas validated, proceeding with preview generation');
+      // Your existing preview generation code here
+  }
 
 function findOriginalCanvas() {
     // Try different methods to find a valid canvas
@@ -8013,110 +8013,144 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     // Use the same preview generation as trending palettes
     async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex, collection) {
         try {
-            console.log(`🎨 Generating REAL preview for favorite palette ${paletteIndex}`);
+            console.log(`🎨 === FAVORITE PREVIEW GENERATION DEBUG ===`);
+            console.log(`🎨 Collection: ${collection}, Palette Index: ${paletteIndex}`);
+            console.log(`🎨 Preview colors being sent:`, paletteColors);
+            
+            // Check cache first
+            if (window.palettePreviewCache && 
+                window.palettePreviewCache[collection] && 
+                window.palettePreviewCache[collection][paletteIndex]) {
+                
+                console.log(`🎨 Using cached preview for ${collection}[${paletteIndex}]`);
+                const cachedPreview = window.palettePreviewCache[collection][paletteIndex];
+                const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+                ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.drawImage(img, 0, 0, 200, 200);
+                        markPreviewReady(previewCanvas);
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        console.log(`🎨 Cached preview failed to load, generating new one`);
+                        drawFallbackPreview(previewCanvas, collection, paletteIndex);
+                        resolve();
+                    };
+                    img.src = cachedPreview;
+                });
+            }
             
             // Get the original image
             const originalCanvas = document.getElementById('layer_canvas_1');
             if (!originalCanvas) {
-                console.error('No original canvas found for preview');
+                console.error('🔴 No original canvas found for preview');
                 drawFallbackPreview(previewCanvas, collection, paletteIndex);
                 return;
             }
             
-            // Clear the preview canvas with white background
-            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+            console.log(`🎨 Original canvas found: ${originalCanvas.id}, dimensions: ${originalCanvas.width}x${originalCanvas.height}`);
             
-            // Create a temporary high-resolution canvas for processing
-            const originalAspect = originalCanvas.width / originalCanvas.height;
-            
+            // FIXED: Create temp canvas with FULL RESOLUTION, not scaled down
             const tempCanvas = document.createElement('canvas');
-            if (originalAspect > 1) {
-                tempCanvas.width = 200;
-                tempCanvas.height = Math.round(200 / originalAspect);
-            } else {
-                tempCanvas.height = 200;
-                tempCanvas.width = Math.round(200 * originalAspect);
-            }
-            
+            tempCanvas.width = originalCanvas.width;  // Use full width
+            tempCanvas.height = originalCanvas.height; // Use full height
+            tempCanvas.id = 'temp_export_canvas_1'; // This ID makes processPallet run in export mode
             const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-            tempCtx.drawImage(originalCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
             
-            // Get the temp canvas data for processing
-            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            // FIXED: Draw the original image at FULL RESOLUTION
+            tempCtx.drawImage(originalCanvas, 0, 0);
             
-            // Find original colors from the image
-            const originalColors = await getDistinctColors(imageData, 30, 100, 40);
+            console.log(`🎨 Temp canvas created: ${tempCanvas.width}x${tempCanvas.height} (FULL RESOLUTION)`);
             
-            if (!originalColors || originalColors.length === 0) {
-                console.error('No original colors found for preview');
-                // Draw the original image with correct aspect ratio
-                const displayScale = Math.min(
-                    previewCanvas.width / tempCanvas.width,
-                    previewCanvas.height / tempCanvas.height
-                );
-                
-                const displayWidth = tempCanvas.width * displayScale;
-                const displayHeight = tempCanvas.height * displayScale;
-                
-                const displayX = (previewCanvas.width - displayWidth) / 2;
-                const displayY = (previewCanvas.height - displayHeight) / 2;
-                
-                ctx.drawImage(tempCanvas, displayX, displayY, displayWidth, displayHeight);
-                markPreviewReady(previewCanvas);
+            // Validate paletteColors before processing
+            if (!paletteColors || !Array.isArray(paletteColors) || paletteColors.length === 0) {
+                console.error(`🔴 Invalid paletteColors for preview:`, paletteColors);
+                drawFallbackPreview(previewCanvas, collection, paletteIndex);
                 return;
             }
             
-            // Create color mappings using the palette colors
-            const colorMappings = [];
-            for (let i = 0; i < Math.min(originalColors.length, paletteColors.length); i++) {
-                colorMappings.push({
-                    originalColor: originalColors[i],
-                    targetColor: paletteColors[i % paletteColors.length]
-                });
-            }
-            
-            // Use ColorProcessor for the preview
-            const colorProcessor = new ColorProcessor();
-            const imageUrl = tempCanvas.toDataURL();
-            
-            // Process the preview using color replacement
-            const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
-                imageUrl,
-                colorMappings
+            // Validate each color
+            const validColors = paletteColors.filter(color => 
+                Array.isArray(color) && 
+                color.length === 3 && 
+                color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
             );
             
-            // Load the processed image back to the preview canvas
-            return new Promise((resolve) => {
-                const resultImg = new Image();
-                resultImg.onload = () => {
-                    const displayScale = Math.min(
-                        previewCanvas.width / resultImg.width,
-                        previewCanvas.height / resultImg.height
-                    );
-                    
-                    const displayWidth = resultImg.width * displayScale;
-                    const displayHeight = resultImg.height * displayScale;
-                    
-                    const displayX = (previewCanvas.width - displayWidth) / 2;
-                    const displayY = (previewCanvas.height - displayHeight) / 2;
-                    
-                    ctx.drawImage(resultImg, displayX, displayY, displayWidth, displayHeight);
-                    markPreviewReady(previewCanvas);
-                    resolve();
-                };
-                resultImg.onerror = (e) => {
-                    console.error("Error loading processed preview:", e);
-                    drawFallbackPreview(previewCanvas, collection, paletteIndex);
-                    resolve();
-                };
-                resultImg.src = processedImageUrl;
-            });
+            if (validColors.length === 0) {
+                console.error(`🔴 No valid colors found in paletteColors:`, paletteColors);
+                drawFallbackPreview(previewCanvas, collection, paletteIndex);
+                return;
+            }
+            
+            if (validColors.length !== paletteColors.length) {
+                console.warn(`⚠️ Some invalid colors filtered out. Original: ${paletteColors.length}, Valid: ${validColors.length}`);
+            }
+            
+            // CRITICAL FIX: Pass the palette array directly instead of collection name
+            // This ensures the preview uses the exact same palette as what's displayed
+            console.log(`🎨 Calling processPallet with palette array directly:`, validColors);
+            
+            // FIXED: Use the same processPallet call pattern as displayColorPalette
+            await window.processPallet(
+                tempCtx,        // layerCtx
+                1,              // totalLayers
+                tempCanvas,     // layerCanvas
+                0,              // currentLayerIndex
+                null,           // oldColorArray
+                validColors,    // PASS THE ACTUAL PALETTE ARRAY, NOT COLLECTION NAME
+                paletteIndex,   // paletteIndex
+                collection      // collectionName
+            );
+            
+            console.log(`🎨 processPallet completed for favorite preview`);
+            
+            // FIXED: Scale down the FULL RESOLUTION result to 200x200 for display
+            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+            ctx.clearRect(0, 0, 200, 200);
+            
+            // Calculate scaling to fit the full image into the 200x200 preview canvas
+            const scale = Math.min(200 / tempCanvas.width, 200 / tempCanvas.height);
+            const scaledWidth = tempCanvas.width * scale;
+            const scaledHeight = tempCanvas.height * scale;
+            const x = (200 - scaledWidth) / 2;
+            const y = (200 - scaledHeight) / 2;
+            
+            // Draw the processed full-resolution image scaled down to the preview canvas
+            ctx.drawImage(tempCanvas, x, y, scaledWidth, scaledHeight);
+            
+            // Cache the result (store the scaled preview, not the full resolution)
+            cachePreview(previewCanvas, collection, paletteIndex, previewCanvas.toDataURL());
+            markPreviewReady(previewCanvas);
+            
+            console.log(`🎨 Favorite preview generated successfully for ${collection}[${paletteIndex}] using full resolution`);
+            console.log(`🎨 === END FAVORITE PREVIEW DEBUG ===\n`);
             
         } catch (error) {
-            console.error("Error generating preview:", error);
+            console.error("🔴 Error generating favorite preview:", error);
+            console.error("🔴 Error stack:", error.stack);
+            console.log(`🎨 Falling back to fallback preview for ${collection}[${paletteIndex}]`);
             drawFallbackPreview(previewCanvas, collection, paletteIndex);
+        }
+    }
+    
+    function cachePreview(canvas, collection, index, dataUrl) {
+        // Initialize cache objects if they don't exist
+        if (!window.palettePreviewCache) {
+            window.palettePreviewCache = {};
+        }
+        
+        if (!window.palettePreviewCache[collection]) {
+            window.palettePreviewCache[collection] = {};
+        }
+        
+        // Store the preview
+        if (dataUrl) {
+            window.palettePreviewCache[collection][index] = dataUrl;
+        } else {
+            window.palettePreviewCache[collection][index] = canvas.toDataURL();
         }
     }
     
@@ -8138,6 +8172,9 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
         ctx.textBaseline = 'middle';
         ctx.font = '14px sans-serif';
         ctx.fillText('Preview unavailable', canvas.width/2, canvas.height/2);
+        
+        // Cache the fallback
+        cachePreview(canvas, collection, paletteIndex);
         markPreviewReady(canvas);
     }
     
@@ -8176,15 +8213,74 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     }
     window.favPaletteColors[layerIndex] = [...validColors];
     
-    // Create the same structure as trending palettes
+    // Create the same structure as trending palettes with STAR BUTTON
     const clickableContainer = document.createElement('div');
     clickableContainer.classList.add('palette-clickable-container');
-    clickableContainer.style.border = '0px solid #ffd700'; // Gold border for favorites
+    clickableContainer.style.border = '2px solid #ffd700'; // Gold border for favorites
     paletteContainer.appendChild(clickableContainer);
     
     // Add data attributes
     clickableContainer.dataset.paletteIndex = layerIndex;
     clickableContainer.dataset.collection = collection;
+    
+    // ADD STAR BUTTON (this was missing!)
+    const starButton = document.createElement('div');
+    starButton.classList.add('palette-star-btn');
+    starButton.innerHTML = '★'; // Filled star since this IS a favorite
+    starButton.title = 'Remove from favorites';
+    starButton.style.backgroundColor = 'rgba(255, 215, 0, 0.9)'; // Gold background
+    starButton.style.color = '#fff';
+    clickableContainer.appendChild(starButton);
+    
+    // Star button click handler for favorites
+    starButton.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent triggering the parent container's click
+        
+        const paletteIndex = parseInt(clickableContainer.dataset.paletteIndex, 10);
+        const collectionName = clickableContainer.dataset.collection;
+        
+        console.log(`🌟 Removing favorite palette ${paletteIndex} from ${collectionName}`);
+        
+        // Remove from favorites
+        if (window.favoritePalettes && window.favoritePalettes[collectionName]) {
+            delete window.favoritePalettes[collectionName][paletteIndex];
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem('favoritePalettes', JSON.stringify(window.favoritePalettes));
+            } catch (e) {
+                console.warn('Could not save to localStorage:', e);
+            }
+        }
+        
+        // Remove from favPaletteColors as well
+        if (window.favPaletteColors) {
+            delete window.favPaletteColors[paletteIndex];
+        }
+        
+        // Hide this palette container with animation
+        clickableContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        clickableContainer.style.opacity = '0';
+        clickableContainer.style.transform = 'scale(0.8)';
+        
+        setTimeout(() => {
+            if (clickableContainer.parentNode) {
+                clickableContainer.parentNode.removeChild(clickableContainer);
+            }
+            
+            // Refresh the favorites display
+            if (typeof window.displayFavorites === 'function') {
+                window.displayFavorites();
+            }
+            
+            // Update star states in other collections
+            setTimeout(() => {
+                if (typeof window.syncFavoriteStarsWithAllCategories === 'function') {
+                    syncFavoriteStarsWithAllCategories();
+                }
+            }, 100);
+        }, 300);
+    });
     
     // Add preview image container
     const previewContainer = document.createElement('div');
@@ -8211,7 +8307,7 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
         const swatch = document.createElement('div');
         swatch.classList.add('color-swatch');
         swatch.style.backgroundColor = `rgb(${color.join(',')})`;
-        swatch.style.border = '0px solid #ffd700'; // Gold border
+        swatch.style.border = '1px solid #ffd700'; // Gold border
         
         const hexValue = rgbToHex(color[0], color[1], color[2]);
         swatch.title = `Color ${idx + 1}: ${hexValue}`;
@@ -8220,7 +8316,13 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     });
     
     // Click handler to apply the palette
-    clickableContainer.addEventListener('click', function() {
+    clickableContainer.addEventListener('click', function(e) {
+        // Don't trigger if clicking on star button or show all button
+        if (e.target.classList.contains('palette-star-btn') || 
+            e.target.classList.contains('show-all-colors-btn')) {
+            return;
+        }
+        
         const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
         const collectionName = this.dataset.collection;
         
@@ -8244,8 +8346,52 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     
     showAllButton.addEventListener('click', function(e) {
         e.stopPropagation();
-        showFullPaletteModal(window.favPaletteColors[layerIndex], collection, layerIndex);
+        if (typeof window.showFullPaletteModal === 'function') {
+            showFullPaletteModal(window.favPaletteColors[layerIndex], collection, layerIndex);
+        }
     });
+    
+    // Add necessary CSS styles for the star button if not already present
+    if (!document.getElementById('favorite-palette-star-styles')) {
+        const styleElement = document.createElement('style');
+        styleElement.id = 'favorite-palette-star-styles';
+        styleElement.textContent = `
+            .palette-star-btn {
+                position: absolute;
+                top: 5px;
+                left: 5px;
+                width: 25px;
+                height: 25px;
+                background-color: rgba(255,255,255,0.8);
+                color: #ccc;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: 14px;
+                z-index: 3;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                transition: all 0.2s ease;
+            }
+            
+            .palette-star-btn:hover {
+                background-color: rgba(255,255,255,0.95);
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                transform: scale(1.1);
+            }
+            
+            .palette-star-btn.favorited {
+                background-color: rgba(255, 215, 0, 0.9);
+                color: #fff;
+            }
+            
+            .palette-clickable-container {
+                position: relative;
+            }
+        `;
+        document.head.appendChild(styleElement);
+    }
     
     // Generate the REAL preview (same as trending palettes)
     console.log(`🎨 Starting REAL preview generation for favorite palette ${layerIndex}`);
@@ -8253,7 +8399,6 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     
     console.log("🎨 === FAVORITE PALETTE DISPLAY COMPLETE ===");
 }
-
 
 
 // Modal function for showing all palette colors
@@ -9530,8 +9675,13 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
       return displayColors;
     }
 
-// Modified generateAndShowPreview function
-async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex, collection) {
+
+
+    // Modified generateAndShowPreview function
+
+
+
+    async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex, collection) {
     try {
         console.log(`=== PREVIEW GENERATION DEBUG ===`);
         console.log(`Collection: ${collection}, Palette Index: ${paletteIndex}`);
@@ -12242,9 +12392,7 @@ async function loadFavorites() {
                     </div>
                     <div class="text-center small mt-1">
                         <strong>${favorite.name}</strong>
-                        <div class="text-muted" style="font-size: 0.75em;">
-                            ${colors.length} colors • 100% match • ${isHarmony ? 'Harmony' : 'Regular'}
-                        </div>
+
                     </div>
                 </div>
             `;
@@ -16477,7 +16625,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
   if (showInSidebar) {
     if (sidebarLoading) sidebarLoading.style.display = 'block';
   } else {
-    if (loadingScreen) loadingScreen.style.display = 'block';
+    if (loadingScreen) loadingScreen.style.display = 'flex';
   }
   
   const analyzer = new ImageColorAnalyzer();
@@ -20598,7 +20746,7 @@ function createSpinner(mainContent) {
 async function exportFile(format = 'tiff') {
     return new Promise(async (resolve, reject) => {
         const loadingScreen = document.getElementById('loading-screen');
-        loadingScreen.style.display = 'block';
+        loadingScreen.style.display = 'flex';
         
         const formData = new FormData();
         const layers = [];
