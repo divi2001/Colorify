@@ -2634,54 +2634,63 @@ function applySaturation(ctx, width, height, factor) {
 {% comment %} for pdf {% endcomment %}
 // Function to download PDF
 function loadInspirationContent() {
-  const inspirationContent = document.getElementById('inspirationContent');
+    const inspirationContent = document.getElementById('inspirationContent');
 
-  // Show loading state
-  inspirationContent.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+    // Show loading state
+    inspirationContent.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-  fetch('inspiration-pdfs/') // Update this URL to match your URL configuration
-      .then(response => response.json())
-      .then(data => {
-          let htmlContent = `
-              <h4 class="ms-auto me-auto">Inspirations</h4>
-              <div class="inspiration-content">
-                  <div class="pdf-grid">
-          `;
+    fetch('inspiration-pdfs/')
+        .then(response => response.json())
+        .then(data => {
+            let htmlContent = `
+                <h4 class="ms-auto me-auto">Inspirations</h4>
+                <div class="inspiration-content">
+                    <div class="pdf-grid">
+            `;
 
-          data.pdfs.forEach(pdf => {
-              htmlContent += `
-                  <div class="pdf-item">
-                      <div class="pdf-preview" data-pdf-id="${pdf.id}">
-                          <img src="${pdf.preview_image}" alt="${pdf.title}">
-                          <div class="pdf-info">
-                              <span class="pdf-name">${pdf.title}</span>
-                              <div class="pdf-actions">
-                                  <span class="pdf-likes">
-                                      <i class="bi ${pdf.liked ? 'bi-star-fill' : 'bi-star'}"></i> 
-                                      <span class="likes-count">${pdf.likes_count}</span>
-                                  </span>
-                                  <button class="btn btn-sm btn-primary download-btn">
-                                      <i class="bi bi-download"></i>
-                                  </button>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              `;
-          });
+            data.pdfs.forEach(pdf => {
+                htmlContent += `
+                    <div class="pdf-item">
+                        <div class="pdf-preview" data-pdf-id="${pdf.id}">
+                            <img src="${pdf.preview_image}" alt="${pdf.title}">
+                            <div class="pdf-info">
+                                <span class="pdf-name">${pdf.title}</span>
+                                <div class="pdf-actions">
+                                    <button class="btn btn-sm btn-primary download-btn" onclick="downloadPDF('${pdf.pdf_url}', '${pdf.title}')">
+                                        <i class="bi bi-download"></i> Download
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
 
-          htmlContent += `
-                  </div>
-              </div>
-          `;
+            htmlContent += `
+                    </div>
+                </div>
+            `;
 
-          inspirationContent.innerHTML = htmlContent;
-          initializePDFEvents(); // Call this after adding the content
-      })
-      .catch(error => {
-          console.error('Error:', error);
-          inspirationContent.innerHTML = '<div class="alert alert-danger">Error loading PDFs</div>';
-      });
+            inspirationContent.innerHTML = htmlContent;
+            initializePDFEvents(); // Call this after adding the content
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            inspirationContent.innerHTML = '<div class="alert alert-danger">Error loading PDFs</div>';
+        });
+}
+
+function downloadPDF(pdfUrl, title) {
+    // Create a temporary anchor element and trigger download
+    const a = document.createElement('a');
+    a.href = pdfUrl;
+    a.download = `${title}.pdf`;
+    a.target = '_blank'; // This ensures it opens in a new tab if download fails
+    
+    // Append to body, click, and remove
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 function toggleLike(pdfId, element) {
