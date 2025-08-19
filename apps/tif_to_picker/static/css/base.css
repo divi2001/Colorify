@@ -42,17 +42,18 @@ body{
 }
 
 .inspiration_card {
-  height: 80px;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 7px;
-}
-.inspiration_card img {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
 }
 
+.inspiration_card img {
+    width: 100%;
+    height: auto;
+    border-radius: 7px;
+    object-fit: contain; /* This ensures the full image is visible */
+}
 .trending_card img{
   height: 130px;
   width: 100%;

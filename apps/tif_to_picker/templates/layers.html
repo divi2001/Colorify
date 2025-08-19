@@ -363,14 +363,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
         <div id="secondaryColumn" class="sidebar d-flex flex-column" style="flex: 0 0 20%;">
-                    <button class="btn-sm m-2 d-flex align-items-center nav-btn" onclick="toggleSidebar('leftMostColumn', this)"  style="border: none; background: #fff">
-              <i class="bi bi-caret-left-fill ms-auto"></i>
-          </button>
+                    <button 
+  class="btn-sm m-2 d-flex align-items-center nav-btn" 
+  onclick="toggleSidebar('secondaryColumn', this)" 
+  style="border: none; background: #fff">
+    <i class="bi bi-caret-left-fill ms-auto"></i>
+</button>
+
           
           <!-- Trending Content -->
      
           <div class="sidebar-content" id="trendingContent" style="display: none;">
-            <h4 class="ms-auto me-auto">Trending Palette</h4>
+            <h2 class="ms-auto me-auto fw-bold text-center fs-4">Trending Palette</h2>
             <hr />
             <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
               {% if layers|length == 1 %}
@@ -413,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     
         <div class="sidebar-content m-4" id="inspirationContent">
-          <h4 class="ms-auto me-auto">Inspirations</h4>
+          <h2 class="ms-auto me-auto fw-bold text-center fs-4">Inspirations</h2>
           <div class="inspiration-content">
               <div class="pdf-grid">
 
@@ -421,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
       </div>
       <div class="sidebar-content" id="effectsContent" style="display: none;">
-        <h4 class="ms-auto me-auto">Effects</h4>
+        <h2 class="ms-auto me-auto fw-bold text-center fs-4">Effects</h2>
         <div class="effects-grid">
             <div class="effect-item" data-effect="grayscale">
                 <div class="effect-preview">
@@ -505,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
 <div class="sidebar-content" id="paletteGeneratorContent" style="display: none;">
-  <h4 class="ms-auto me-auto">Color Picker</h4>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Color Picker</h2>
   <hr />
   
   <!-- Controls -->
@@ -542,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- Harmony Content -->
 <!-- Harmony Content -->
 <div class="sidebar-content" id="harmonyContent" style="display: none;">
-  <h4 class="ms-auto me-auto">Color Harmony</h4>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Color Harmony</h2>
   
   <!-- Harmony Type Selector -->
   <div class="harmony-selector mb-3 px-3">
@@ -588,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
      <!-- SS Collection Content -->
      <div class="sidebar-content" id="ssCollectionContent" style="display: none;">
-      <h4 class="ms-auto me-auto">SS Collection</h4>
+      <h2 class="ms-auto me-auto fw-bold text-center fs-4">SS Collection</h2>
       <hr />
       <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
           {% if layers|length == 1 %}
@@ -632,7 +636,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
 
 <div class="sidebar-content" id="favCollectionContent" style="display: none;">
-  <h4 class="ms-auto me-auto">Favourite Collection</h4>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Favourite Collection</h2>
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       
@@ -652,7 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Base Color Content -->
 <!-- Base Color Content -->
 <div class="sidebar-content" id="baseColorContent" style="display: none;">
-  <h4 class="ms-auto me-auto">Base Colors</h4>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Base Colors</h2>
   <div class="base-colors-grid">
     <!-- Color blocks will be generated here -->
   </div>
@@ -668,7 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- AW Collection Content -->
 <div class="sidebar-content" id="awCollectionContent" style="display: none;">
-  <h4 class="ms-auto me-auto">AW Collection</h4>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4">AW Collection</h2>
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       {% if layers|length == 1 %}
@@ -710,7 +714,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <div class="sidebar-content" id="mockupsContent" style="display: none;">
-    <h4 class="ms-auto me-auto">Mockups</h4>
+    <h2 class="ms-auto me-auto fw-bold text-center fs-4">Mockups</h2>
     <div class="mockups-grid">
         <!-- Mockups will be loaded here via AJAX -->
         <div class="text-center">
@@ -2643,7 +2647,7 @@ function loadInspirationContent() {
         .then(response => response.json())
         .then(data => {
             let htmlContent = `
-                <h4 class="ms-auto me-auto">Inspirations</h4>
+                <h2 class="ms-auto me-auto fw-bold text-center fs-4">Inspirations</h2>
                 <div class="inspiration-content">
                     <div class="pdf-grid">
             `;
@@ -9158,21 +9162,23 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
     
     // Get color family (hue range) for a color
-    function getColorFamily(color) {
-        const [h, s, l] = rgbToHsl(...color);
-        
-        // Define color families with hue ranges
-        if (h >= 345 || h < 15) return 'red';
-        if (h >= 15 && h < 45) return 'orange';
-        if (h >= 45 && h < 75) return 'yellow';
-        if (h >= 75 && h < 165) return 'green';
-        if (h >= 165 && h < 195) return 'cyan';
-        if (h >= 195 && h < 255) return 'blue';
-        if (h >= 255 && h < 285) return 'purple';
-        if (h >= 285 && h < 345) return 'pink';
-        
-        return 'neutral';
-    }
+function getColorFamily(color) {
+    const [h, s, l] = rgbToHsl(...color);
+    
+    // Define color families with GAP in green range to reduce green dominance
+    if (h >= 345 || h < 15) return 'red';
+    if (h >= 15 && h < 45) return 'orange';
+    if (h >= 45 && h < 75) return 'yellow';
+    if (h >= 75 && h < 120) return 'green';      // REDUCED: was 75-165, now 75-120
+    // GAP: 120-150 (no assignment - will go to cyan)
+    if (h >= 150 && h < 180) return 'cyan';      // SHIFTED: was 165-195
+    if (h >= 180 && h < 220) return 'blue';      // SHIFTED: was 195-255
+    if (h >= 220 && h < 260) return 'purple';    // SHIFTED: was 255-285
+    if (h >= 260 && h < 300) return 'pink';      // SHIFTED: was 285-345
+    if (h >= 300 && h < 345) return 'magenta';   // NEW: to fill the gap
+    
+    return 'neutral';
+}
     
     // Group colors by their color families
     function groupColorsByFamily(colors) {
@@ -9205,17 +9211,19 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const isSourceBackground = isBackgroundColor(sourceColor);
         
         // Define hue ranges for each color family
-        const hueRanges = {
-            'red': [345, 15],
-            'orange': [15, 45],
-            'yellow': [45, 75],
-            'green': [75, 165],
-            'cyan': [165, 195],
-            'blue': [195, 255],
-            'purple': [255, 285],
-            'pink': [285, 345]
-        };
-        
+// Define hue ranges for each color family
+  const hueRanges = {
+      'red': [345, 15],
+      'orange': [15, 45],
+      'yellow': [45, 75],
+      'green': [75, 90],      // Reduced range
+      // 'teal': [130, 150],      // New category for blue-green
+      'cyan': [150, 180],
+      'blue': [180, 220],
+      'indigo': [220, 260],
+      'purple': [260, 290],
+      'pink': [290, 345]
+  };
         const range = hueRanges[targetHueRange];
         if (!range) {
             // Fallback to random hue if family not found
@@ -9259,8 +9267,9 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const availableFamilyNames = Object.keys(baseFamilies);
         
         // All possible target families
-        const allFamilies = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink'];
-        
+// All possible target families
+        // All possible target families - keeping original nInspirationsames, just with gap in green
+        const allFamilies = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink', 'magenta'];       
         // Collection-specific adjustments
         const collectionSettings = {
             'ss': {
@@ -11459,21 +11468,24 @@ function getCookie(name) {
 
 
 
-  function getColorFamily(color) {
-        const [h, s, l] = rgbToHsl(...color);
-        
-        // Define color families with hue ranges
-        if (h >= 345 || h < 15) return 'red';
-        if (h >= 15 && h < 45) return 'orange';
-        if (h >= 45 && h < 75) return 'yellow';
-        if (h >= 75 && h < 165) return 'green';
-        if (h >= 165 && h < 195) return 'cyan';
-        if (h >= 195 && h < 255) return 'blue';
-        if (h >= 255 && h < 285) return 'purple';
-        if (h >= 285 && h < 345) return 'pink';
-        
-        return 'neutral';
-    }
+// Get color family (hue range) for a color
+function getColorFamily(color) {
+    const [h, s, l] = rgbToHsl(...color);
+    
+    // Define color families with more balanced hue ranges
+    if (h >= 345 || h < 15) return 'red';        // 30 degrees
+    if (h >= 15 && h < 45) return 'orange';      // 30 degrees  
+    if (h >= 45 && h < 75) return 'yellow';      // 30 degrees
+    if (h >= 75 && h < 90) return 'green';      // 45 degrees (reduced from 90)
+    // if (h >= 130 && h < 150) return 'teal';      // 30 degrees (new category)
+    if (h >= 170 && h < 180) return 'cyan';      // 30 degrees
+    if (h >= 180 && h < 220) return 'blue';      // 40 degrees
+    if (h >= 220 && h < 260) return 'indigo';    // 40 degrees
+    if (h >= 260 && h < 290) return 'purple';    // 30 degrees
+    if (h >= 290 && h < 345) return 'pink';      // 55 degrees
+    
+    return 'neutral';
+}
 // Helper function to get CSRF token from cookies
 
 
@@ -11616,21 +11628,25 @@ function analyzeColorRelationships(colors) {
         }
     }
     
-    function getColorFamily(color) {
-        const [h, s, l] = rgbToHsl(...color);
-        
-        if (h >= 345 || h < 15) return 'red';
-        if (h >= 15 && h < 45) return 'orange';
-        if (h >= 45 && h < 75) return 'yellow';
-        if (h >= 75 && h < 165) return 'green';
-        if (h >= 165 && h < 195) return 'cyan';
-        if (h >= 195 && h < 255) return 'blue';
-        if (h >= 255 && h < 285) return 'purple';
-        if (h >= 285 && h < 345) return 'pink';
-        
-        return 'neutral';
-    }
+function getColorFamily(color) {
+    const [h, s, l] = rgbToHsl(...color);
     
+    // Define color families with more balanced hue ranges
+    if (h >= 345 || h < 15) return 'red';        // 30 degrees
+    if (h >= 15 && h < 45) return 'orange';      // 30 degrees  
+    if (h >= 45 && h < 75) return 'yellow';      // 30 degrees
+    if (h >= 75 && h < 90) return 'green';      // 45 degrees (reduced from 90)
+    // if (h >= 130 && h < 150) return 'teal';      // 30 degrees (new category)
+    if (h >= 170 && h < 180) return 'cyan';      // 30 degrees
+    if (h >= 180 && h < 220) return 'blue';      // 40 degrees
+    if (h >= 220 && h < 260) return 'indigo';    // 40 degrees
+    if (h >= 260 && h < 290) return 'purple';    // 30 degrees
+    if (h >= 290 && h < 345) return 'pink';      // 55 degrees
+    
+    return 'neutral';
+}
+// Helper function to get CSRF token from cookies
+
     // Group colors by their color families (same as original)
     function groupColorsByFamily(colors) {
         const families = {};
@@ -13006,11 +13022,13 @@ function getColorFamily(color) {
     if (h >= 345 || h < 15) return 'red';
     if (h >= 15 && h < 45) return 'orange';
     if (h >= 45 && h < 75) return 'yellow';
-    if (h >= 75 && h < 165) return 'green';
-    if (h >= 165 && h < 195) return 'cyan';
-    if (h >= 195 && h < 255) return 'blue';
-    if (h >= 255 && h < 285) return 'purple';
-    if (h >= 285 && h < 345) return 'pink';
+    if (h >= 75 && h < 120) return 'green';      // REDUCED: was 75-165, now 75-120
+    // GAP: 120-150 (no assignment - will go to cyan)
+    if (h >= 150 && h < 180) return 'cyan';      // SHIFTED: was 165-195
+    if (h >= 180 && h < 220) return 'blue';      // SHIFTED: was 195-255
+    if (h >= 220 && h < 260) return 'purple';    // SHIFTED: was 255-285
+    if (h >= 260 && h < 300) return 'pink';      // SHIFTED: was 285-345
+    if (h >= 300 && h < 345) return 'magenta';   // NEW: to fill the gap
     
     return 'neutral';
 }
