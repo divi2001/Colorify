@@ -262,7 +262,7 @@ DATABASES = {
         # 'NAME': 'colorify3',
         'NAME': 'colorify3',
         'USER': 'root',
-        'PASSWORD': 'tanuj1221',
+        'PASSWORD': '1221',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
@@ -331,6 +331,11 @@ CACHES = {
         'LOCATION': 'django_cache_table',
     }
 }
+
+# Razorpay settings (if used)
+RAZORPAY_KEY_ID = 'rzp_test_R7UT8EDLENC0vm'
+RAZORPAY_KEY_SECRET = 'cgjQxW9NmrNaXf4yK2dn0oVs'
+RAZORPAY_CURRENCY = 'INR'
 
 # settings.py for Redis (optional)
 # CACHES = {

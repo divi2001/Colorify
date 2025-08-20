@@ -1,38 +1,378 @@
 <!-- templates/subscription_module/plans.html -->
-{% extends 'base.html' %}
+{% extends 'pages/main_base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}Colorify - Plans{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Subscription Plans</h1>
-    
-    {% if current_subscription and current_subscription.is_active %}
-    <div class="alert alert-info">
-        <h4>Your Current Subscription</h4>
-        <p>Plan: <strong>{{ current_subscription.plan.name }}</strong></p>
-        <p>Status: <strong>{% if current_subscription.is_active %}Active{% else %}Expired{% endif %}</strong></p>
-        <p>Expires on: <strong>{{ current_subscription.end_date|date:"d M Y" }}</strong></p>
-    </div>
-    {% endif %}
-    
-    <div class="row">
-        {% for plan in plans %}
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h3>{{ plan.name }}</h3>
+<div class="container mx-auto px-4 ">
+    <!-- Header -->
+    <div class="container mx-auto px-4 py-8 mb-22">
+        <div class="text-center  mx-auto">
+            <!-- Title Section -->
+            <div class="space-y-4">
+                <div class="relative inline-block">
+                    <h1 class="text-5xl font-semibold mb-2 flex flex-wrap justify-center items-center gap-2">
+                        <span>Transparent Pricing</span>
+                        <span class="relative">
+                            <span class="text-purple-600">Plans</span>
+                            <svg class="absolute -bottom-5 right-0 w-28 h-4" viewBox="0 0 1200 100">
+                                <path 
+                                    d="M0,50 Q600,-80 1200,50" 
+                                    stroke="#FF4500" 
+                                    stroke-width="25" 
+                                    fill="none"
+                                />
+                            </svg>
+                        </span>
+                        <span class="text-5xl font-semibold">for Every Need</span>
+                    </h1>
                 </div>
-                <div class="card-body">
-                    <h4>${{ plan.price }}</h4>
-                    <p>Duration: {{ plan.duration_in_days }} days</p>
-                    <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="btn btn-primary">Subscribe</a>
+                <p class="text-gray-500 text-sm mt-5">
+                    Choose the perfect plan that fits your needs and budget.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Subscription Status -->
+    {% if current_subscription and current_subscription.is_active %}
+        <div class="max-w-4xl mx-auto mb-8">
+            <div class="bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-500 rounded-lg p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-green-800">
+                                Active Subscription: <span class="font-bold">{{ current_subscription.plan.name }}</span>
+                            </p>
+                            <p class="text-sm text-green-700">
+                                Expires on {{ current_subscription.end_date|date:"F d, Y" }} 
+                                ({{ current_subscription.days_remaining }} days remaining)
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Active
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="alert alert-warning">No subscription plans available.</div>
+    {% endif %}
+
+    <!-- Dynamic Pricing Cards -->
+    {% if plans %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-10">
+            {% for plan in plans %}
+                {% comment %} Check if this plan is the user's current active plan {% endcomment %}
+                {% if current_subscription and current_subscription.is_active and current_subscription.plan.id == plan.id %}
+                    {% with is_current_plan=True %}
+                        <div class="relative bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform scale-105 border-2 border-green-400">
+                            <!-- Current Plan Badge -->
+                            <!-- <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                                <span class="bg-white text-green-600 px-4 py-1 rounded-full text-sm font-bold shadow-lg">CURRENT PLAN</span>
+                            </div> -->
+                            
+                            <!-- Current Plan Indicator -->
+                            <div class="absolute top-4 right-4">
+                                <div class="flex items-center justify-center w-8 h-8 bg-white rounded-full">
+                                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <!-- Plan Header -->
+                            <div class="mb-6 mt-4">
+                                <h3 class="text-sm font-semibold text-white uppercase mb-4">{{ plan.name }}</h3>
+                                <div class="flex items-baseline mb-2">
+                                    <span class="text-5xl font-bold text-white">
+                                        ₹{% if plan.discounted_price %}{{ plan.discounted_price|floatformat:0 }}{% else %}{{ plan.original_price|floatformat:0 }}{% endif %}
+                                    </span>
+                                    <span class="text-white ml-2">/ month</span>
+                                </div>
+                                <p class="text-sm text-green-100">{{ plan.description }}</p>
+                            </div>
+                            
+                            <!-- Plan Features -->
+                            <ul class="space-y-4 mb-8">
+                                <!-- Storage -->
+                                <li class="flex items-center">
+                                    <svg class="w-5 h-5 text-white mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-white">
+                                        {% if plan.storage_limit_mb >= 2147483647 %}
+                                            Unlimited Storage
+                                        {% elif plan.storage_limit_mb >= 1024 %}
+                                            {% widthratio plan.storage_limit_mb 1024 1 %} GB Storage
+                                        {% else %}
+                                            {{ plan.storage_limit_mb }} MB Storage
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                
+                                <!-- File Uploads -->
+                                <li class="flex items-center">
+                                    <svg class="w-5 h-5 text-white mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-white">
+                                        {% if plan.file_upload_limit >= 2147483647 %}
+                                            Unlimited File Uploads
+                                        {% else %}
+                                            {{ plan.file_upload_limit }} File Uploads/month
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                
+                                <!-- Devices -->
+                                <li class="flex items-center">
+                                    <svg class="w-5 h-5 text-white mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-white">
+                                        {% if plan.max_devices >= 2147483647 %}
+                                            Unlimited Devices
+                                        {% else %}
+                                            Login upto {{ plan.max_devices }} Device{{ plan.max_devices|pluralize }}
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                
+                                <!-- Duration -->
+                                <li class="flex items-center">
+                                    <svg class="w-5 h-5 text-white mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-white">{{ plan.duration_in_days }} Days Duration</span>
+                                </li>
+                            </ul>
+                            
+                            <!-- Action Button -->
+                            <div class="space-y-2">
+                                <button class="w-full bg-white text-green-600 rounded-full py-3 px-4 font-semibold flex items-center justify-center cursor-default">
+                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Active Plan
+                                </button>
+                                <p class="text-center text-xs text-green-100">
+                                    Expires: {{ current_subscription.end_date|date:"M d, Y" }}
+                                </p>
+                            </div>
+                        </div>
+                    {% endwith %}
+                {% else %}
+                    <div class="relative 
+                        {% if plan.name == 'Pro' and plan.is_active %}
+                            bg-blue-600 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow transform scale-105
+                        {% elif not plan.is_active or 'Legacy' in plan.name %}
+                            bg-gray-100 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow opacity-75
+                        {% else %}
+                            bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow border
+                        {% endif %}">
+                        
+                        <!-- Popular Badge -->
+                        {% if plan.name == 'Pro' and plan.is_active %}
+                            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                                <span class="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold">POPULAR</span>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Plan Header -->
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold {% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %} uppercase mb-4">{{ plan.name }}</h3>
+                            <div class="flex items-baseline mb-2">
+                                <span class="text-5xl font-bold {% if plan.name == 'Pro' and plan.is_active %}text-white{% endif %}">
+                                    ₹{% if plan.discounted_price %}{{ plan.discounted_price|floatformat:0 }}{% else %}{{ plan.original_price|floatformat:0 }}{% endif %}
+                                </span>
+                                <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-500{% endif %} ml-2">/ month</span>
+                            </div>
+                            <p class="text-sm {% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-500{% endif %}">{{ plan.description }}</p>
+                        </div>
+                        
+                        <!-- Plan Features -->
+                        <ul class="space-y-4 mb-8">
+                            <!-- Storage -->
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 {% if plan.name == 'Pro' and plan.is_active %}text-white{% elif not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %}">
+                                    {% if plan.storage_limit_mb >= 2147483647 %}
+                                        Unlimited Storage
+                                    {% elif plan.storage_limit_mb >= 1024 %}
+                                        {% widthratio plan.storage_limit_mb 1024 1 %} GB Storage
+                                    {% else %}
+                                        {{ plan.storage_limit_mb }} MB Storage
+                                    {% endif %}
+                                </span>
+                            </li>
+                            
+                            <!-- File Uploads -->
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 {% if plan.name == 'Pro' and plan.is_active %}text-white{% elif not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %}">
+                                    {% if plan.file_upload_limit >= 2147483647 %}
+                                        Unlimited File Uploads
+                                    {% else %}
+                                        {{ plan.file_upload_limit }} File Uploads/month
+                                    {% endif %}
+                                </span>
+                            </li>
+                            
+                            <!-- Devices -->
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 {% if plan.name == 'Pro' and plan.is_active %}text-white{% elif not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %}">
+                                    {% if plan.max_devices >= 2147483647 %}
+                                        Unlimited Devices
+                                    {% else %}
+                                        Login upto {{ plan.max_devices }} Device{{ plan.max_devices|pluralize }}
+                                    {% endif %}
+                                </span>
+                            </li>
+                            
+                            <!-- Duration -->
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 {% if plan.name == 'Pro' and plan.is_active %}text-white{% elif not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="{% if plan.name == 'Pro' and plan.is_active %}text-white{% else %}text-gray-600{% endif %}">{{ plan.duration_in_days }} Days Duration</span>
+                            </li>
+                        </ul>
+                        
+                        <!-- Action Button -->
+                        {% if current_subscription and current_subscription.is_active %}
+                            <!-- User has an active subscription but this is not their current plan -->
+                            {% if plan.original_price > current_subscription.plan.original_price %}
+                                <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full py-3 px-4 transition-colors flex items-center justify-center no-underline">
+                                    Upgrade to {{ plan.name }}
+                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            {% else %}
+                                <button class="w-full bg-gray-300 text-gray-500 rounded-full py-3 px-4 transition-colors flex items-center justify-center cursor-not-allowed" disabled>
+                                    {% if plan.original_price < current_subscription.plan.original_price %}
+                                        Downgrade Available
+                                    {% else %}
+                                        Alternative Plan
+                                    {% endif %}
+                                </button>
+                            {% endif %}
+                        {% elif not plan.is_active or 'Legacy' in plan.name %}
+                            <button class="w-full bg-gray-400 text-white rounded-full py-3 px-4 transition-colors flex items-center justify-center cursor-not-allowed" disabled>
+                                {% if plan.original_price == 0 %}Free Plan{% else %}Inactive{% endif %}
+                            </button>
+                        {% elif plan.name == 'Pro' %}
+                            <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full bg-white hover:bg-gray-100 text-blue-600 rounded-full py-3 px-4 transition-colors flex items-center justify-center no-underline">
+                                Choose {{ plan.name }}
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        {% elif plan.name == 'Enterprise' %}
+                            <button class="w-full bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] text-white rounded-full py-3 px-4 transition-colors flex items-center justify-center">
+                                Contact Sales
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        {% else %}
+                            <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] text-white rounded-full py-3 px-4 transition-colors flex items-center justify-center no-underline">
+                                Get Started
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
+    {% else %}
+        <div class="text-center py-12">
+            <p class="text-gray-500 text-xl">No subscription plans available at the moment.</p>
+        </div>
+    {% endif %}
 </div>
+
+<style>
+.custom-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 5px;
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.custom-slider:hover {
+    opacity: 1;
+}
+
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #6F5DE5;
+    cursor: pointer;
+}
+
+.custom-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #6F5DE5;
+    cursor: pointer;
+}
+
+/* Animation for current plan */
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+    }
+}
+
+.animate-pulse-green {
+    animation: pulse-green 2s infinite;
+}
+</style>
+
+<script>
+// Add some interactive effects for the current plan
+document.addEventListener('DOMContentLoaded', function() {
+    const currentPlanCard = document.querySelector('.bg-gradient-to-br.from-green-500');
+    if (currentPlanCard) {
+        // Add a subtle pulsing effect to the current plan
+        currentPlanCard.classList.add('animate-pulse-green');
+        
+        // Remove the animation after 5 seconds to avoid distraction
+        setTimeout(() => {
+            currentPlanCard.classList.remove('animate-pulse-green');
+        }, 5000);
+    }
+});
+</script>
 {% endblock %}

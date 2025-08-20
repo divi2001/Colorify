@@ -1,0 +1,384 @@
+<!-- templates/subscription_module/payment_checkout.html -->
+{% extends 'pages/main_base.html' %}
+{% load static %}
+
+{% block title %}Payment Checkout - Colorify{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold mb-6 text-center">Complete Payment</h2>
+        
+        <!-- Plan Details -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold">{{ plan.name }} Plan</h3>
+            <p class="text-gray-600">{{ plan.description }}</p>
+            
+            <!-- Original Price Display -->
+            {% if plan.discounted_price %}
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg text-gray-500 line-through">₹{{ plan.original_price }}</span>
+                    <span class="text-2xl font-bold text-blue-600">₹{{ plan.current_price }}</span>
+                </div>
+            {% else %}
+                <p class="text-2xl font-bold text-blue-600">₹{{ plan.current_price }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Coupon/Referral Code Section -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+            <div class="flex items-center justify-between mb-3">
+                <label class="text-sm font-medium text-gray-700">Have a referral code?</label>
+                <button id="toggle-coupon" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Apply Code
+                </button>
+            </div>
+            
+            <div id="coupon-section" class="hidden">
+                <div class="flex space-x-2">
+                    <input 
+                        type="text" 
+                        id="referral-code" 
+                        placeholder="Enter referral code" 
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                        maxlength="20"
+                    >
+                    <button 
+                        id="apply-code" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                        Apply
+                    </button>
+                </div>
+                <div id="coupon-message" class="mt-2 text-sm hidden"></div>
+            </div>
+        </div>
+
+        <!-- Final Amount Display -->
+        <div class="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+            <div class="flex justify-between items-center">
+                <span class="text-lg font-medium">Plan Price:</span>
+                <span id="original-amount" class="text-lg">₹{{ final_amount }}</span>
+            </div>
+            
+            <div id="discount-row" class="flex justify-between items-center mt-2 hidden">
+                <span class="text-lg font-medium text-green-600">Discount:</span>
+                <span id="discount-amount" class="text-lg text-green-600">-₹0</span>
+            </div>
+            
+            <div class="border-t border-blue-300 mt-2 pt-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-xl font-bold">Total Amount:</span>
+                    <span id="final-amount" class="text-xl font-bold text-blue-600">₹{{ final_amount }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applied Coupon Display -->
+        <div id="applied-coupon" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-green-800">
+                        Referral code <span id="applied-code-text"></span> applied
+                    </span>
+                </div>
+                <button id="remove-coupon" class="text-red-500 hover:text-red-700 text-sm font-medium">
+                    Remove
+                </button>
+            </div>
+            <p class="text-sm text-green-600 mt-1">
+                You saved <span id="savings-amount">₹0</span> with this code!
+            </p>
+        </div>
+
+        <!-- Payment Button -->
+        <button id="rzp-button" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+            <span id="button-text">Pay ₹{{ final_amount }}</span>
+            <span id="button-loading" class="hidden">Processing...</span>
+        </button>
+        
+        <!-- Payment Status -->
+        <div id="payment-status" class="mt-4 text-center hidden">
+            <div class="flex items-center justify-center space-x-2">
+                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-gray-600">Processing payment...</p>
+            </div>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="mt-4 text-center">
+            <div class="flex items-center justify-center space-x-1 text-sm text-gray-500">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span>Secure payment powered by Razorpay</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize variables
+    const originalAmount = {{ final_amount }};
+    let currentAmount = originalAmount;
+    let appliedReferralCode = null;
+    let discountAmount = 0;
+
+    // DOM elements
+    const toggleCouponBtn = document.getElementById('toggle-coupon');
+    const couponSection = document.getElementById('coupon-section');
+    const referralCodeInput = document.getElementById('referral-code');
+    const applyCodeBtn = document.getElementById('apply-code');
+    const couponMessage = document.getElementById('coupon-message');
+    const appliedCouponDiv = document.getElementById('applied-coupon');
+    const removeCouponBtn = document.getElementById('remove-coupon');
+    const originalAmountSpan = document.getElementById('original-amount');
+    const discountRow = document.getElementById('discount-row');
+    const discountAmountSpan = document.getElementById('discount-amount');
+    const finalAmountSpan = document.getElementById('final-amount');
+    const appliedCodeText = document.getElementById('applied-code-text');
+    const savingsAmountSpan = document.getElementById('savings-amount');
+    const buttonText = document.getElementById('button-text');
+    const buttonLoading = document.getElementById('button-loading');
+    const rzpButton = document.getElementById('rzp-button');
+
+    // Check if referral code was pre-applied
+    {% if referral_code %}
+        appliedReferralCode = {
+            code: '{{ referral_code.code }}',
+            discount_percentage: {{ referral_code.discount_percentage }}
+        };
+        discountAmount = originalAmount - {{ final_amount }};
+        currentAmount = {{ final_amount }};
+        showAppliedCoupon();
+        updateAmountDisplay();
+    {% endif %}
+
+    // Toggle coupon section
+    toggleCouponBtn.addEventListener('click', function() {
+        const isHidden = couponSection.classList.contains('hidden');
+        if (isHidden) {
+            couponSection.classList.remove('hidden');
+            toggleCouponBtn.textContent = 'Hide';
+            referralCodeInput.focus();
+        } else {
+            couponSection.classList.add('hidden');
+            toggleCouponBtn.textContent = 'Apply Code';
+            clearCouponMessage();
+        }
+    });
+
+    // Apply referral code
+    applyCodeBtn.addEventListener('click', function() {
+        const code = referralCodeInput.value.trim().toUpperCase();
+        if (!code) {
+            showCouponMessage('Please enter a referral code', 'error');
+            return;
+        }
+
+        if (appliedReferralCode && appliedReferralCode.code === code) {
+            showCouponMessage('This code is already applied', 'warning');
+            return;
+        }
+
+        applyCodeBtn.disabled = true;
+        applyCodeBtn.textContent = 'Applying...';
+
+        // Make AJAX request to validate and apply referral code
+        fetch('{% url "subscription_module:validate_referral_code" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                'referral_code': code,
+                'plan_id': {{ plan.id }},
+                'original_amount': originalAmount
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                appliedReferralCode = {
+                    code: code,
+                    discount_percentage: data.discount_percentage
+                };
+                discountAmount = originalAmount - data.discounted_amount;
+                currentAmount = data.discounted_amount;
+                
+                showAppliedCoupon();
+                updateAmountDisplay();
+                hideCouponSection();
+                showCouponMessage('Referral code applied successfully!', 'success');
+            } else {
+                showCouponMessage(data.message || 'Invalid referral code', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showCouponMessage('Error applying referral code. Please try again.', 'error');
+        })
+        .finally(() => {
+            applyCodeBtn.disabled = false;
+            applyCodeBtn.textContent = 'Apply';
+        });
+    });
+
+    // Remove applied coupon
+    removeCouponBtn.addEventListener('click', function() {
+        appliedReferralCode = null;
+        discountAmount = 0;
+        currentAmount = originalAmount;
+        
+        hideAppliedCoupon();
+        updateAmountDisplay();
+        clearCouponMessage();
+        referralCodeInput.value = '';
+    });
+
+    // Enter key support for referral code input
+    referralCodeInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            applyCodeBtn.click();
+        }
+    });
+
+    // Helper functions
+    function showCouponMessage(message, type) {
+        couponMessage.textContent = message;
+        couponMessage.className = `mt-2 text-sm ${getMessageClass(type)}`;
+        couponMessage.classList.remove('hidden');
+    }
+
+    function clearCouponMessage() {
+        couponMessage.classList.add('hidden');
+    }
+
+    function getMessageClass(type) {
+        switch(type) {
+            case 'success': return 'text-green-600';
+            case 'error': return 'text-red-600';
+            case 'warning': return 'text-yellow-600';
+            default: return 'text-gray-600';
+        }
+    }
+
+    function showAppliedCoupon() {
+        appliedCodeText.textContent = appliedReferralCode.code;
+        savingsAmountSpan.textContent = `₹${discountAmount.toFixed(2)}`;
+        appliedCouponDiv.classList.remove('hidden');
+    }
+
+    function hideAppliedCoupon() {
+        appliedCouponDiv.classList.add('hidden');
+    }
+
+    function hideCouponSection() {
+        couponSection.classList.add('hidden');
+        toggleCouponBtn.textContent = 'Apply Code';
+    }
+
+    function updateAmountDisplay() {
+        originalAmountSpan.textContent = `₹${originalAmount.toFixed(2)}`;
+        finalAmountSpan.textContent = `₹${currentAmount.toFixed(2)}`;
+        buttonText.textContent = `Pay ₹${currentAmount.toFixed(2)}`;
+        
+        if (discountAmount > 0) {
+            discountAmountSpan.textContent = `-₹${discountAmount.toFixed(2)}`;
+            discountRow.classList.remove('hidden');
+        } else {
+            discountRow.classList.add('hidden');
+        }
+    }
+
+    // Razorpay payment handling
+    rzpButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        rzpButton.disabled = true;
+        buttonText.classList.add('hidden');
+        buttonLoading.classList.remove('hidden');
+        document.getElementById('payment-status').classList.remove('hidden');
+        
+        var options = {
+            "key": "{{ razorpay_key_id }}",
+            "amount": Math.round(currentAmount * 100), // Convert to paise
+            "currency": "{{ order.currency }}",
+            "name": "Colorify Studio",
+            "description": "{{ plan.name }} Subscription",
+            "order_id": "{{ order.id }}",
+            "handler": function (response) {
+                // Send payment details to server with referral code info
+                const paymentData = {
+                    'razorpay_order_id': response.razorpay_order_id,
+                    'razorpay_payment_id': response.razorpay_payment_id,
+                    'razorpay_signature': response.razorpay_signature,
+                    'final_amount': currentAmount,
+                    'applied_referral_code': appliedReferralCode ? appliedReferralCode.code : null
+                };
+                
+                fetch('{% url "subscription_module:payment_callback" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: new URLSearchParams(paymentData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        alert('Payment verification failed: ' + data.message);
+                        resetPaymentButton();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Payment processing failed. Please try again.');
+                    resetPaymentButton();
+                });
+            },
+            "prefill": {
+                "name": "{{ user.get_full_name|default:user.username }}",
+                "email": "{{ user.email }}",
+            },
+            "notes": {
+                "transaction_id": "{{ transaction.transaction_id }}",
+                "referral_code": appliedReferralCode ? appliedReferralCode.code : '',
+                "final_amount": currentAmount
+            },
+            "theme": {
+                "color": "#1664E8"
+            },
+            "modal": {
+                "ondismiss": function() {
+                    console.log('Payment modal closed');
+                    resetPaymentButton();
+                }
+            }
+        };
+        
+        var rzp = new Razorpay(options);
+        rzp.open();
+    });
+
+    function resetPaymentButton() {
+        rzpButton.disabled = false;
+        buttonText.classList.remove('hidden');
+        buttonLoading.classList.add('hidden');
+        document.getElementById('payment-status').classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}

@@ -1,4 +1,8 @@
 # apps\subscription_module\admin.py
+# This file contains the admin interface for managing subscription-related models in Django.
+# It includes custom admin classes for SubscriptionPlan, UserSubscription, PaymentTransaction, Device,
+# InspirationPDF, PDFLike, Palette, Color, and ReferralCode models.
+# The admin interface allows for easy management of these models, including listing, filtering, and editing records.
 from django.contrib import admin
 from django import forms
 from django.utils.html import format_html
@@ -17,6 +21,10 @@ from django.http import HttpResponseRedirect
 
 
 # Custom admin classes for Subscription models
+# This admin class manages the SubscriptionPlan model.
+# It includes fields for displaying the plan name, type, current price, duration, and active status.
+# It also allows filtering by subscription type and active status, and searching by name and description.
+# The current price field is read-only to prevent accidental changes.
 @admin.register(SubscriptionPlan)
 class SubscriptionPlanAdmin(admin.ModelAdmin):
     list_display = ('name', 'subscription_type', 'current_price', 'duration_in_days', 'is_active')
@@ -27,6 +35,7 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
     def current_price(self, obj):
         return obj.current_price
     current_price.short_description = 'Current Price'
+
 
 @admin.register(UserSubscription)
 class UserSubscriptionAdmin(admin.ModelAdmin):

@@ -1,39 +1,37 @@
 # apps/subscription_module/views.py
 import logging
-from django.shortcuts import render, redirect
-from django.conf import settings
-from django.utils import timezone
-from django.contrib.auth.decorators import login_required
-from .models import SubscriptionPlan, UserSubscription
-from datetime import timedelta
+from datetime import datetime, timedelta
+
 import stripe
-from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm
-from django.shortcuts import render, redirect
-from paypal.standard.forms import PayPalPaymentsForm
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
+from django.conf import settings
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from .models import Color
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import User
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.timezone import now
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from paypal.standard.forms import PayPalPaymentsForm
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from .models import Palette, Color, PaletteFavorite
-from datetime import datetime
-from django.utils.timezone import now
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse
-from django.http import HttpResponse
-from django.conf import settings
-from django.utils import timezone
-from django.contrib import messages
-from .models import SubscriptionPlan, UserSubscription, PaymentTransaction
-from .payu_utils import PayUConfig
+from rest_framework.response import Response
+
+from .models import (
+    SubscriptionPlan, UserSubscription, PaymentTransaction,
+    ReferralCode, Color, Palette, PaletteFavorite
+)
+from .razorpay_utils import RazorpayConfig
+
 logger = logging.getLogger(__name__)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -278,18 +276,7 @@ class SubscriptionPlansView(LoginRequiredMixin, View):
     """View to display available subscription plans"""
     
     def get(self, request):
-        # Debug: Check all plans first
-        all_plans = SubscriptionPlan.objects.all()
-        
-        print(f"DEBUG: Total plans in database: {all_plans.count()}")
-        
-        for plan in all_plans:
-            print(f"DEBUG: Plan - {plan.name}, Active: {plan.is_active}, Price: {plan.original_price}")
-        
-        # Fetch all plans for debugging
-        plans = SubscriptionPlan.objects.all().order_by('original_price')
-        
-        print(f"DEBUG: Plans queryset count: {plans.count()}")
+        plans = SubscriptionPlan.objects.filter(is_active=True).order_by('original_price')
         
         current_subscription = None
         try:
@@ -299,138 +286,245 @@ class SubscriptionPlansView(LoginRequiredMixin, View):
             
         context = {
             'plans': plans,
-            'current_subscription': current_subscription
+            'current_subscription': current_subscription,
+            'razorpay_key_id': settings.RAZORPAY_KEY_ID,  # Pass to template
         }
         
-        # Use debug template temporarily
-        return render(request, 'pages/plans_debug.html', context)
+        return render(request, 'subscription_module/plans.html', context)
     
-# apps/subscription_module/views.py
+    
+@login_required
+def initiate_payment(request, plan_id):
+    print(f"DEBUG: initiate_payment called with plan_id: {plan_id}")
 
-# class SubscriptionPlansView(LoginRequiredMixin, View):
-#     """View to display available subscription plans"""
+    """Initiate Razorpay payment for a subscription plan"""
+    plan = get_object_or_404(SubscriptionPlan, id=plan_id, is_active=True)
     
-#     def get(self, request):
-#         # Fetch all plans
-#         plans = SubscriptionPlan.objects.all().order_by('original_price')
-        
-#         current_subscription = None
-#         try:
-#             current_subscription = UserSubscription.objects.get(user=request.user)
-#         except UserSubscription.DoesNotExist:
-#             pass
-            
-#         context = {
-#             'plans': plans,
-#             'current_subscription': current_subscription
-#         }
-        
-#         return render(request, 'pages/plans.html', context)
+    # Check if user already has an active subscription
+    try:
+        existing_subscription = UserSubscription.objects.get(user=request.user)
+        if existing_subscription.is_active():
+            messages.warning(request, "You already have an active subscription.")
+            return redirect('subscription_module:subscription_plans')
+    except UserSubscription.DoesNotExist:
+        pass
     
-class InitiatePaymentView(LoginRequiredMixin, View):
-    """Initiate payment process for subscription"""
+    # Calculate final amount (consider referral codes if needed)
+    final_amount = plan.current_price
+    referral_code = None
     
-    def get(self, request, plan_id):
-        plan = get_object_or_404(SubscriptionPlan, id=plan_id)
-        
-        # Create a pending transaction
-        transaction = PaymentTransaction.objects.create(
-            user=request.user,
-            subscription_plan=plan,
-            amount=plan.price,
-            status='pending'
+    # Handle referral code if provided
+    referral_code_str = request.GET.get('referral_code')
+    if referral_code_str:
+        try:
+            referral_code = ReferralCode.objects.get(
+                code=referral_code_str.upper(),
+                is_active=True
+            )
+            if referral_code.is_valid():
+                if not referral_code.applicable_plans.exists() or plan in referral_code.applicable_plans.all():
+                    final_amount = referral_code.apply_discount(final_amount)
+                    messages.success(request, f"Referral code applied! {referral_code.discount_percentage}% discount")
+                else:
+                    messages.warning(request, "Referral code is not applicable for this plan")
+                    referral_code = None
+            else:
+                messages.warning(request, "Referral code is expired or invalid")
+                referral_code = None
+        except ReferralCode.DoesNotExist:
+            messages.warning(request, "Invalid referral code")
+            referral_code = None
+    
+    # Create payment transaction
+    transaction = PaymentTransaction.objects.create(
+        user=request.user,
+        subscription_plan=plan,
+        amount=final_amount,
+        referral_code=referral_code,
+        status='pending'
+    )
+    
+    # Create Razorpay order
+    try:
+        razorpay_config = RazorpayConfig()
+        order = razorpay_config.create_order(
+            amount=float(final_amount),
+            receipt=f'txn_{transaction.transaction_id}',
+            notes={
+                'transaction_id': str(transaction.transaction_id),
+                'user_id': request.user.id,
+                'plan_id': plan_id
+            }
         )
         
-        # Prepare PayU payment data
-        payu = PayUConfig()
-        txnid = str(transaction.transaction_id)
-        
-        # Basic user information
-        firstname = request.user.first_name if request.user.first_name else request.user.username
-        email = request.user.email
-        phone = request.user.phone_number if hasattr(request.user, 'phone_number') else ''
-        
-        # Product information
-        productinfo = f"Subscription: {plan.name}"
-        
-        # URLs
-        success_url = request.build_absolute_uri(reverse('subscription_module:subscription_payment_success'))
-        failure_url = request.build_absolute_uri(reverse('subscription_module:subscription_payment_failure'))
-
-        # Prepare data dictionary for hash calculation
-        data = {
-            'key': payu.merchant_key,
-            'txnid': txnid,
-            'amount': str(plan.price),
-            'productinfo': productinfo,
-            'firstname': firstname,
-            'email': email,
-            'phone': phone,
-            'surl': success_url,
-            'furl': failure_url,
-            'service_provider': 'payu_paisa',
-            'udf1': str(transaction.id),  # Store transaction ID for reference
-        }
-        
-        # Calculate hash
-        data['hash'] = payu.calculate_hash(data)
+        # Store Razorpay order ID
+        transaction.razorpay_order_id = order['id']
+        transaction.save()
         
         context = {
-            'data': data,
+            'order': order,
             'plan': plan,
-            'payu_url': payu.base_url,
             'transaction': transaction,
+            'final_amount': final_amount,
+            'razorpay_key_id': settings.RAZORPAY_KEY_ID,
+            'user': request.user,
         }
         
-        return render(request, 'subscription_module/initiate_payment.html', context)
+        return render(request, 'subscription_module/payment_checkout.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error creating Razorpay order: {e}")
+        transaction.status = 'failed'
+        transaction.save()
+        messages.error(request, "Unable to initiate payment. Please try again.")
+        return redirect('subscription_module:subscription_plans')
 
-class PaymentSuccessView(LoginRequiredMixin, View):
-    """Handle successful payment callback from PayU"""
-    
-    def post(self, request):
-        payu = PayUConfig()
+# Update your payment_callback view
+@csrf_exempt
+@require_POST
+def payment_callback(request):
+    """Handle Razorpay payment callback"""
+    try:
+        # Get payment details from POST data
+        razorpay_order_id = request.POST.get('razorpay_order_id')
+        razorpay_payment_id = request.POST.get('razorpay_payment_id')
+        razorpay_signature = request.POST.get('razorpay_signature')
+        final_amount = request.POST.get('final_amount')
+        applied_referral_code = request.POST.get('applied_referral_code')
         
-        # Verify the hash to ensure the callback is authentic
-        if not payu.verify_hash(request.POST):
-            messages.error(request, "Invalid payment verification. Please contact support.")
-            return redirect('subscription_plans')
+        if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
+            return JsonResponse({'status': 'error', 'message': 'Missing payment parameters'})
         
-        # Get transaction ID from the response
-        transaction_id = request.POST.get('udf1')
-        payu_reference = request.POST.get('mihpayid')
-        status = request.POST.get('status')
-        
-        if status != 'success':
-            messages.error(request, f"Payment failed with status: {status}")
-            return redirect('subscription_plans')
-        
+        # Find the transaction
         try:
-            # Get and update transaction
-            transaction = PaymentTransaction.objects.get(id=transaction_id)
-            user_subscription = transaction.mark_as_completed(payu_reference)
-            
-            messages.success(request, f"Payment successful! Your subscription is active until {user_subscription.end_date.strftime('%d %b %Y')}.")
-            return redirect('subscription_plans')
-            
+            transaction = PaymentTransaction.objects.get(
+                razorpay_order_id=razorpay_order_id,
+                status='pending'
+            )
         except PaymentTransaction.DoesNotExist:
-            messages.error(request, "Transaction not found. Please contact support.")
-            return redirect('subscription_plans')
-
-class PaymentFailureView(LoginRequiredMixin, View):
-    """Handle failed payment callback from PayU"""
-    
-    def post(self, request):
-        # Get error message from PayU
-        error = request.POST.get('error', 'Payment failed')
-        transaction_id = request.POST.get('udf1')
+            return JsonResponse({'status': 'error', 'message': 'Transaction not found'})
         
-        try:
-            # Update transaction status
-            transaction = PaymentTransaction.objects.get(id=transaction_id)
+        # Verify payment signature
+        razorpay_config = RazorpayConfig()
+        if razorpay_config.verify_payment_signature(
+            razorpay_order_id, razorpay_payment_id, razorpay_signature
+        ):
+            # Update transaction with final amount if referral code was applied
+            if final_amount:
+                transaction.amount = float(final_amount)
+            
+            # Update referral code if applied during checkout
+            if applied_referral_code and not transaction.referral_code:
+                try:
+                    referral_code = ReferralCode.objects.get(
+                        code=applied_referral_code.upper(),
+                        is_active=True
+                    )
+                    if referral_code.is_valid():
+                        transaction.referral_code = referral_code
+                except ReferralCode.DoesNotExist:
+                    pass  # Continue without referral code if not found
+            
+            # Payment verified successfully
+            transaction.razorpay_payment_id = razorpay_payment_id
+            transaction.razorpay_signature = razorpay_signature
+            transaction.mark_as_completed(razorpay_payment_id)
+            
+            # Create or update subscription
+            start_date = timezone.now()
+            end_date = start_date + timezone.timedelta(days=transaction.subscription_plan.duration_in_days)
+            
+            UserSubscription.objects.update_or_create(
+                user=transaction.user,
+                defaults={
+                    'plan': transaction.subscription_plan,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'active': True
+                }
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'redirect_url': reverse('subscription_module:payment_success')
+            })
+        else:
+            # Payment verification failed
             transaction.status = 'failed'
             transaction.save()
-        except PaymentTransaction.DoesNotExist:
-            pass
+            return JsonResponse({'status': 'error', 'message': 'Payment verification failed'})
             
-        messages.error(request, f"Payment failed: {error}")
-        return redirect('subscription_plans')
+    except Exception as e:
+        logger.error(f"Error in payment callback: {e}")
+        return JsonResponse({'status': 'error', 'message': 'Payment processing failed'})
+
+@login_required
+def payment_success(request):
+    """Payment success page"""
+    try:
+        subscription = UserSubscription.objects.get(user=request.user)
+        return render(request, 'subscription_module/payment_success.html', {
+            'subscription': subscription
+        })
+    except UserSubscription.DoesNotExist:
+        messages.error(request, "Subscription not found.")
+        return redirect('subscription_module:subscription_plans')
+    
+# Add this to your views.py
+@csrf_exempt
+@login_required
+def validate_referral_code(request):
+    """Validate and apply referral code"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        referral_code_str = data.get('referral_code', '').strip().upper()
+        plan_id = data.get('plan_id')
+        original_amount = float(data.get('original_amount', 0))
+        
+        if not referral_code_str:
+            return JsonResponse({'success': False, 'message': 'Please enter a referral code'})
+        
+        try:
+            referral_code = ReferralCode.objects.get(
+                code=referral_code_str,
+                is_active=True
+            )
+            plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
+            
+            if not referral_code.is_valid():
+                return JsonResponse({
+                    'success': False, 
+                    'message': 'This referral code has expired or reached its usage limit'
+                })
+            
+            # Check if code is applicable to this plan
+            if (referral_code.applicable_plans.exists() and 
+                not referral_code.applicable_plans.filter(id=plan.id).exists()):
+                return JsonResponse({
+                    'success': False, 
+                    'message': 'This referral code is not valid for the selected plan'
+                })
+            
+            # Calculate discounted amount
+            discounted_amount = referral_code.apply_discount(original_amount)
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{referral_code.discount_percentage}% discount applied!',
+                'discount_percentage': referral_code.discount_percentage,
+                'discounted_amount': float(discounted_amount),
+                'discount_amount': float(original_amount - discounted_amount)
+            })
+            
+        except ReferralCode.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Invalid referral code'})
+        except SubscriptionPlan.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Invalid subscription plan'})
+            
+    except Exception as e:
+        logger.error(f"Error validating referral code: {e}")
+        return JsonResponse({'success': False, 'message': 'Error processing referral code'})

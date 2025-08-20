@@ -7,7 +7,11 @@ import uuid
 import random
 import string
 
-
+# This model represents a subscription plan that users can purchase.
+# It includes fields for the plan name, description, type, duration, pricing, limits on file uploads and storage,
+# and the maximum number of devices allowed.
+# It also includes methods for calculating current prices, displaying storage and device limits, and determining if a plan is popular.
+# The subscription type can be monthly, quarterly, yearly, or custom.
 class SubscriptionPlan(models.Model):
     SUBSCRIPTION_TYPE_CHOICES = [
         ('monthly', 'Monthly'),
@@ -107,6 +111,10 @@ class SubscriptionPlan(models.Model):
         """Determine if this plan should be marked as popular"""
         return self.name.lower() == 'pro'  # You can customize this logic
 
+# This model represents a user's subscription, linking them to a specific plan.
+# It includes fields for the user, plan, start and end dates, active status, and counts for devices, file uploads, and storage used.
+# It also includes methods for checking if the subscription is active, if devices can be added, if there is enough storage space,
+# and if file uploads are allowed. Additionally, it provides methods for adding and removing devices.
 class UserSubscription(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, 
@@ -133,6 +141,9 @@ class UserSubscription(models.Model):
         return f'{self.user.username} - {self.plan.name if self.plan else "No Plan"}'
     
     def is_active(self):
+        # Legacy plans should not be considered "active" for subscription purposes
+        if self.plan and self.plan.name == "Legacy Default Plan":
+            return False
         return self.end_date > timezone.now() and self.active
     
     def can_add_device(self):
@@ -179,7 +190,10 @@ class UserSubscription(models.Model):
             )
         ]
     
-
+# This model represents a device linked to a user, allowing them to manage multiple devices under their subscription.
+# It includes fields for the user, device ID, device name, last login timestamp, and active status.
+# It also includes methods for saving the device and updating the last login timestamp.
+# When a device is deleted, it decrements the count of devices used in the user's subscription.
 class Device(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -209,6 +223,11 @@ class Device(models.Model):
                 subscription.save(update_fields=['devices_used_count'])
         super().delete(*args, **kwargs)
 
+
+# This model is for managing referral codes that can be applied to subscription plans.
+# It includes fields for the code itself, discount percentage, expiration date, usage limits, and associated plans.
+# It also includes methods for checking validity, applying discounts, and generating random codes.
+# It is designed to be flexible, allowing for various discount structures and plan associations.
 class ReferralCode(models.Model):
     CODE_LENGTH = 8  # You can adjust this as needed
     
@@ -293,9 +312,10 @@ class ReferralCode(models.Model):
                 self.code = self.generate_random_code()
         super().save(*args, **kwargs)
 
-
-
-
+# This model is for managing payment transactions related to subscriptions.
+# It includes fields for the user, subscription plan, transaction type, amount, status, and payment gateway reference.
+# It also includes methods for marking transactions as completed and applying referral codes if applicable.
+# The transaction types can include subscription purchases, renewals, upgrades, and device limit increases.
 class PaymentTransaction(models.Model):
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -345,6 +365,14 @@ class PaymentTransaction(models.Model):
         related_name='transactions'
     )
 
+    # Add these new fields for Razorpay
+    razorpay_order_id = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Update payment_method default
+    payment_method = models.CharField(max_length=50, default='Razorpay')
+
     def __str__(self):
         return f"{self.user.username} - {self.transaction_id} - {self.status}"
     
@@ -372,7 +400,10 @@ class PaymentTransaction(models.Model):
             )
 
 
-
+# This model is for managing PDF files related to inspiration or design palettes.
+# It includes fields for the title, PDF file, preview image, likes count, and timestamps for creation and updates.
+# It also includes methods for updating the likes count based on user interactions.
+# The PDF files can be liked by users, and the likes are counted to display popularity.
 class InspirationPDF(models.Model):
     title = models.CharField(max_length=200)
     pdf_file = models.FileField(
@@ -397,6 +428,10 @@ class InspirationPDF(models.Model):
         self.likes_count = self.pdf_likes.count()
         self.save()
 
+# This model represents a user's like on a PDF file.
+# It includes fields for the user, the PDF file liked, and a timestamp for when the like was created.
+# It also includes methods for saving and deleting the like, which update the likes count on the PDF.
+# Each user can only like a PDF once, enforced by a unique constraint on the user and PDF fields.
 class PDFLike(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     pdf = models.ForeignKey(
@@ -418,7 +453,11 @@ class PDFLike(models.Model):
         super().delete(*args, **kwargs)
         pdf.update_likes_count()
 
-
+# This model is for managing color palettes created by users.
+# It includes fields for the palette name, creator, creation and update timestamps, number of colors,
+# base color, type (e.g., Spring/Summer, Autumn/Winter), and a count of favorites.
+# It also includes methods for counting favorites, getting the base color in RGB format, and updating the favorites count.
+# The source image colors are stored as JSON to allow for flexible color management.
 class Palette(models.Model):
     TYPE_CHOICES = [
         ('SS', 'Spring/Summer'),
@@ -479,6 +518,10 @@ class Palette(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+# This model represents a color within a palette.
+# It includes fields for the color name, RGB values, and a foreign key to the palette it belongs to.
+# It also includes methods for displaying the color in RGB format.
+# The RGB values are validated to ensure they are within the range of 0-255.
 class Color(models.Model):
     name = models.CharField(max_length=50, blank=True)
     palette = models.ForeignKey(Palette, on_delete=models.CASCADE, related_name='colors')
@@ -488,7 +531,11 @@ class Color(models.Model):
 
     def __str__(self):
         return f"RGB({self.red}, {self.green}, {self.blue})"
-    
+
+# This model represents a base color that can be used in palettes.
+# It includes fields for the color name and RGB values, allowing for easy management of commonly used colors.
+# The RGB values are validated to ensure they are within the range of 0-255.
+# This model can be extended to include more attributes or methods as needed.    
 class BaseColor(models.Model):
     name = models.CharField(max_length=100, unique=True)
     red = models.PositiveSmallIntegerField()   # 0 to 255
@@ -498,6 +545,10 @@ class BaseColor(models.Model):
     def __str__(self):
         return f"{self.name} ({self.red}, {self.green}, {self.blue})"
 
+# This model is for managing user favorites for palettes.
+# It includes fields for the user, the palette they favorited, and a timestamp for when the favorite was created.
+# It also includes methods for saving and deleting the favorite, which update the favorites count on the palette.
+# Each user can only favorite a palette once, enforced by a unique constraint on the user and palette fields.
 class PaletteFavorite(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorite_palettes')
