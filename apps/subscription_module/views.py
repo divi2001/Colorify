@@ -1,4 +1,5 @@
 # apps/subscription_module/views.py
+# This file contains views for the subscription module, including payment processing, subscription management, and user registration.
 import logging
 from datetime import datetime, timedelta
 
