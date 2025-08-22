@@ -1142,7 +1142,9 @@ h1 {
 .image-adjustments {
     position: relative;
 }
-
+.modal-body::-webkit-scrollbar {
+  width: 2px;                /* very thin */
+}
 .adjustment-panel {
     /* position: fixed; */
     /* Changed to fixed positioning */
