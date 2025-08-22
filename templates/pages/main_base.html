@@ -129,12 +129,12 @@
     .hover-scale {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+.hover-scale:hover {
+  transform: scale(1.05);
+  box-shadow: none !important; /* remove shadow */
+  background: transparent !important; /* ensure no background */
+}
 
-    .hover-scale:hover {
-      transform: scale(1.05);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-        0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
 
     .hover-lift:hover {
       transform: translateY(-5px);
@@ -1751,7 +1751,7 @@
       <div>
         <h4 class="text-white/90 font-light">Recognised By</h4>
         <div class="flex justify-center">
-          <img src={% static 'images/startup_india.png' %} alt="Startup India"
+          <img src={% static 'images/startupIndia1.png' %} alt="Startup India"
             class="h-16 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
         </div>
       </div>
