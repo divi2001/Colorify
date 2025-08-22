@@ -771,30 +771,25 @@
             </a>
           </div>
           <!-- Navigation Links -->
-          <div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
-            <a href="{% url 'home' %}"
-              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Home</a>
-            <a href="{% url 'about' %}"
-              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">About
-              us</a>
-            <a href="{% url 'plans' %}"
-              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Pricing</a>
-            <a href="{% url 'contact' %}"
-              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact
-              us</a>
-              {% if user.is_authenticated %}
-              {% else %}
-              <a href="{% url 'account_login' %}"
-              class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Login</a>
-              {% endif %}
-         
-            {% if user.is_authenticated %}
-                <a href="{% url 'account_logout' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
-            {% else %}
-            
-                <a href="{% url 'account_login' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try It Now</a>
-            {% endif %}
-          </div>
+<div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
+    <a href="{% url 'home' %}"
+       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Home</a>
+    <a href="{% url 'about' %}"
+       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">About us</a>
+    <a href="{% url 'plans' %}"
+       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Pricing</a>
+    <a href="{% url 'contact' %}"
+       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact us</a>
+
+    {% if user.is_authenticated %}
+        <a href="{% url 'account_logout' %}"
+           class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+    {% else %}
+        <a href="{% url 'account_login' %}"
+           class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Login</a>
+    {% endif %}
+</div>
+
 
           <!-- Mobile menu button -->
           <div class="md:hidden">
@@ -1002,7 +997,7 @@
           <h2 class="figma-text-5xl mb-6">
             Empowering the Future of Color Matching with
             <div class="text-gradient-orange mt-2">
-              <span class="relative ml-2">
+              <span class="relative">
                 <span class="text-gradient-orange">AI</span>
                 <svg class="absolute -bottom-6 right-0 w-40 h-8" viewBox="0 0 1200 100">
                   <path d="M0,50 Q600,-80 1200,50" stroke="#ff6b6b" stroke-width="25" fill="none" opacity="0.7" />
@@ -1014,8 +1009,9 @@
             We help the textile and print industry achieve flawless color accuracy. Our AI-powered platform removes
             guesswork and delivers perfect matches in one click--saving time, reducing errors, and cutting costs
           </p>
-          <button class="btn-primary text-white px-8 py-4 rounded-2xl font-light shadow-xl hover-lift">
+          <button class="btn-primary text-white px-8 py-4 rounded-2xl font-light shadow-xl hover-lift" onclick="window.location.href='/tif-editor/'">
             Know more
+            
           </button>
         </div>
 
@@ -1288,10 +1284,14 @@
         <p class="figma-text-lg md:figma-text-xl lg:figma-text-2xl text-white/90 mb-6 md:mb-10 max-w-3xl mx-auto">
           Start designing faster, smarter, and with perfect color accuracy--no guesswork, no delays.
         </p>
-        <button
-          class="bg-white text-slate-800 px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 rounded-xl md:rounded-2xl figma-text-base md:figma-text-lg hover:bg-slate-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
-          Try It Now
-        </button>
+       <a href="/tif-editor/"
+   class="bg-white text-slate-800 px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 
+          rounded-xl md:rounded-2xl figma-text-base md:figma-text-lg 
+          hover:bg-slate-50 transition-all duration-300 shadow-xl 
+          hover:shadow-2xl hover:scale-105 inline-block text-center">
+  Try It Now
+</a>
+
       </div>
     </div>
   </section>
