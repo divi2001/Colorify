@@ -9,6 +9,14 @@
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <script src="{% static "js/talwind3.14.js" %}"></script>
 </head>
+<style>
+  .btn-primary{
+     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+</style>
 
 <body class="bg-gray-100">
   <!-- Main Container -->
@@ -454,7 +462,7 @@
                 {{ form.tiff_file }}
               </div>
               <button type="button" onclick="document.getElementById('{{ form.tiff_file.id_for_label }}').click();" 
-                class="px-2 sm:px-4 py-2 bg-blue-600 text-white rounded-xl flex items-center gap-2 hover:bg-blue-700 upload_file_btn">
+                class="btn-primary px-2 sm:px-4 py-2 text-white rounded-xl flex items-center gap-2 hover:bg-blue-700 upload_file_btn">
                 <img src="{% static 'images/add.png' %}" height="16" width="16" alt="Add icon">
                 <p class="text-xs sm:text-sm font-medium">Upload files</p>
               </button>

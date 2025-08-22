@@ -219,6 +219,12 @@ document.addEventListener('DOMContentLoaded', function() {
         width: {{width}}px;
         height: {{height}}px;
       }
+        .btn-primary{
+     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
            #harmonyMenu {
             display: none;
         }
@@ -264,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
         style="flex: 0 0 12%"
       >
         <button
-          class="btn btn-primary btn-sm m-2 d-flex align-items-center"
+          class="btn btn-sm m-2 d-flex align-items-center"
           onclick="toggleSidebar('leftMostColumn', this)"
         >
           <i class="bi bi-caret-left-fill ms-auto"></i>
@@ -364,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div id="secondaryColumn" class="sidebar d-flex flex-column" style="flex: 0 0 20%;">
                     <button 
-  class="btn-sm m-2 d-flex align-items-center nav-btn" 
+  class="btn-sm m-2 d-flex align-items-center nav-btn " 
   onclick="toggleSidebar('secondaryColumn', this)" 
   style="border: none; background: #fff">
     <i class="bi bi-caret-left-fill ms-auto"></i>
