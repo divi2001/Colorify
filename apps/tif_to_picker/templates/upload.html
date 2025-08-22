@@ -16,6 +16,20 @@
     position: relative;
     overflow: hidden;
   }
+  
+  .sidebar-toggle {
+    transition: all 0.3s ease;
+  }
+  
+  .sidebar-hidden {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  
+  .sidebar-visible {
+    transform: translateX(0);
+    opacity: 1;
+  }
 </style>
 
 <body class="bg-gray-100">
@@ -186,14 +200,31 @@
       <div class="flex flex-col w-full">
         <!-- Main content section -->
         <div class="flex flex-grow mb-2">
+          <!-- Sidebar Toggle Button (visible when sidebar is hidden) -->
+<!-- Sidebar Toggle Button (visible when sidebar is hidden) -->
+<button id="sidebar-toggle-show" class="fixed top-20 left-2 z-20 bg-white border border-gray-200 rounded-lg p-2 shadow-md hover:bg-gray-50 transition-all duration-300 hidden">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#3C4CD1" class="bi bi-caret-right-fill" viewBox="0 0 16 16">
+    <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+  </svg>
+</button>
+
+<!-- In the sidebar header, change the collapse button to: -->
+<span id="sidebar-toggle-hide" class="collapse_btn cursor-pointer hidden lg:block">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#737A8C"
+    class="bi bi-caret-left-fill" viewBox="0 0 16 16">
+    <path
+      d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z" />
+  </svg>
+</span>
+
           <!-- Left fixed-width column -->
-          <div class="rounded-xl bg-white p-2 w-full lg:w-[250px] ml-0 lg:ml-2 tab-content active" id="tab1">
+          <div id="left-sidebar" class="rounded-xl bg-white p-2 w-full lg:w-[250px] ml-0 lg:ml-2 tab-content active sidebar-toggle sidebar-visible" id="tab1">
             <div>
               <div class="flex justify-between items-center h-11">
                 <div>
                   <h2 class="text-sm lg:text-base font-medium">Inspirations</h2>
                 </div>
-                <span class="collapse_btn cursor-pointer hidden lg:block">
+                <span id="sidebar-toggle-hide" class="collapse_btn cursor-pointer hidden lg:block">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#737A8C"
                     class="bi bi-caret-left-fill" viewBox="0 0 16 16">
                     <path
@@ -588,6 +619,35 @@
   </div>
 
   <script>
+    // Sidebar toggle functionality
+    const leftSidebar = document.getElementById('left-sidebar');
+    const sidebarToggleHide = document.getElementById('sidebar-toggle-hide');
+    const sidebarToggleShow = document.getElementById('sidebar-toggle-show');
+
+    // Hide sidebar
+    sidebarToggleHide.addEventListener('click', function() {
+      leftSidebar.classList.remove('sidebar-visible');
+      leftSidebar.classList.add('sidebar-hidden');
+      
+      // Hide the sidebar after animation
+      setTimeout(() => {
+        leftSidebar.style.display = 'none';
+        sidebarToggleShow.classList.remove('hidden');
+      }, 300);
+    });
+
+    // Show sidebar
+    sidebarToggleShow.addEventListener('click', function() {
+      leftSidebar.style.display = 'block';
+      sidebarToggleShow.classList.add('hidden');
+      
+      // Small delay to ensure display is set before animation
+      setTimeout(() => {
+        leftSidebar.classList.remove('sidebar-hidden');
+        leftSidebar.classList.add('sidebar-visible');
+      }, 10);
+    });
+
     // Tab functionality
     function showTab(tabNumber) {
       // Hide all tab contents
