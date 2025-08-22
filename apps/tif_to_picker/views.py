@@ -370,6 +370,7 @@ def upload_tiff(request, user_id=None, project_id=None):
     """
     Handles TIFF file uploads with subscription limit enforcement
     """
+    logger.info(f"User {request.user.id} accessed upload_tiff view")
     # Handle project editing case
     project = None
     if user_id and project_id:

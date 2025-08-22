@@ -1,3 +1,4 @@
+<!-- templates\pages\contact.html -->
 {% extends 'pages/main_base.html' %}
 {% load i18n %}
 {% load static %}
@@ -120,9 +121,9 @@
             <p class="text-white/90 mb-8">
                 Your Gateway to Stunning Palettes and Limitless Creativity!
             </p>
-            <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-medium hover:bg-opacity-90 transition duration-300">
+            <a href="{% url 'upload_tiff' %}" class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-medium hover:bg-opacity-90 transition duration-300">
                 Explore now
-            </button>
+            </a>
           </div>
     </main>
 

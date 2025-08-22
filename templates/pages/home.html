@@ -814,7 +814,7 @@
           <a href="{% url 'plans' %}" class="block py-2 text-gray-600 hover:text-gray-900">Plans</a>
           <a href="{% url 'contact' %}" class="block py-2 text-gray-600 hover:text-gray-900">Contact us</a>
           {% if user.is_authenticated %}
-              <a href="{% url 'account_logout' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+              <a href="{% url 'account_logout' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
           {% else %}
               <a href="{% url 'account_login' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try it Now</a>
           {% endif %}
@@ -990,47 +990,47 @@
   </div>
 
   <!-- Main Content -->
-  <main class="mx-auto px-6  sm:px-6 lg:px-10" style="background-color: #FFF4E5;">
-    <!-- Enhanced First Section -->
-    <div class="mb-20 scroll-reveal">
-      <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-        <!-- Content LEFT -->
-        <div class="lg:block w-full lg:w-1/2">
-          <div class="text-[25px] text-gradient font-normal mb-6 tracking-wider uppercase">
-            ABOUT US
-          </div>
-          <h2 class="figma-text-5xl mb-6">
-            Empowering the Future of Color Matching with
-            <div class="text-gradient-orange mt-2">
-              <span class="relative ml-2">
-                <span class="text-gradient-orange">AI</span>
-                <svg class="absolute -bottom-6 right-0 w-40 h-8" viewBox="0 0 1200 100">
-                  <path d="M0,50 Q600,-80 1200,50" stroke="#ff6b6b" stroke-width="25" fill="none" opacity="0.7" />
-                </svg>
-              </span>
-            </div>
-          </h2>
-          <p class="figma-text-lg text-slate-600 mb-8">
-            We help the textile and print industry achieve flawless color accuracy. Our AI-powered platform removes
-            guesswork and delivers perfect matches in one click--saving time, reducing errors, and cutting costs
-          </p>
-          <button class="btn-primary text-white px-8 py-4 rounded-2xl font-light shadow-xl hover-lift">
-            Know more
-          </button>
-        </div>
+  <main class="mx-auto px-6 sm:px-6 lg:px-10 bg-[#FFF4E5]">
+      <!-- Enhanced First Section -->
+      <div class="mb-20 scroll-reveal">
+          <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+              <!-- Content LEFT -->
+              <div class="w-full lg:w-1/2">
+                  <div class="text-[25px] bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent font-normal mb-6 tracking-wider uppercase">
+                      ABOUT US
+                  </div>
+                  <h2 class="text-5xl font-light leading-tight mb-6">
+                      Empowering the Future of Color Matching with
+                      <div class="mt-2">
+                          <span class="relative ml-2">
+                              <span class="bg-gradient-to-r from-[#ff6b6b] to-[#ffa726] bg-clip-text text-transparent">AI</span>
+                              <svg class="absolute -bottom-6 right-0 w-40 h-8" viewBox="0 0 1200 100">
+                                  <path d="M0,50 Q600,-80 1200,50" stroke="#ff6b6b" stroke-width="25" fill="none" opacity="0.7" />
+                              </svg>
+                          </span>
+                      </div>
+                  </h2>
+                  <p class="text-lg font-light text-slate-600 mb-8">
+                      We help the textile and print industry achieve flawless color accuracy. Our AI-powered platform removes guesswork and delivers perfect matches in one click--saving time, reducing errors, and cutting costs
+                  </p>
+                  <button class="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-8 py-4 rounded-2xl font-light shadow-xl hover:translate-y-[-5px] hover:shadow-2xl transition-all duration-300 relative overflow-hidden">
+                      <span class="relative z-10">Know more</span>
+                  </button>
+              </div>
 
-        <!-- Video RIGHT -->
-        <div class="w-full lg:w-1/2 flex items-center justify-center hover-scale">
-          <div class="relative rounded-3xl overflow-hidden shadow-2xl">
-            <video id="myVideo" class="w-full h-full rounded-3xl" poster="" autoplay loop muted playsinline>
-              <source src="./static/images/arrowvideov2.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+              <!-- Video RIGHT -->
+              <div class="w-full lg:w-1/2 flex items-center justify-center">
+                  <div class="relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 hover:scale-105">
+                      <video id="myVideo" class="w-full h-full rounded-3xl" poster="" autoplay loop muted playsinline>
+                          <source src="{% static 'images/arrowvideov2.mp4' %}" type="video/mp4" />
+                          Your browser does not support the video tag.
+                      </video>
+                  </div>
+              </div>
           </div>
-        </div>
       </div>
-    </div>
   </main>
+  
   <!-- Enhanced Features Section -->
   <div class="py-20 px-4 scroll-reveal" style="background-color: #E0F7F5">
     <div class="max-w-6xl mx-auto">
