@@ -39,26 +39,26 @@
     <!-- Current Subscription Status -->
     {% if current_subscription and current_subscription.is_active %}
         <div class="max-w-4xl mx-auto mb-8">
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
+            <div class="bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-500 rounded-lg p-4 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-blue-800">
+                            <p class="text-sm font-medium text-green-800">
                                 Active Subscription: <span class="font-bold">{{ current_subscription.plan.name }}</span>
                             </p>
-                            <p class="text-sm text-blue-700">
+                            <p class="text-sm text-green-700">
                                 Expires on {{ current_subscription.end_date|date:"F d, Y" }} 
                                 ({{ current_subscription.days_remaining }} days remaining)
                             </p>
                         </div>
                     </div>
                     <div class="text-right">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             Active
                         </span>
                     </div>
@@ -83,7 +83,7 @@
                             <!-- Current Plan Indicator -->
                             <div class="absolute top-4 right-4">
                                 <div class="flex items-center justify-center w-8 h-8 bg-white rounded-full">
-                                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                                     </svg>
                                 </div>
@@ -98,7 +98,7 @@
                                     </span>
                                     <span class="text-white ml-2">/ month</span>
                                 </div>
-                                <p class="text-sm text-blue-100">{{ plan.description }}</p>
+                                <p class="text-sm text-green-100">{{ plan.description }}</p>
                             </div>
                             
                             <!-- Plan Features -->
@@ -176,9 +176,10 @@
                             bg-gray-100 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow opacity-75
                         {% else %}
                             bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow border
+                            {% if plan.name == 'Pro' %}transform scale-105{% endif %}
                         {% endif %}">
                         
-                        <!-- Popular Badge - Keep this for Pro plan -->
+                        <!-- Popular Badge -->
                         {% if plan.name == 'Pro' and plan.is_active %}
                             <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
                                 <span class="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold">POPULAR</span>
@@ -189,7 +190,7 @@
                         <div class="mb-6">
                             <h3 class="text-sm font-semibold text-gray-600 uppercase mb-4">{{ plan.name }}</h3>
                             <div class="flex items-baseline mb-2">
-                                <span class="text-5xl font-bold text-gray-800">
+                                <span class="text-5xl font-bold">
                                     ₹{% if plan.discounted_price %}{{ plan.discounted_price|floatformat:0 }}{% else %}{{ plan.original_price|floatformat:0 }}{% endif %}
                                 </span>
                                 <span class="text-gray-500 ml-2">/ month</span>
@@ -215,7 +216,6 @@
                                 </span>
                             </li>
                             
-                            <!-- Repeat the same pattern for other features (File Uploads, Devices, Duration) -->
                             <!-- File Uploads -->
                             <li class="flex items-center">
                                 <svg class="w-5 h-5 {% if not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -253,9 +253,25 @@
                             </li>
                         </ul>
                         
-                        <!-- Action Button (keep this section as is) -->
+                        <!-- Action Button -->
                         {% if current_subscription and current_subscription.is_active %}
-                            <!-- ... existing button logic ... -->
+                            <!-- User has an active subscription but this is not their current plan -->
+                            {% if plan.original_price > current_subscription.plan.original_price %}
+                                <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full py-3 px-4 transition-colors flex items-center justify-center no-underline">
+                                    Upgrade
+                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            {% else %}
+                                <button class="w-full bg-gray-300 text-gray-500 rounded-full py-3 px-4 transition-colors flex items-center justify-center cursor-not-allowed" disabled>
+                                    {% if plan.original_price < current_subscription.plan.original_price %}
+                                        Downgrade Available
+                                    {% else %}
+                                        Alternative Plan
+                                    {% endif %}
+                                </button>
+                            {% endif %}
                         {% elif not plan.is_active or 'Legacy' in plan.name %}
                             <button class="w-full bg-gray-400 text-white rounded-full py-3 px-4 transition-colors flex items-center justify-center cursor-not-allowed" disabled>
                                 {% if plan.original_price == 0 %}Free Plan{% else %}Inactive{% endif %}
@@ -328,7 +344,7 @@
     cursor: pointer;
 }
 
-/* Animation for current plan - now blue */
+/* Animation for current plan */
 @keyframes pulse-blue {
     0%, 100% {
         box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
