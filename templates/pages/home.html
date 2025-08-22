@@ -808,7 +808,7 @@
           <a href="{% url 'plans' %}" class="block py-2 text-gray-600 hover:text-gray-900">Plans</a>
           <a href="{% url 'contact' %}" class="block py-2 text-gray-600 hover:text-gray-900">Contact us</a>
           {% if user.is_authenticated %}
-              <a href="{% url 'account_logout' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+              <a href="{% url 'account_logout' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
           {% else %}
               <a href="{% url 'account_login' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try it Now</a>
           {% endif %}
@@ -1014,18 +1014,19 @@
           </button>
         </div>
 
-        <!-- Video RIGHT -->
-        <div class="w-full lg:w-1/2 flex items-center justify-center hover-scale">
-          <div class="relative rounded-3xl overflow-hidden shadow-2xl">
-            <video id="myVideo" class="w-full h-full rounded-3xl" poster="" autoplay loop muted playsinline>
-              <source src="./static/images/arrowvideov2.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+              <!-- Video RIGHT -->
+              <div class="w-full lg:w-1/2 flex items-center justify-center">
+                  <div class="relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 hover:scale-105">
+                      <video id="myVideo" class="w-full h-full rounded-3xl" poster="" autoplay loop muted playsinline>
+                          <source src="{% static 'images/arrowvideov2.mp4' %}" type="video/mp4" />
+                          Your browser does not support the video tag.
+                      </video>
+                  </div>
+              </div>
           </div>
-        </div>
       </div>
-    </div>
   </main>
+  
   <!-- Enhanced Features Section -->
   <div class="py-20 px-4 scroll-reveal" style="background-color: #E0F7F5">
     <div class="max-w-6xl mx-auto">
