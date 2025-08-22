@@ -9,7 +9,8 @@ import logging
 from collections import Counter
 from datetime import datetime
 from typing import Dict, List, Optional
-
+from django.utils import timezone
+from datetime import datetime
 # Third-party imports
 import cv2
 import numpy as np
@@ -366,11 +367,13 @@ def process_svg_upload(request):
 
 
 @login_required
+@login_required
 def upload_tiff(request, user_id=None, project_id=None):
     """
     Handles TIFF file uploads with subscription limit enforcement
     """
     logger.info(f"User {request.user.id} accessed upload_tiff view")
+    
     # Handle project editing case
     project = None
     if user_id and project_id:
@@ -382,7 +385,9 @@ def upload_tiff(request, user_id=None, project_id=None):
     # Check user subscription
     try:
         user_subscription = request.user.subscription
+        print(f"🔍 DEBUG: Found existing subscription for user {request.user.id}")
     except AttributeError:
+        print(f"🔍 DEBUG: No subscription found, creating default for user {request.user.id}")
         # Create default subscription if none exists
         from apps.subscription_module.models import SubscriptionPlan, UserSubscription
         try:
@@ -398,10 +403,24 @@ def upload_tiff(request, user_id=None, project_id=None):
                     end_date=end_date,
                     active=True
                 )
+                print(f"Created/renewed subscription for user {request.user.id} with plan {default_plan.name}")
         except Exception as e:
             logger.error(f"Failed to create default subscription: {str(e)}")
             messages.error(request, "Error initializing your account. Please contact support.")
             return redirect('home')
+
+    # Add comprehensive subscription debugging
+    print(f"🔍 DEBUG: === SUBSCRIPTION STATUS ===")
+    print(f"  User: {request.user.id}")
+    print(f"  Plan: {user_subscription.plan.name}")
+    print(f"  Start Date: {user_subscription.start_date}")
+    print(f"  End Date: {user_subscription.end_date}")
+    print(f"  Active (DB field): {getattr(user_subscription, 'active', 'NO ACTIVE FIELD')}")
+    print(f"  Files Used: {user_subscription.file_uploads_used}")
+    print(f"  File Limit: {user_subscription.plan.file_upload_limit}")
+    print(f"  Storage Used (MB): {user_subscription.storage_used_mb}")
+    print(f"  Storage Limit (MB): {user_subscription.plan.storage_limit_mb}")
+    print(f"🔍 DEBUG: ============================")
 
     if request.method == 'POST' and form.is_valid():
         tiff_file = request.FILES['tiff_file']
@@ -413,28 +432,48 @@ def upload_tiff(request, user_id=None, project_id=None):
             # Calculate file size in MB (more accurate than request.FILES size)
             file_size_bytes = tiff_file.size
             file_size_mb = file_size_bytes / (1024 * 1024)
+            print(f"🔍 DEBUG: File size in MB: {file_size_mb:.2f}")
             
-            # Check subscription limits
-            if not user_subscription.is_active():
+            # DETAILED SUBSCRIPTION LIMIT CHECKS WITH DEBUG
+            print(f"🔍 DEBUG: === CHECKING SUBSCRIPTION LIMITS ===")
+            
+            # Check 1: Subscription Active
+            is_active_result = user_subscription.is_active()
+            print(f"🔍 DEBUG: is_active() method returned: {is_active_result}")
+            if not is_active_result:
+                print(f"🚨 LIMIT HIT: Subscription not active")
                 return render_limit_reached(
                     request,
                     error_message="Your subscription has expired. Please renew to continue uploading files.",
                     user_subscription=user_subscription
                 )
             
-            if not user_subscription.can_upload_file():
+            # Check 2: File Upload Limit
+            can_upload_result = user_subscription.can_upload_file()
+            print(f"🔍 DEBUG: can_upload_file() method returned: {can_upload_result}")
+            print(f"🔍 DEBUG: Files check: {user_subscription.file_uploads_used} < {user_subscription.plan.file_upload_limit} = {user_subscription.file_uploads_used < user_subscription.plan.file_upload_limit}")
+            if not can_upload_result:
+                print(f"🚨 LIMIT HIT: Cannot upload file - file limit reached")
                 return render_limit_reached(
                     request,
                     error_message=f"You've reached your file upload limit ({user_subscription.plan.file_upload_limit} files).",
                     user_subscription=user_subscription
                 )
             
-            if not user_subscription.has_storage_space(file_size_mb):
+            # Check 3: Storage Space
+            has_storage_result = user_subscription.has_storage_space(file_size_mb)
+            print(f"🔍 DEBUG: has_storage_space({file_size_mb:.2f}) method returned: {has_storage_result}")
+            print(f"🔍 DEBUG: Storage check: {user_subscription.storage_used_mb} + {file_size_mb:.2f} <= {user_subscription.plan.storage_limit_mb} = {(user_subscription.storage_used_mb + file_size_mb) <= user_subscription.plan.storage_limit_mb}")
+            if not has_storage_result:
+                print(f"🚨 LIMIT HIT: Not enough storage space")
                 return render_limit_reached(
                     request,
                     error_message=f"Not enough storage space. This file requires {file_size_mb:.2f}MB.",
                     user_subscription=user_subscription
                 )
+            
+            print(f"🔍 DEBUG: ✅ All subscription checks passed - proceeding with upload")
+            print(f"🔍 DEBUG: ==========================================")
             
             # Create file path
             filename = f"project_{project_id}_{tiff_file.name}" if project else tiff_file.name
@@ -462,9 +501,13 @@ def upload_tiff(request, user_id=None, project_id=None):
             
             # Get precise file size after save
             precise_file_size_mb = os.path.getsize(temp_path) / (1024 * 1024)
+            print(f"🔍 DEBUG: Precise file size: {precise_file_size_mb:.2f}MB")
             
             # Final storage check with precise size
-            if not user_subscription.has_storage_space(precise_file_size_mb):
+            has_precise_storage = user_subscription.has_storage_space(precise_file_size_mb)
+            print(f"🔍 DEBUG: Final storage check with precise size: {has_precise_storage}")
+            if not has_precise_storage:
+                print(f"🚨 LIMIT HIT: File requires more space than estimated")
                 os.remove(temp_path)
                 return render_limit_reached(
                     request,
@@ -528,10 +571,16 @@ def upload_tiff(request, user_id=None, project_id=None):
             
             # Update subscription metrics
             try:
+                print(f"🔍 DEBUG: Updating subscription metrics...")
+                print(f"🔍 DEBUG: Before update - Files: {user_subscription.file_uploads_used}, Storage: {user_subscription.storage_used_mb}MB")
+                
                 with transaction.atomic():
                     user_subscription.file_uploads_used += 1
                     user_subscription.storage_used_mb += precise_file_size_mb
                     user_subscription.save()
+                    
+                print(f"🔍 DEBUG: After update - Files: {user_subscription.file_uploads_used}, Storage: {user_subscription.storage_used_mb}MB")
+                
             except Exception as e:
                 logger.error(f"Error updating subscription metrics: {e}")
                 # Continue processing as this is not critical for file upload
@@ -560,6 +609,7 @@ def upload_tiff(request, user_id=None, project_id=None):
             print(f"    - layer_count: {context['layer_count']}")
             print(f"    - layers: {len(context['layers'])} items")
             print(f"    - MEDIA_URL: {context['MEDIA_URL']}")
+            print(f"🔍 DEBUG: ✅ SUCCESS - Rendering layers.html template")
             
             if project:
                 context.update({
@@ -569,12 +619,11 @@ def upload_tiff(request, user_id=None, project_id=None):
                 })
                 print(f"🔍 DEBUG: Added project context for project {project.id}")
             
-            print(f"🔍 DEBUG: Rendering template with context")
             return render(request, 'layers.html', context)
             
         except Exception as e:
             logger.error(f"Error processing TIFF upload: {str(e)}", exc_info=True)
-            print(f"🔍 DEBUG: Exception in upload processing: {str(e)}")
+            print(f"🔍 DEBUG: ❌ Exception in upload processing: {str(e)}")
             messages.error(request, f"Error processing file: {str(e)}")
             # Clean up any temporary files
             if 'temp_path' in locals() and os.path.exists(temp_path):
@@ -599,10 +648,8 @@ def upload_tiff(request, user_id=None, project_id=None):
             'project': project
         })
     
-    print(f"🔍 DEBUG: Rendering upload template")
+    print(f"🔍 DEBUG: Rendering upload template (GET request or failed POST)")
     return render(request, 'upload.html', context)
-
-
 
 import traceback
 
@@ -617,6 +664,29 @@ def checkout(request, plan_id):
 
 def render_limit_reached(request, error_message, user_subscription):
     """Helper function to render the limit reached template"""
+    today = timezone.now().date()
+    end_date = user_subscription.end_date
+    if isinstance(end_date, datetime):  # normalize if datetime
+        end_date = end_date.date()
+
+    days_remaining = max((end_date - today).days, 0)
+    is_active_calc = end_date >= today
+
+    print("=== DEBUG: render_limit_reached ===")
+    print("Plan:", user_subscription.plan.name)
+    print("End Date (normalized):", end_date)
+    print("Today:", today)
+    print("Days Remaining:", days_remaining)
+    print("Active field (DB):", getattr(user_subscription, "active", None))
+    print("is_active (calculated):", is_active_calc)
+    print("====================================")
+    print("=== DEBUG: upload_tiff limits check ===")
+    print("Files used:", user_subscription.file_uploads_used)
+    print("File limit:", user_subscription.plan.file_upload_limit)
+    print("Storage used (MB):", user_subscription.storage_used_mb)
+    print("Storage limit (MB):", user_subscription.plan.storage_limit_mb)
+
+
     return render(request, 'subscription_module/limit_reached.html', {
         'error_message': error_message,
         'plan_name': user_subscription.plan.name,
@@ -626,15 +696,32 @@ def render_limit_reached(request, error_message, user_subscription):
         'storage_used': user_subscription.storage_used_mb,
         'storage_limit': user_subscription.plan.storage_limit_mb,
         'storage_used_percentage': (user_subscription.storage_used_mb / user_subscription.plan.storage_limit_mb) * 100,
-        'days_remaining': user_subscription.days_remaining()
+        'days_remaining': days_remaining
     })
 
 
 def get_subscription_context(user_subscription):
-    """Helper function to prepare subscription context"""
     if not user_subscription or not user_subscription.plan:
+        print("=== DEBUG: No active subscription or plan ===")
         return None
-    
+
+    today = timezone.now().date()
+    end_date = user_subscription.end_date
+    if isinstance(end_date, datetime):  # if it's a datetime, normalize
+        end_date = end_date.date()
+
+    days_remaining = max((end_date - today).days, 0)
+    is_active_calc = end_date >= today
+
+    print("=== DEBUG: get_subscription_context ===")
+    print("Plan:", user_subscription.plan.name)
+    print("End Date (normalized):", end_date)
+    print("Today:", today)
+    print("Days Remaining:", days_remaining)
+    print("Active field (DB):", getattr(user_subscription, "active", None))
+    print("is_active (calculated):", is_active_calc)
+    print("========================================")
+
     return {
         'plan_name': user_subscription.plan.name,
         'files_used': user_subscription.file_uploads_used,
@@ -643,12 +730,9 @@ def get_subscription_context(user_subscription):
         'storage_used': user_subscription.storage_used_mb,
         'storage_limit': user_subscription.plan.storage_limit_mb,
         'storage_used_percentage': (user_subscription.storage_used_mb / user_subscription.plan.storage_limit_mb) * 100,
-        'days_remaining': user_subscription.days_remaining(),
-        'is_active': user_subscription.is_active()
+        'days_remaining': days_remaining,
+        'is_active': is_active_calc
     }
-
-
-
 @login_required
 def upgrade_plan(request):
     available_plans = SubscriptionPlan.objects.filter(is_active=True)

@@ -9162,23 +9162,25 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
     
     // Get color family (hue range) for a color
-function getColorFamily(color) {
+
+
+    function getColorFamily(color) {
     const [h, s, l] = rgbToHsl(...color);
     
     // Define color families with GAP in green range to reduce green dominance
     if (h >= 345 || h < 15) return 'red';
     if (h >= 15 && h < 45) return 'orange';
     if (h >= 45 && h < 75) return 'yellow';
-    if (h >= 75 && h < 120) return 'green';      // REDUCED: was 75-165, now 75-120
+    if (h >= 75 && h < 90) return 'green';      // REDUCED: was 75-165, now 75-120
     // GAP: 120-150 (no assignment - will go to cyan)
-    if (h >= 150 && h < 180) return 'cyan';      // SHIFTED: was 165-195
+    if (h >= 170 && h < 180) return 'cyan';      // SHIFTED: was 165-195
     if (h >= 180 && h < 220) return 'blue';      // SHIFTED: was 195-255
     if (h >= 220 && h < 260) return 'purple';    // SHIFTED: was 255-285
     if (h >= 260 && h < 300) return 'pink';      // SHIFTED: was 285-345
     if (h >= 300 && h < 345) return 'magenta';   // NEW: to fill the gap
     
     return 'neutral';
-}
+   }
     
     // Group colors by their color families
     function groupColorsByFamily(colors) {
@@ -9211,14 +9213,14 @@ function getColorFamily(color) {
         const isSourceBackground = isBackgroundColor(sourceColor);
         
         // Define hue ranges for each color family
-// Define hue ranges for each color family
+       // Define hue ranges for each color family
   const hueRanges = {
       'red': [345, 15],
       'orange': [15, 45],
       'yellow': [45, 75],
       'green': [75, 90],      // Reduced range
       // 'teal': [130, 150],      // New category for blue-green
-      'cyan': [150, 180],
+      'cyan': [170, 180],
       'blue': [180, 220],
       'indigo': [220, 260],
       'purple': [260, 290],
@@ -9267,7 +9269,7 @@ function getColorFamily(color) {
         const availableFamilyNames = Object.keys(baseFamilies);
         
         // All possible target families
-// All possible target families
+    // All possible target families
         // All possible target families - keeping original nInspirationsames, just with gap in green
         const allFamilies = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink', 'magenta'];       
         // Collection-specific adjustments
@@ -9454,7 +9456,7 @@ function getColorFamily(color) {
         if (h < 15 || h >= 345) hueName = "Red";
         else if (h >= 15 && h < 45) hueName = "Orange";
         else if (h >= 45 && h < 75) hueName = "Yellow";
-        else if (h >= 75 && h < 165) hueName = "Green";
+        else if (h >= 75 && h < 90) hueName = "Green";
         else if (h >= 165 && h < 195) hueName = "Cyan";
         else if (h >= 195 && h < 255) hueName = "Blue";
         else if (h >= 255 && h < 285) hueName = "Purple";
@@ -9539,7 +9541,7 @@ function getColorFamily(color) {
         { name: "Red", range: [345, 15] },        // Red wraps around 0
         { name: "Orange", range: [15, 45] },      // Orange
         { name: "Yellow", range: [45, 75] },      // Yellow
-        { name: "Green", range: [75, 165] },      // Green
+        { name: "Green", range: [75, 90] },      // Green
         { name: "Cyan", range: [165, 195] },      // Cyan
         { name: "Blue", range: [195, 255] },      // Blue
         { name: "Purple", range: [255, 285] },    // Purple
@@ -9718,6 +9720,8 @@ function getColorFamily(color) {
 
 
     // Modified generateAndShowPreview function
+
+
 
 
 
