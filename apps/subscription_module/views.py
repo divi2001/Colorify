@@ -305,8 +305,16 @@ def initiate_payment(request, plan_id):
     try:
         existing_subscription = UserSubscription.objects.get(user=request.user)
         if existing_subscription.is_active():
-            messages.warning(request, "You already have an active subscription.")
-            return redirect('subscription_module:subscription_plans')
+            # Allow upgrades: check if the new plan is more expensive than current plan
+            if plan.original_price <= existing_subscription.plan.original_price:
+                # This is not an upgrade (same price or downgrade)
+                if plan.id == existing_subscription.plan.id:
+                    messages.warning(request, "You already have this subscription plan.")
+                else:
+                    messages.warning(request, "Downgrades are not currently supported. Please contact support.")
+                return redirect('subscription_module:subscription_plans')
+            # If we reach here, it's an upgrade, so allow it to proceed
+            messages.info(request, f"Upgrading from {existing_subscription.plan.name} to {plan.name}")
     except UserSubscription.DoesNotExist:
         pass
     
@@ -337,11 +345,21 @@ def initiate_payment(request, plan_id):
             referral_code = None
     
     # Create payment transaction
+    # Set transaction type based on whether user has existing subscription
+    transaction_type = 'subscription'
+    try:
+        existing_subscription = UserSubscription.objects.get(user=request.user)
+        if existing_subscription.is_active():
+            transaction_type = 'upgrade'
+    except UserSubscription.DoesNotExist:
+        pass
+    
     transaction = PaymentTransaction.objects.create(
         user=request.user,
         subscription_plan=plan,
         amount=final_amount,
         referral_code=referral_code,
+        transaction_type=transaction_type,
         status='pending'
     )
     
@@ -354,7 +372,8 @@ def initiate_payment(request, plan_id):
             notes={
                 'transaction_id': str(transaction.transaction_id),
                 'user_id': request.user.id,
-                'plan_id': plan_id
+                'plan_id': plan_id,
+                'transaction_type': transaction_type
             }
         )
         
@@ -379,6 +398,7 @@ def initiate_payment(request, plan_id):
         transaction.save()
         messages.error(request, "Unable to initiate payment. Please try again.")
         return redirect('subscription_module:subscription_plans')
+    
 
 # Update your payment_callback view
 @csrf_exempt
@@ -431,19 +451,46 @@ def payment_callback(request):
             transaction.razorpay_signature = razorpay_signature
             transaction.mark_as_completed(razorpay_payment_id)
             
-            # Create or update subscription
+            # Create or update subscription based on transaction type
             start_date = timezone.now()
-            end_date = start_date + timezone.timedelta(days=transaction.subscription_plan.duration_in_days)
             
-            UserSubscription.objects.update_or_create(
-                user=transaction.user,
-                defaults={
-                    'plan': transaction.subscription_plan,
-                    'start_date': start_date,
-                    'end_date': end_date,
-                    'active': True
-                }
-            )
+            if transaction.transaction_type in ['subscription', 'renewal', 'upgrade']:
+                try:
+                    existing_subscription = UserSubscription.objects.get(user=transaction.user)
+                    
+                    if transaction.transaction_type == 'upgrade':
+                        # For upgrades, extend from current end_date if it's in the future
+                        if existing_subscription.end_date > start_date:
+                            start_date = existing_subscription.end_date
+                        end_date = start_date + timezone.timedelta(days=transaction.subscription_plan.duration_in_days)
+                        
+                        # Update existing subscription
+                        existing_subscription.plan = transaction.subscription_plan
+                        existing_subscription.end_date = end_date
+                        existing_subscription.active = True
+                        existing_subscription.save()
+                    else:
+                        # For renewal, extend from current end_date
+                        if transaction.transaction_type == 'renewal' and existing_subscription.end_date > start_date:
+                            start_date = existing_subscription.end_date
+                        
+                        end_date = start_date + timezone.timedelta(days=transaction.subscription_plan.duration_in_days)
+                        existing_subscription.plan = transaction.subscription_plan
+                        existing_subscription.start_date = start_date if transaction.transaction_type == 'subscription' else existing_subscription.start_date
+                        existing_subscription.end_date = end_date
+                        existing_subscription.active = True
+                        existing_subscription.save()
+                        
+                except UserSubscription.DoesNotExist:
+                    # Create new subscription
+                    end_date = start_date + timezone.timedelta(days=transaction.subscription_plan.duration_in_days)
+                    UserSubscription.objects.create(
+                        user=transaction.user,
+                        plan=transaction.subscription_plan,
+                        start_date=start_date,
+                        end_date=end_date,
+                        active=True
+                    )
             
             return JsonResponse({
                 'status': 'success',

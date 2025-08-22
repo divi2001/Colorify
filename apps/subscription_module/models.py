@@ -141,8 +141,9 @@ class UserSubscription(models.Model):
         return f'{self.user.username} - {self.plan.name if self.plan else "No Plan"}'
     
     def is_active(self):
-        # Remove the legacy plan restriction
-        return self.end_date > timezone.now() and self.active
+        """Check if subscription is currently active based on end date and active flag"""
+        return self.active and self.end_date > timezone.now()
+        
     def can_add_device(self):
         return self.devices_used_count < (self.plan.max_devices if self.plan else 1)
     

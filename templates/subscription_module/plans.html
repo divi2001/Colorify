@@ -74,7 +74,7 @@
                 {% comment %} Check if this plan is the user's current active plan {% endcomment %}
                 {% if current_subscription and current_subscription.is_active and current_subscription.plan.id == plan.id %}
                     {% with is_current_plan=True %}
-                        <div class="relative bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform scale-105 border-2 border-blue-400">
+                        <div class="relative bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform scale-105 border-2 border-blue-400 flex flex-col h-full">
                             <!-- Current Plan Badge -->
                             <!-- <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
                                 <span class="bg-white text-blue-600 px-4 py-1 rounded-full text-sm font-bold shadow-lg">CURRENT PLAN</span>
@@ -171,7 +171,7 @@
                         </div>
                     {% endwith %}
                 {% else %}
-                    <div class="relative 
+                    <div class="relative flex flex-col h-full
                         {% if not plan.is_active or 'Legacy' in plan.name %}
                             bg-gray-100 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow opacity-75
                         {% else %}
@@ -199,7 +199,7 @@
                         </div>
                         
                         <!-- Plan Features -->
-                        <ul class="space-y-4 mb-8">
+                        <ul class="space-y-4 mb-auto">
                             <!-- Storage -->
                             <li class="flex items-center">
                                 <svg class="w-5 h-5 {% if not plan.is_active %}text-gray-400{% else %}text-purple-500{% endif %} mr-2" fill="currentColor" viewBox="0 0 20 20">
