@@ -18920,10 +18920,14 @@ function resetLayer(layerIndex) {
     if (layerStates && layerStates.resetToOriginal) {
         layerStates.resetToOriginal(layerIndex);
         
-        // Reset adjustments
+        // Reset adjustments and clear all trackers
         if (window.imageAdjuster) {
             window.imageAdjuster.resetLayerAdjustments(layerIndex);
         }
+        
+        // Also clear trackers directly (redundant but safe)
+        paletteTracker.clearPalette();
+        filterTracker.clearFilter();
         
     } else {
         console.error('layerStates.resetToOriginal method not available');
