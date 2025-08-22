@@ -1144,11 +1144,11 @@ h1 {
 }
 
 .adjustment-panel {
-    position: fixed;
+    /* position: fixed; */
     /* Changed to fixed positioning */
     /* left: 60px; */
     /* Offset from left to not overlap with the button */
-    padding-bottom: 30vh;
+
     /* Position from bottom */
     background: white;
     padding: 15px;
