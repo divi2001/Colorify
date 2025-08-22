@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_protect
 from allauth.account.views import SignupView
 from allauth.account.forms import SignupForm
 from apps.core.models import Project
+from apps.subscription_module.models import UserSubscription
 from django.shortcuts import redirect
 
 # Configure logging
@@ -42,7 +43,19 @@ def affiliate_view(request):
 
 def profile_dashboard_view(request):
     logger.info(f"User {request.user.id} is attempting to view profile-dashboard")
-    return render(request, 'pages/profile-dashboard.html',  {'user': request.user})
+    # Get current subscription information
+    current_subscription = None
+    try:
+        current_subscription = UserSubscription.objects.get(user=request.user)
+    except UserSubscription.DoesNotExist:
+        pass
+
+    context = {
+        'user': request.user,
+        'current_subscription': current_subscription
+    }
+    
+    return render(request, 'pages/profile-dashboard.html', context)
 
 @login_required
 def edit_project_view(request, user_id, project_id):
