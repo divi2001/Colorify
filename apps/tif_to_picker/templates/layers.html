@@ -18717,8 +18717,8 @@ class ImageAdjuster {
             }
         });
 
-        // Recreate sliders with reset values
-        this.createAdjustmentSliders();
+        // Update slider values instead of recreating them
+        this.updateSliderValues();
     }
 
     applyAdjustments(layer) {
@@ -18812,9 +18812,18 @@ class ImageAdjuster {
         return [h * 360, s * 100, l * 100];
     }
     // Add this method to your ImageAdjuster class
+    // Add this method to your ImageAdjuster class
     resetLayerAdjustments(layer) {
         // Reset adjustments for specific layer
         this.adjustments[layer] = {
+            hue: 0,
+            saturation: 0,
+            brightness: 0,
+            temperature: 0
+        };
+        
+        // Also reset combined adjustments since we're resetting a layer
+        this.adjustments.combined = {
             hue: 0,
             saturation: 0,
             brightness: 0,
@@ -18827,10 +18836,31 @@ class ImageAdjuster {
         // Clear from adjustment tracker
         adjustmentTracker.clearLayerAdjustments(layer);
         
-        // Update UI if panel is open
+        // Update UI sliders immediately if panel is open
+        this.updateSliderValues();
+    }
+
+    // Add this new method to update slider values without recreating the entire panel
+    updateSliderValues() {
         const adjustmentPanel = document.getElementById('adjustmentPanel');
         if (adjustmentPanel && adjustmentPanel.style.display !== 'none') {
-            this.createAdjustmentSliders();
+            // Update all sliders and their value displays
+            const sliders = adjustmentPanel.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                const layer = slider.dataset.layer;
+                const adjustment = slider.dataset.adjustment;
+                
+                if (this.adjustments[layer]) {
+                    const newValue = this.adjustments[layer][adjustment];
+                    slider.value = newValue;
+                    
+                    // Update the value display
+                    const valueDisplay = slider.parentElement.querySelector('.value-display');
+                    if (valueDisplay) {
+                        valueDisplay.textContent = newValue;
+                    }
+                }
+            });
         }
     }
 
@@ -18886,18 +18916,18 @@ function editLayer(layerIndex) {
 }
 
 function resetLayer(layerIndex) {
-  // Reset layer to original state using the correct method name
-  if (layerStates && layerStates.resetToOriginal) {
-    layerStates.resetToOriginal(layerIndex);
-    
-    // Reset adjustments
-    if (window.imageAdjuster) {
-      window.imageAdjuster.resetLayerAdjustments(layerIndex);
+    // Reset layer to original state using the correct method name
+    if (layerStates && layerStates.resetToOriginal) {
+        layerStates.resetToOriginal(layerIndex);
+        
+        // Reset adjustments
+        if (window.imageAdjuster) {
+            window.imageAdjuster.resetLayerAdjustments(layerIndex);
+        }
+        
+    } else {
+        console.error('layerStates.resetToOriginal method not available');
     }
-    
-  } else {
-    console.error('layerStates.resetToOriginal method not available');
-  }
 }
 
 function showLayerInfoButton(layerIndex) {
