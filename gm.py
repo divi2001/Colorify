@@ -15,6 +15,10 @@ import nltk
 from nltk.tokenize import word_tokenize
 from langdetect import detect
 from difflib import SequenceMatcher
+import multiprocessing as mp
+from multiprocessing import Pool, Manager
+import os
+from functools import partial
 
 # Download the necessary resources
 nltk.download('punkt')
@@ -497,65 +501,103 @@ def compare_texts(text1, text2, ignore_list):
         'spelling': spelling,
         'grammar': grammar
     }
+
 # Database configuration
 DB_CONFIG = {
-    'host': "45.119.47.81",
+    'host': "localhost",
     'port': 3306,
     'user': "root",
     'password': "1221",
-    'database': "shexamjune25checking"
+    'database': "shexamjuly25checking_3rdst"
 }
 
-# API endpoint
-API_BASE_URL = 'http://45.119.47.81:5002'
-
 def create_connection():
-    """Create database connection"""
+    """Create database connection with proper configuration"""
     try:
-        connection = mysql.connector.connect(**DB_CONFIG)
-        if connection.is_connected():
-            print("Connected to MySQL database")
-            return connection
+        connection = mysql.connector.connect(
+            **DB_CONFIG,
+            autocommit=True,  # Enable autocommit
+            use_pure=True,    # Use pure Python implementation
+            consume_results=True,  # Consume all results
+            buffered=True     # Use buffered cursor
+        )
+        return connection
     except Error as e:
         print(f"Database connection error: {e}")
         return None
 
-def get_students(connection, department_id):
-    """Get all students from a department"""
-    cursor = connection.cursor(dictionary=True)
-    query = "SELECT student_id, subjectsId, qset FROM students WHERE departmentId = %s"
-    cursor.execute(query, (department_id,))
-    students = cursor.fetchall()
-    cursor.close()
-    return students
-
-def get_answer_passages(connection, subject_id, qset):
-    """Get answer passages for a subject and qset"""
-    cursor = connection.cursor(dictionary=True)
-    query = "SELECT textPassageA, textPassageB FROM audiodb WHERE subjectId = %s AND qset = %s"
-    cursor.execute(query, (subject_id, qset))
-    result = cursor.fetchone()
-    cursor.close()
-    return result
-
-def get_student_passages(connection, student_id):
-    """Get student passages"""
-    cursor = connection.cursor(dictionary=True)
-    query = "SELECT passageA, passageB FROM finalPassageSubmit WHERE student_id = %s"
-    cursor.execute(query, (student_id,))
-    result = cursor.fetchone()
-    cursor.close()
-    return result
-
-def get_modreview_data(connection, student_id):
-    """Get QPA, QPB data from modreviewlog"""
-    cursor = connection.cursor(dictionary=True)
-    query = "SELECT QPA, QPB FROM modreviewlog WHERE student_id = %s"
-    cursor.execute(query, (student_id,))
-    result = cursor.fetchone()
-    cursor.close()
-    return result
-
+def load_all_data(department_id, limit=100):
+    """Load all required data at once to avoid database connection issues in multiprocessing"""
+    print(f"Loading data from database (first {limit} students)...")
+    connection = create_connection()
+    if not connection:
+        return None, None, None, None
+    
+    try:
+        cursor = connection.cursor(dictionary=True, buffered=True)
+        
+        # Get first 100 students
+        cursor.execute("SELECT student_id, subjectsId, qset FROM students WHERE departmentId = %s LIMIT %s", (department_id, limit))
+        students = cursor.fetchall()
+        cursor.fetchall()  # Consume any remaining results
+        
+        # Get all answer passages for the subjects/qsets used by students
+        subject_qset_pairs = list(set((student['subjectsId'], student['qset']) for student in students))
+        answer_passages = {}
+        
+        for subject_id, qset in subject_qset_pairs:
+            cursor.execute("SELECT textPassageA, textPassageB FROM audiodb WHERE subjectId = %s AND qset = %s", 
+                         (subject_id, qset))
+            result = cursor.fetchone()
+            cursor.fetchall()  # Consume any remaining results
+            if result:
+                answer_passages[(subject_id, qset)] = result
+        
+        # Get all student passages
+        student_ids = [student['student_id'] for student in students]
+        student_passages = {}
+        
+        # Process student IDs in batches to avoid query length issues
+        batch_size = 1000
+        for i in range(0, len(student_ids), batch_size):
+            batch_ids = student_ids[i:i + batch_size]
+            placeholders = ','.join(['%s'] * len(batch_ids))
+            query = f"SELECT student_id, passageA, passageB FROM finalPassageSubmit WHERE student_id IN ({placeholders})"
+            cursor.execute(query, batch_ids)
+            results = cursor.fetchall()
+            cursor.fetchall()  # Consume any remaining results
+            
+            for result in results:
+                student_passages[result['student_id']] = result
+        
+        # Get all modreview data
+        modreview_data = {}
+        for i in range(0, len(student_ids), batch_size):
+            batch_ids = student_ids[i:i + batch_size]
+            placeholders = ','.join(['%s'] * len(batch_ids))
+            query = f"SELECT student_id, QPA, QPB FROM modreviewlog WHERE student_id IN ({placeholders})"
+            cursor.execute(query, batch_ids)
+            results = cursor.fetchall()
+            cursor.fetchall()  # Consume any remaining results
+            
+            for result in results:
+                modreview_data[result['student_id']] = result
+        
+        cursor.close()
+        connection.close()
+        
+        print(f"Loaded data for {len(students)} students (limited to first {limit})")
+        print(f"Loaded {len(answer_passages)} answer passage sets")
+        print(f"Loaded {len(student_passages)} student passage sets")
+        print(f"Loaded {len(modreview_data)} modreview records")
+        
+        return students, answer_passages, student_passages, modreview_data
+        
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        if connection:
+            connection.close()
+        return None, None, None, None
 
 def parse_ignore_list(ignore_text):
     """Convert ignore list text to array"""
@@ -574,41 +616,6 @@ def parse_ignore_list(ignore_text):
         # Fallback to simple split
         items = [item.strip().strip('"\'') for item in ignore_text.split(',')]
         return [item for item in items if item]
-
-def get_ignore_lists_from_modreview(connection, student_id):
-    """Get ignore lists from modreviewlog QPA and QPB columns"""
-    cursor = connection.cursor(dictionary=True)
-    query = "SELECT QPA, QPB FROM modreviewlog WHERE student_id = %s"
-    cursor.execute(query, (student_id,))
-    result = cursor.fetchone()
-    cursor.close()
-    
-    if result:
-        ignore_a = parse_ignore_list(result['QPA']) if result['QPA'] else []
-        ignore_b = parse_ignore_list(result['QPB']) if result['QPB'] else []
-        return ignore_a, ignore_b
-    
-    return [], []
-
-def call_compare_api(text1, text2, ignore_list=[]):
-    """Call the comparison API"""
-    url = f"{API_BASE_URL}/compare"
-    payload = {
-        'text1': text1,
-        'text2': text2,
-        'ignore_list': ignore_list
-    }
-    
-    try:
-        response = requests.post(url, json=payload, timeout=30)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"API error: {response.status_code}")
-            return None
-    except Exception as e:
-        print(f"API call failed: {e}")
-        return None
 
 def calculate_marks(api_result):
     """Calculate marks from API result"""
@@ -631,108 +638,165 @@ def calculate_marks(api_result):
     
     return marks, False, total_mistakes
 
-def process_student(connection, student):
-    """Process a single student"""
-    student_id = student['student_id']
-    subject_id = student['subjectsId']
-    qset = student['qset']
+def process_student_worker(args):
+    """Worker function to process a single student - runs in parallel"""
+    student_data, answer_passages, student_passages, modreview_data, process_id = args
     
-    print(f"Processing student {student_id}...")
-    
-    # Get answer passages
-    answer_data = get_answer_passages(connection, subject_id, qset)
-    if not answer_data:
-        print(f"No answer passages found for subject {subject_id}, qset {qset}")
-        return None
-    
-    # Get student passages
-    student_data = get_student_passages(connection, student_id)
-    if not student_data:
-        print(f"No student passages found for student {student_id}")
-        return None
-    
-    # Get modreview data (scores)
-    modreview_data = get_modreview_data(connection, student_id)
-    modreview_qpa_score = modreview_data['QPA'] if modreview_data else None
-    modreview_qpb_score = modreview_data['QPB'] if modreview_data else None
-    
-    # Get ignore lists from modreviewlog QPA and QPB columns
-    ignore_a, ignore_b = get_ignore_lists_from_modreview(connection, student_id)
-    # print(f"Ignore lists: Passage A = {ignore_a}, Passage B = {ignore_b}")
-    # Compare Passage A
-    result_a = compare_texts(
-        student_data['passageA'], 
-        answer_data['textPassageA'], 
-        ignore_a
-    )
-    
-    if result_a is None:
-        print(f"Passage A comparison failed for student {student_id}")
-        return None
-    
-    # Compare Passage B
-    result_b = compare_texts(
-        student_data['passageB'], 
-        answer_data['textPassageB'], 
-        ignore_b
-    )
-    
-    if result_b is None:
-        print(f"Passage B comparison failed for student {student_id}")
-        return None
-    
-    # Calculate marks
-    marks_a, empty_a, mistakes_a = calculate_marks(result_a)
-    marks_b, empty_b, mistakes_b = calculate_marks(result_b)
-    total_marks = marks_a + marks_b
-    pass_status = 'Pass' if total_marks >= 32 else 'Fail'
-    print(f"Marks: Passage A = {marks_a}, Passage B = {marks_b}, Total = {total_marks} ({pass_status})")
-    
-    # Prepare result
-    result = {
-        'Student_ID': student_id,
-        'Subject_ID': subject_id,
-        'QSet': qset,
-        'ModReview_QPA_Score': modreview_qpa_score,
-        'ModReview_QPB_Score': modreview_qpb_score,
+    try:
+        student_id = student_data['student_id']
+        subject_id = student_data['subjectsId']
+        qset = student_data['qset']
         
-        'PassageA_IgnoreList': ', '.join(ignore_a) if ignore_a else 'None',
-        'PassageA_Marks': round(marks_a, 2),
-        'PassageA_Empty': empty_a,
-        'PassageA_Added': ', '.join(str(x) for x in result_a.get('added', [])),
-        'PassageA_Added_Count': len(result_a.get('added', [])),
-        'PassageA_Missed': ', '.join(str(x) for x in result_a.get('missed', [])),
-        'PassageA_Missed_Count': len(result_a.get('missed', [])),
-        'PassageA_Spelling': ', '.join(str(x) for x in result_a.get('spelling', [])),
-        'PassageA_Spelling_Count': len(result_a.get('spelling', [])),
-        'PassageA_Grammar': ', '.join(str(x) for x in result_a.get('grammar', [])),
-        'PassageA_Grammar_Count': len(result_a.get('grammar', [])),
-        'PassageA_Total_Mistakes': mistakes_a,
+        # Get answer passages
+        answer_key = (subject_id, qset)
+        if answer_key not in answer_passages:
+            return {
+                'success': False,
+                'student_id': student_id,
+                'error': f'No answer passages found for subject {subject_id}, qset {qset}',
+                'process_id': process_id
+            }
         
-        'PassageB_IgnoreList': ', '.join(ignore_b) if ignore_b else 'None',
-        'PassageB_Marks': round(marks_b, 2),
-        'PassageB_Empty': empty_b,
-        'PassageB_Added': ', '.join(str(x) for x in result_b.get('added', [])),
-        'PassageB_Added_Count': len(result_b.get('added', [])),
-        'PassageB_Missed': ', '.join(str(x) for x in result_b.get('missed', [])),
-        'PassageB_Missed_Count': len(result_b.get('missed', [])),
-        'PassageB_Spelling': ', '.join(str(x) for x in result_b.get('spelling', [])),
-        'PassageB_Spelling_Count': len(result_b.get('spelling', [])),
-        'PassageB_Grammar': ', '.join(str(x) for x in result_b.get('grammar', [])),
-        'PassageB_Grammar_Count': len(result_b.get('grammar', [])),
-        'PassageB_Total_Mistakes': mistakes_b,
+        answer_data = answer_passages[answer_key]
         
-        'Total_Marks': round(total_marks, 2),
-        'Pass_Status': pass_status,
-        'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
+        # Get student passages
+        if student_id not in student_passages:
+            return {
+                'success': False,
+                'student_id': student_id,
+                'error': f'No student passages found for student {student_id}',
+                'process_id': process_id
+            }
+        
+        student_data_passages = student_passages[student_id]
+        
+        # Get modreview data (scores and ignore lists)
+        modreview_record = modreview_data.get(student_id, {})
+        modreview_qpa_score = modreview_record.get('QPA', None)
+        modreview_qpb_score = modreview_record.get('QPB', None)
+        
+        # Parse ignore lists from modreview QPA and QPB columns
+        ignore_a = parse_ignore_list(modreview_qpa_score) if modreview_qpa_score else []
+        ignore_b = parse_ignore_list(modreview_qpb_score) if modreview_qpb_score else []
+        
+        # Compare Passage A
+        result_a = compare_texts(
+            student_data_passages['passageA'], 
+            answer_data['textPassageA'], 
+            ignore_a
+        )
+        
+        if result_a is None:
+            return {
+                'success': False,
+                'student_id': student_id,
+                'error': 'Passage A comparison failed',
+                'process_id': process_id
+            }
+        
+        # Compare Passage B
+        result_b = compare_texts(
+            student_data_passages['passageB'], 
+            answer_data['textPassageB'], 
+            ignore_b
+        )
+        
+        if result_b is None:
+            return {
+                'success': False,
+                'student_id': student_id,
+                'error': 'Passage B comparison failed',
+                'process_id': process_id
+            }
+        
+        # Calculate marks
+        marks_a, empty_a, mistakes_a = calculate_marks(result_a)
+        marks_b, empty_b, mistakes_b = calculate_marks(result_b)
+        total_marks = marks_a + marks_b
+        pass_status = 'Pass' if total_marks >= 32 else 'Fail'
+        
+        # Prepare result
+        result = {
+            'Student_ID': student_id,
+            'Subject_ID': subject_id,
+            'QSet': qset,
+            'ModReview_QPA_Score': modreview_qpa_score,
+            'ModReview_QPB_Score': modreview_qpb_score,
+            
+            'PassageA_IgnoreList': ', '.join(ignore_a) if ignore_a else 'None',
+            'PassageA_Marks': round(marks_a, 2),
+            'PassageA_Empty': empty_a,
+            'PassageA_Added': ', '.join(str(x) for x in result_a.get('added', [])),
+            'PassageA_Added_Count': len(result_a.get('added', [])),
+            'PassageA_Missed': ', '.join(str(x) for x in result_a.get('missed', [])),
+            'PassageA_Missed_Count': len(result_a.get('missed', [])),
+            'PassageA_Spelling': ', '.join(str(x) for x in result_a.get('spelling', [])),
+            'PassageA_Spelling_Count': len(result_a.get('spelling', [])),
+            'PassageA_Grammar': ', '.join(str(x) for x in result_a.get('grammar', [])),
+            'PassageA_Grammar_Count': len(result_a.get('grammar', [])),
+            'PassageA_Total_Mistakes': mistakes_a,
+            
+            'PassageB_IgnoreList': ', '.join(ignore_b) if ignore_b else 'None',
+            'PassageB_Marks': round(marks_b, 2),
+            'PassageB_Empty': empty_b,
+            'PassageB_Added': ', '.join(str(x) for x in result_b.get('added', [])),
+            'PassageB_Added_Count': len(result_b.get('added', [])),
+            'PassageB_Missed': ', '.join(str(x) for x in result_b.get('missed', [])),
+            'PassageB_Missed_Count': len(result_b.get('missed', [])),
+            'PassageB_Spelling': ', '.join(str(x) for x in result_b.get('spelling', [])),
+            'PassageB_Spelling_Count': len(result_b.get('spelling', [])),
+            'PassageB_Grammar': ', '.join(str(x) for x in result_b.get('grammar', [])),
+            'PassageB_Grammar_Count': len(result_b.get('grammar', [])),
+            'PassageB_Total_Mistakes': mistakes_b,
+            
+            'Total_Marks': round(total_marks, 2),
+            'Pass_Status': pass_status,
+            'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        return {
+            'success': True,
+            'result': result,
+            'process_id': process_id,
+            'marks': total_marks  # Add marks for logging
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'student_id': student_data['student_id'],
+            'error': f'Error: {str(e)}',
+            'process_id': process_id
+        }
+
+def update_progress_with_marks(completed, total, start_time, recent_results, pass_count, fail_count):
+    """Update and display progress with marks information"""
+    elapsed_time = time.time() - start_time
+    progress_pct = (completed / total) * 100
     
-    return result
+    if completed > 0:
+        avg_time_per_student = elapsed_time / completed
+        eta_seconds = avg_time_per_student * (total - completed)
+        eta_minutes = eta_seconds / 60
+        
+        # Show recent student marks
+        recent_marks_str = ""
+        if recent_results:
+            recent_marks = [f"{r['result']['Student_ID']}:{r['marks']:.1f}" for r in recent_results[-3:] if 'marks' in r]
+            if recent_marks:
+                recent_marks_str = f" | Recent: {', '.join(recent_marks)}"
+        
+        pass_rate = (pass_count / completed * 100) if completed > 0 else 0
+        
+        print(f"\rProgress: {completed}/{total} ({progress_pct:.1f}%) | "
+              f"Pass: {pass_count} ({pass_rate:.1f}%) | Fail: {fail_count} | "
+              f"Elapsed: {elapsed_time/60:.1f}m | ETA: {eta_minutes:.1f}m{recent_marks_str}", 
+              end='', flush=True)
 
 def save_to_excel(results, failed_students, department_id):
     """Save results to Excel"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"evaluation_results_dept_{department_id}_{timestamp}.xlsx"
+    filename = f"evaluation_results_dept_{department_id}_first100_{timestamp}.xlsx"
     
     with pd.ExcelWriter(filename, engine='openpyxl') as writer:
         # Main results
@@ -749,83 +813,179 @@ def save_to_excel(results, failed_students, department_id):
         total_students = len(results) + len(failed_students)
         success_rate = (len(results) / total_students * 100) if total_students > 0 else 0
         
-        summary = pd.DataFrame({
-            'Metric': ['Total Students', 'Successful', 'Failed', 'Success Rate (%)'],
-            'Value': [total_students, len(results), len(failed_students), round(success_rate, 1)]
-        })
+        if results:
+            pass_count = sum(1 for r in results if r['Pass_Status'] == 'Pass')
+            fail_count = len(results) - pass_count
+            avg_marks = sum(r['Total_Marks'] for r in results) / len(results)
+            pass_rate = (pass_count / len(results) * 100) if len(results) > 0 else 0
+            
+            summary = pd.DataFrame({
+                'Metric': ['Total Students (First 100)', 'Successful Processing', 'Failed Processing', 'Processing Success Rate (%)',
+                          'Academic Pass', 'Academic Fail', 'Academic Pass Rate (%)', 'Average Marks'],
+                'Value': [total_students, len(results), len(failed_students), round(success_rate, 1),
+                         pass_count, fail_count, round(pass_rate, 1), round(avg_marks, 2)]
+            })
+        else:
+            summary = pd.DataFrame({
+                'Metric': ['Total Students (First 100)', 'Successful Processing', 'Failed Processing', 'Processing Success Rate (%)'],
+                'Value': [total_students, len(results), len(failed_students), round(success_rate, 1)]
+            })
+        
         summary.to_excel(writer, sheet_name='Summary', index=False)
     
-    print(f"Results saved to: {filename}")
+    print(f"\nResults saved to: {filename}")
+    return filename
+
+def parallel_process_students(students, answer_passages, student_passages, modreview_data, department_id, num_processes=20):
+    """Process students in parallel using multiprocessing with preloaded data"""
+    print(f"Starting parallel processing with {num_processes} processes...")
+    
+    # Prepare data for workers - each gets a copy of all preloaded data
+    student_data_list = [
+        (student, answer_passages, student_passages, modreview_data, i % num_processes) 
+        for i, student in enumerate(students)
+    ]
+    
+    results = []
+    failed_students = []
+    completed = 0
+    total = len(students)
+    pass_count = 0
+    fail_count = 0
+    recent_results = []
+    
+    start_time = time.time()
+    
+    # Use multiprocessing Pool
+    with Pool(processes=num_processes) as pool:
+        # Process students in parallel
+        for result in pool.imap(process_student_worker, student_data_list):
+            completed += 1
+            
+            if result['success']:
+                results.append(result['result'])
+                recent_results.append(result)
+                
+                # Keep only recent results for display
+                if len(recent_results) > 10:
+                    recent_results = recent_results[-10:]
+                
+                # Count pass/fail
+                if result['result']['Pass_Status'] == 'Pass':
+                    pass_count += 1
+                else:
+                    fail_count += 1
+                    
+            else:
+                failed_students.append({
+                    'Student_ID': result['student_id'],
+                    'Subject_ID': 'N/A',
+                    'QSet': 'N/A',
+                    'Reason': result['error'],
+                    'Process_ID': result['process_id']
+                })
+            
+            # Update progress every 10 students or at the end
+            if completed % 10 == 0 or completed == total:
+                update_progress_with_marks(completed, total, start_time, recent_results, pass_count, fail_count)
+    
+    print()  # New line after progress
+    return results, failed_students
 
 def main():
+    """Main function with parallel processing and preloaded data - FIRST 100 STUDENTS ONLY"""
     # Set department ID here
     DEPARTMENT_ID = 6
+    NUM_PROCESSES = 20  # Use 20 out of 32 available cores
+    STUDENT_LIMIT = 100  # Process only first 100 students
     
-    print("=== PASSAGE EVALUATION SYSTEM ===")
+    print("=== PARALLEL PASSAGE EVALUATION SYSTEM (FIRST 100 STUDENTS) ===")
     print(f"Department ID: {DEPARTMENT_ID}")
-    
-    # Connect to database
-    connection = create_connection()
-    if not connection:
-        return
+    print(f"Student Limit: {STUDENT_LIMIT}")
+    print(f"Number of CPU cores to use: {NUM_PROCESSES}")
+    print(f"Available CPU cores: {mp.cpu_count()}")
     
     try:
-        # Get all students
-        students = get_students(connection, DEPARTMENT_ID)
+        # Load data for first 100 students only
+        students, answer_passages, student_passages, modreview_data = load_all_data(DEPARTMENT_ID, STUDENT_LIMIT)
+        
         if not students:
-            print("No students found")
+            print("No students found or failed to load data")
             return
         
-        print(f"Found {len(students)} students")
+        print(f"Found {len(students)} students (limited to first {STUDENT_LIMIT})")
+        print(f"Estimated processing time with {NUM_PROCESSES} cores: ~{len(students)/(NUM_PROCESSES*2):.1f} minutes")
+        print("Starting processing...\n")
         
-        # Process each student
-        results = []
-        failed_students = []
+        # Process students in parallel
+        start_time = time.time()
+        results, failed_students = parallel_process_students(
+            students, answer_passages, student_passages, modreview_data, DEPARTMENT_ID, NUM_PROCESSES
+        )
+        total_time = time.time() - start_time
         
-        for i, student in enumerate(students, 1):
-            print(f"[{i}/{len(students)}] ", end="")
+        # Save results to Excel
+        filename = save_to_excel(results, failed_students, DEPARTMENT_ID)
+        
+        # Calculate statistics
+        if results:
+            total_marks_list = [r['Total_Marks'] for r in results]
+            pass_count = sum(1 for r in results if r['Pass_Status'] == 'Pass')
+            fail_count = len(results) - pass_count
+            avg_marks = sum(total_marks_list) / len(total_marks_list)
+            max_marks = max(total_marks_list)
+            min_marks = min(total_marks_list)
             
-            try:
-                result = process_student(connection, student)
-                if result:
-                    results.append(result)
-                    print("✓")
-                else:
-                    failed_students.append({
-                        'Student_ID': student['student_id'],
-                        'Subject_ID': student['subjectsId'],
-                        'QSet': student['qset'],
-                        'Reason': 'Processing failed'
-                    })
-                    print("✗")
-            except Exception as e:
-                failed_students.append({
-                    'Student_ID': student['student_id'],
-                    'Subject_ID': student['subjectsId'],
-                    'QSet': student['qset'],
-                    'Reason': f'Error: {str(e)}'
-                })
-                print(f"✗ Error: {e}")
+            print(f"\n=== DETAILED SUMMARY (FIRST 100 STUDENTS) ===")
+            print(f"Total students processed: {len(students)} (limited to first {STUDENT_LIMIT})")
+            print(f"Successful evaluations: {len(results)}")
+            print(f"Failed evaluations: {len(failed_students)}")
+            print(f"Processing success rate: {len(results)/len(students)*100:.1f}%")
+            print(f"")
+            print(f"Academic Results:")
+            print(f"  Pass (≥32): {pass_count} ({pass_count/len(results)*100:.1f}%)")
+            print(f"  Fail (<32): {fail_count} ({fail_count/len(results)*100:.1f}%)")
+            print(f"  Average marks: {avg_marks:.2f}/100")
+            print(f"  Highest marks: {max_marks:.2f}/100")
+            print(f"  Lowest marks: {min_marks:.2f}/100")
+            print(f"")
+            print(f"Performance:")
+            print(f"  Total processing time: {total_time/60:.1f} minutes")
+            print(f"  Average time per student: {total_time/len(students):.2f} seconds")
+            print(f"  Processing rate: {len(students)/(total_time/60):.1f} students/minute")
+            print(f"  Speedup achieved: ~{NUM_PROCESSES}x faster than single-core")
+            print(f"")
+            print(f"Output file: {filename}")
             
-            # Small delay
-            time.sleep(0.2)
+            # Show top and bottom performers
+            sorted_results = sorted(results, key=lambda x: x['Total_Marks'], reverse=True)
+            print(f"\n=== TOP 5 PERFORMERS ===")
+            for i, result in enumerate(sorted_results[:5], 1):
+                print(f"{i}. Student {result['Student_ID']}: {result['Total_Marks']:.2f} marks ({result['Pass_Status']})")
+            
+            print(f"\n=== BOTTOM 5 PERFORMERS ===")
+            for i, result in enumerate(sorted_results[-5:], 1):
+                print(f"{i}. Student {result['Student_ID']}: {result['Total_Marks']:.2f} marks ({result['Pass_Status']})")
         
-        # Save results
-        save_to_excel(results, failed_students, DEPARTMENT_ID)
+        # Show failed students if any
+        if failed_students:
+            print(f"\n=== FAILED STUDENTS (Processing Errors) ===")
+            for failed in failed_students[:10]:  # Show first 10
+                print(f"Student {failed['Student_ID']}: {failed['Reason']}")
+            if len(failed_students) > 10:
+                print(f"... and {len(failed_students) - 10} more (see Excel file)")
         
-        # Final summary
-        print(f"\n=== SUMMARY ===")
-        print(f"Total students: {len(students)}")
-        print(f"Successful: {len(results)}")
-        print(f"Failed: {len(failed_students)}")
-        print(f"Success rate: {len(results)/len(students)*100:.1f}%")
+        print(f"\n=== NOTE ===")
+        print(f"This run processed only the FIRST {STUDENT_LIMIT} students from department {DEPARTMENT_ID}")
+        print(f"To process all students, modify STUDENT_LIMIT in the code or remove the limit parameter")
         
     except Exception as e:
         print(f"Critical error: {e}")
-    
-    finally:
-        connection.close()
-        print("Database connection closed")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
+    # Ensure proper multiprocessing on Windows
+    if mp.get_start_method(allow_none=True) != 'spawn':
+        mp.set_start_method('spawn', force=True)
     main()

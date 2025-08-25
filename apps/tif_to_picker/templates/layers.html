@@ -9004,138 +9004,165 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         }
     }
     
-    // Updated generateDiversePalettes with aggressive green filtering
-    function generateDiversePalettes(baseColors, collection = 'trending') {
-        const palettes = [];
+function generateDiversePalettes(baseColors, collection = 'trending') {
+    const palettes = [];
+    
+    const mappingColors = [
+        "#FF5733", "#3357FF", "#FF33A8", "#FF8F33", "#8F33FF",
+        "#FF3333", "#33A8FF", "#FF33F5", "#FFD533", "#D533FF", // Added more yellow representation
+        "#FF336E", "#33C7FF", "#FF6B8B", "#336EFF", "#FF8C42",
+        "#4286FF", "#FF5252", "#5262FF", "#FFEB3B", "#8040FF"  // Added pure yellow
+    ];
+    
+    const shuffledColors = shuffleArray([...mappingColors]);
+    const baseHslValues = baseColors.map(color => {
+        const hsl = rgbToHsl(...color);
+        return { h: hsl[0], s: hsl[1], l: hsl[2], isBackground: isBackgroundColor(color) };
+    });
+
+    for (let i = 0; i < 20; i++) {
+        const newPalette = [];
+        const mappingColor = shuffledColors[i];
+        const mappingHsl = rgbToHsl(...hexToRgb(mappingColor));
+        const firstColorOriginal = baseHslValues[0];
         
-        // Filter green from base colors first
-        const filteredBaseColors = removeGreenFromColors(baseColors);
+        const brightnessPattern = generateBrightnessPattern(baseColors.length, collection);
         
-        const baseFamilies = groupColorsByFamily(filteredBaseColors);
-        const availableFamilyNames = Object.keys(baseFamilies).filter(name => name !== 'green');
-        
-        // NO GREEN in target families
-        const allFamilies = ['red', 'orange', 'yellow', 'cyan', 'blue', 'purple', 'pink', 'magenta'];
-        
-        const collectionSettings = {
-            'ss': {
-                saturationMultiplier: 1.2,
-                lightnessMultiplier: 1.1,
-                minSaturation: 60,
-                maxSaturation: 100,
-                minLightness: 40,
-                maxLightness: 90
-            },
-            'aw': {
-                saturationMultiplier: 0.8,
-                lightnessMultiplier: 0.9,
-                minSaturation: 20,
-                maxSaturation: 80,
-                minLightness: 25,
-                maxLightness: 75
-            },
-            'trending': {
-                saturationMultiplier: 1.0,
-                lightnessMultiplier: 1.0,
-                minSaturation: 30,
-                maxSaturation: 90,
-                minLightness: 30,
-                maxLightness: 85
+        baseColors.forEach((originalColor, colorIndex) => {
+            const originalHsl = baseHslValues[colorIndex];
+            const brightnessLevel = brightnessPattern[colorIndex];
+            
+            if (colorIndex === 0) {
+                let [h, s, l] = mappingHsl;
+                
+                // Special handling for yellows
+                if (h >= 50 && h <= 70) {
+                    // Preserve yellow characteristics
+                    s = Math.max(70, s); // Keep yellows saturated
+                    l = Math.max(50, l); // Keep yellows bright enough
+                } 
+                // Green reduction (but not affecting yellows)
+                else if (h > 70 && h <= 160) {
+                    s = Math.max(30, Math.min(70, s * 0.7));
+                }
+                
+                // Apply brightness pattern while preserving yellow characteristics
+                l = applyBrightnessLevelWithYellow(l, brightnessLevel, h);
+                
+                newPalette.push(hslToRgb(h, s, l));
+            } else {
+                const hueDifference = (originalHsl.h - firstColorOriginal.h + 360) % 360;
+                let newHue = (mappingHsl[0] + hueDifference) % 360;
+                
+                // Modified green handling to preserve yellows
+                if (newHue > 70 && newHue <= 160) {
+                    newHue = (newHue < 115) ? 60 + Math.random() * 10 : 170 + Math.random() * 10;
+                }
+                
+                let newSat = originalHsl.s + (Math.random() - 0.5) * 25;
+                let newLight = originalHsl.l;
+                
+                // Special handling for yellows in derived colors
+                if (newHue >= 50 && newHue <= 70) {
+                    newSat = Math.max(70, newSat);
+                    newLight = Math.max(50, newLight);
+                }
+                
+                newLight = applyBrightnessLevelWithYellow(newLight, brightnessLevel, newHue);
+                
+                if (newHue > 70 && newHue <= 180) {
+                    newSat = Math.max(20, Math.min(65, newSat * 0.8));
+                }
+                
+                if (!originalHsl.isBackground) {
+                    if (Math.random() > 0.6) newSat = Math.max(30, Math.min(80, newSat - 15));
+                }
+                
+                newSat = Math.max(20, Math.min(95, newSat));
+                newLight = Math.max(15, Math.min(95, newLight));
+                
+                if (originalHsl.isBackground) {
+                    newSat = Math.min(25, newSat);
+                    newLight = Math.max(80, newLight);
+                }
+                
+                newPalette.push(hslToRgb(newHue, newSat, newLight));
             }
-        };
+        });
         
-        const settings = collectionSettings[collection] || collectionSettings.trending;
-        
-        for (let i = 0; i < 20; i++) {
-            const newPalette = [];
-            const familyMapping = {};
-            const usedTargetFamilies = new Set();
-            
-            availableFamilyNames.forEach((originalFamily, index) => {
-                let targetFamily;
-                
-                if (collection === 'ss') {
-                    targetFamily = allFamilies[(index + i * 2) % allFamilies.length];
-                } else if (collection === 'aw') {
-                    if (i % 2 === 0) {
-                        targetFamily = allFamilies[(index + 1) % allFamilies.length];
-                    } else {
-                        targetFamily = allFamilies[(index + 4) % allFamilies.length];
-                    }
-                } else {
-                    if (i < 8) {
-                        targetFamily = allFamilies[(index + i) % allFamilies.length];
-                    } else if (i < 16) {
-                        targetFamily = allFamilies[(allFamilies.length - 1 - index + (i - 8) * 2) % allFamilies.length];
-                    } else {
-                        const baseIndex = (index * 3 + i * 5) % allFamilies.length;
-                        targetFamily = allFamilies[baseIndex];
-                    }
-                }
-                
-                let fallbackAttempts = 0;
-                while (usedTargetFamilies.has(targetFamily) && fallbackAttempts < allFamilies.length) {
-                    targetFamily = allFamilies[(allFamilies.indexOf(targetFamily) + 1) % allFamilies.length];
-                    fallbackAttempts++;
-                }
-                
-                familyMapping[originalFamily] = targetFamily;
-                usedTargetFamilies.add(targetFamily);
-            });
-            
-            filteredBaseColors.forEach((originalColor, colorIndex) => {
-                const originalFamily = getColorFamily(originalColor);
-                let targetFamily = familyMapping[originalFamily] || 'blue';
-                
-                let newColor = generateMatchingColor(originalColor, targetFamily);
-                let [h, s, l] = rgbToHsl(...newColor);
-                
-                // Force away from green range
-                if (h >= 30 && h < 170) {
-                    const safeHues = [15, 200, 240, 290, 330];
-                    h = safeHues[Math.floor(Math.random() * safeHues.length)];
-                }
-                
-                const baseHueVariation = ((i * 15 + colorIndex * 5) % 30 - 15);
-                const baseSatVariation = ((i * 8 + colorIndex * 3) % 20 - 10);
-                const baseLightVariation = ((i * 6 + colorIndex * 2) % 16 - 8);
-                
-                s = s * settings.saturationMultiplier;
-                l = l * settings.lightnessMultiplier;
-                
-                let newHue = (h + baseHueVariation + 360) % 360;
-                
-                // Check again after variation
-                if (newHue >= 30 && newHue < 170) {
-                    newHue = newHue < 100 ? 15 : 200;
-                }
-                
-                const newSat = Math.max(settings.minSaturation, 
-                                      Math.min(settings.maxSaturation, s + baseSatVariation));
-                const newLight = Math.max(settings.minLightness, 
-                                        Math.min(settings.maxLightness, l + baseLightVariation));
-                
-                if (isBackgroundColor(originalColor)) {
-                    if (collection === 'ss') {
-                        newColor = hslToRgb(newHue, Math.min(25, newSat), Math.max(85, newLight));
-                    } else if (collection === 'aw') {
-                        newColor = hslToRgb(newHue, Math.min(30, newSat), Math.min(80, Math.max(70, newLight)));
-                    } else {
-                        newColor = hslToRgb(newHue, Math.min(20, newSat), Math.max(80, newLight));
-                    }
-                } else {
-                    newColor = hslToRgb(newHue, newSat, newLight);
-                }
-                
-                newPalette.push(newColor);
-            });
-            
-            // Final green filter for this palette
-            palettes.push(removeGreenFromColors(newPalette));
-        }
-        
-        return palettes;
+        palettes.push(newPalette);
     }
+    
+    return palettes;
+}
+
+function applyBrightnessLevelWithYellow(baseLightness, level, hue) {
+    const isYellow = hue >= 50 && hue <= 70;
+    
+    const variations = {
+        // SS Collection - Bright Values
+        'very-bright': isYellow ? 90 : 90,  // Consistently very bright
+        'bright': isYellow ? 80 : 80,       // Consistently bright
+        
+        // AW Collection - Dark Values
+        'dark': isYellow ? 30 : 30,         // Consistently dark
+        'very-dark': isYellow ? 20 : 20,    // Consistently very dark
+        
+        // Trending Collection
+        'normal': isYellow ? 65 : baseLightness
+    };
+    
+    let newLightness = variations[level] || baseLightness;
+    
+    // Special handling for yellows in trending collection only
+    if (isYellow && level === 'normal') {
+        newLightness = Math.max(45, newLightness);
+    }
+    
+    return Math.max(10, Math.min(95, newLightness));
+}
+
+  function generateBrightnessPattern(length, collection) {
+    const pattern = [];
+    
+    switch(collection) {
+        case 'ss':
+            // Randomly fill with bright and very-bright
+            for (let i = 0; i < length; i++) {
+                pattern.push(Math.random() < 0.5 ? 'very-bright' : 'bright');
+            }
+            break;
+            
+        case 'aw':
+            // Randomly fill with dark and very-dark
+            for (let i = 0; i < length; i++) {
+                pattern.push(Math.random() < 0.5 ? 'very-dark' : 'dark');
+            }
+            break;
+            
+        case 'trending':
+        default:
+            const levels = ['very-bright', 'bright', 'normal', 'dark', 'very-dark'];
+            pattern.push('very-bright');
+            pattern.push('dark');
+            for (let i = 2; i < length; i++) {
+                pattern.push(levels[Math.floor(Math.random() * levels.length)]);
+            }
+            return shuffleArray(pattern);
+    }
+    
+    return pattern; // No shuffle needed for SS and AW
+}
+
+
+  function shuffleArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+  }
     
     function colorDifference(rgb1, rgb2) {
         const hsl1 = rgbToHsl(...rgb1);
@@ -10909,7 +10936,7 @@ function hslToRgbforsingle(h, s, l) {
             return colors;
         }
     
-    function generateUniqueRGBColorArray(count) {
+    {% comment %} function generateUniqueRGBColorArray(count) {
         const colors = [];
     
         while (colors.length < count) {
@@ -10926,7 +10953,7 @@ function hslToRgbforsingle(h, s, l) {
         }
     
         return colors;
-    }
+    } {% endcomment %}
 
       function showLayerInfo() {
         contextMenu.style.display = 'none';
