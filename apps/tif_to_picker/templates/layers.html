@@ -9007,14 +9007,34 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
 function generateDiversePalettes(baseColors, collection = 'trending') {
     const palettes = [];
     
-    const mappingColors = [
-        "#FF5733", "#3357FF", "#FF33A8", "#FF8F33", "#8F33FF",
-        "#FF3333", "#33A8FF", "#FF33F5", "#FFD533", "#D533FF", // Added more yellow representation
-        "#FF336E", "#33C7FF", "#FF6B8B", "#336EFF", "#FF8C42",
-        "#4286FF", "#FF5252", "#5262FF", "#FFEB3B", "#8040FF"  // Added pure yellow
-    ];
-    
-    const shuffledColors = shuffleArray([...mappingColors]);
+    // Reorganized mapping colors into color families
+    const colorFamilies = {
+        reds: ["#FF5733", "#FF3333", "#FF336E", "#FF5252"],
+        blues: ["#3357FF", "#33A8FF", "#33C7FF", "#4286FF"],
+        purples: ["#8F33FF", "#D533FF", "#8040FF"],
+        pinks: ["#FF33A8", "#FF33F5", "#FF4081"],
+        oranges: ["#FF8F33", "#FF8C42"],
+        yellows: ["#FFD533", "#FFEB3B"],
+        teals: ["#33DBCD", "#40E0D0"],
+        greens: ["#33FF57", "#66FF66"]
+    };
+
+    // Create a balanced distribution of first colors
+    let firstColors = [];
+    Object.values(colorFamilies).forEach(family => {
+        // Take 2-3 colors from each family randomly
+        const count = Math.min(family.length, Math.floor(Math.random() * 2) + 2);
+        const selected = shuffleArray([...family]).slice(0, count);
+        firstColors.push(...selected);
+    });
+    firstColors = shuffleArray(firstColors);
+
+    // Ensure we have enough first colors
+    while (firstColors.length < 20) {
+        firstColors.push(...shuffleArray(firstColors));
+    }
+    firstColors = firstColors.slice(0, 20);
+
     const baseHslValues = baseColors.map(color => {
         const hsl = rgbToHsl(...color);
         return { h: hsl[0], s: hsl[1], l: hsl[2], isBackground: isBackgroundColor(color) };
@@ -9022,7 +9042,7 @@ function generateDiversePalettes(baseColors, collection = 'trending') {
 
     for (let i = 0; i < 20; i++) {
         const newPalette = [];
-        const mappingColor = shuffledColors[i];
+        const mappingColor = firstColors[i];
         const mappingHsl = rgbToHsl(...hexToRgb(mappingColor));
         const firstColorOriginal = baseHslValues[0];
         
@@ -9035,44 +9055,33 @@ function generateDiversePalettes(baseColors, collection = 'trending') {
             if (colorIndex === 0) {
                 let [h, s, l] = mappingHsl;
                 
-                // Special handling for yellows
-                if (h >= 50 && h <= 70) {
-                    // Preserve yellow characteristics
-                    s = Math.max(70, s); // Keep yellows saturated
-                    l = Math.max(50, l); // Keep yellows bright enough
-                } 
-                // Green reduction (but not affecting yellows)
-                else if (h > 70 && h <= 160) {
-                    s = Math.max(30, Math.min(70, s * 0.7));
+                // Adjust saturation based on color family
+                if (h >= 50 && h <= 70) { // Yellows
+                    s = Math.max(70, s);
+                    l = Math.max(50, l);
+                } else {
+                    // Ensure first color is vibrant
+                    s = Math.max(60, Math.min(90, s));
                 }
                 
-                // Apply brightness pattern while preserving yellow characteristics
                 l = applyBrightnessLevelWithYellow(l, brightnessLevel, h);
-                
                 newPalette.push(hslToRgb(h, s, l));
             } else {
                 const hueDifference = (originalHsl.h - firstColorOriginal.h + 360) % 360;
                 let newHue = (mappingHsl[0] + hueDifference) % 360;
                 
-                // Modified green handling to preserve yellows
-                if (newHue > 70 && newHue <= 160) {
-                    newHue = (newHue < 115) ? 60 + Math.random() * 10 : 170 + Math.random() * 10;
-                }
+                // Add slight random variation to derived colors
+                newHue = (newHue + (Math.random() - 0.5) * 20 + 360) % 360;
                 
                 let newSat = originalHsl.s + (Math.random() - 0.5) * 25;
                 let newLight = originalHsl.l;
                 
-                // Special handling for yellows in derived colors
-                if (newHue >= 50 && newHue <= 70) {
+                if (newHue >= 50 && newHue <= 70) { // Yellows
                     newSat = Math.max(70, newSat);
                     newLight = Math.max(50, newLight);
                 }
                 
                 newLight = applyBrightnessLevelWithYellow(newLight, brightnessLevel, newHue);
-                
-                if (newHue > 70 && newHue <= 180) {
-                    newSat = Math.max(20, Math.min(65, newSat * 0.8));
-                }
                 
                 if (!originalHsl.isBackground) {
                     if (Math.random() > 0.6) newSat = Math.max(30, Math.min(80, newSat - 15));
@@ -9096,25 +9105,32 @@ function generateDiversePalettes(baseColors, collection = 'trending') {
     return palettes;
 }
 
+function getColorFamily(hue) {
+    if (hue >= 0 && hue < 30) return 'red';
+    if (hue >= 30 && hue < 50) return 'orange';
+    if (hue >= 50 && hue < 70) return 'yellow';
+    if (hue >= 70 && hue < 150) return 'green';
+    if (hue >= 150 && hue < 180) return 'teal';
+    if (hue >= 180 && hue < 240) return 'blue';
+    if (hue >= 240 && hue < 300) return 'purple';
+    if (hue >= 300 && hue < 360) return 'pink';
+    return 'unknown';
+}
+
+// Previous functions remain the same
 function applyBrightnessLevelWithYellow(baseLightness, level, hue) {
     const isYellow = hue >= 50 && hue <= 70;
     
     const variations = {
-        // SS Collection - Bright Values
-        'very-bright': isYellow ? 90 : 90,  // Consistently very bright
-        'bright': isYellow ? 80 : 80,       // Consistently bright
-        
-        // AW Collection - Dark Values
-        'dark': isYellow ? 30 : 30,         // Consistently dark
-        'very-dark': isYellow ? 20 : 20,    // Consistently very dark
-        
-        // Trending Collection
+        'very-bright': isYellow ? 90 : 90,
+        'bright': isYellow ? 80 : 80,
+        'dark': isYellow ? 30 : 30,
+        'very-dark': isYellow ? 20 : 20,
         'normal': isYellow ? 65 : baseLightness
     };
     
     let newLightness = variations[level] || baseLightness;
     
-    // Special handling for yellows in trending collection only
     if (isYellow && level === 'normal') {
         newLightness = Math.max(45, newLightness);
     }
@@ -9122,19 +9138,17 @@ function applyBrightnessLevelWithYellow(baseLightness, level, hue) {
     return Math.max(10, Math.min(95, newLightness));
 }
 
-  function generateBrightnessPattern(length, collection) {
+function generateBrightnessPattern(length, collection) {
     const pattern = [];
     
     switch(collection) {
         case 'ss':
-            // Randomly fill with bright and very-bright
             for (let i = 0; i < length; i++) {
                 pattern.push(Math.random() < 0.5 ? 'very-bright' : 'bright');
             }
             break;
             
         case 'aw':
-            // Randomly fill with dark and very-dark
             for (let i = 0; i < length; i++) {
                 pattern.push(Math.random() < 0.5 ? 'very-dark' : 'dark');
             }
@@ -9151,10 +9165,17 @@ function applyBrightnessLevelWithYellow(baseLightness, level, hue) {
             return shuffleArray(pattern);
     }
     
-    return pattern; // No shuffle needed for SS and AW
+    return pattern;
 }
 
-
+function shuffleArray(array) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
   function shuffleArray(array) {
       const newArray = [...array];
       for (let i = newArray.length - 1; i > 0; i--) {
@@ -16831,84 +16852,140 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }, 3000);
     }
     
-    // New function to create background variations
-    // New function to create background variations
+    // Function to create background variations
     function createBackgroundVariations(baseColor, variationType) {
       const [h, s, l] = rgbToHsl(...baseColor);
       
       switch (variationType) {
         case 'dark':
-          // Create dark background (low lightness, maintain some saturation)
           return hslToRgb(h, Math.max(s * 0.6, 8), Math.max(l * 0.25, 3));
           
         case 'faint':
-          // Apply SS collection logic - light and bright with slight warm/cool tint
-          const newSat = Math.min(25, s + 10); // Slight increase in saturation
-          const newLight = Math.max(85, Math.min(95, l + 5)); // Keep very light
+          const newSat = Math.min(25, s + 10);
+          const newLight = Math.max(85, Math.min(95, l + 5));
           return hslToRgb(h, newSat, newLight);
           
         case 'regular':
         default:
-          // Keep original color but ensure it's suitable as background
           return hslToRgb(h, Math.max(s * 0.7, 12), Math.min(Math.max(l * 0.9, 15), 75));
       }
     }
     
-    // Harmony generation functions
-  function generateMonochromaticPalette(baseColor, imageColors) {
-  try {
-    const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-    const monoRange = 40; // how much we allow lightness/saturation shift
-
-    const monoPalette = imageColors.map((color, i) => {
-      const [originalH, originalS, originalL] = rgbToHsl(...color);
-
-      // Keep hue fixed (monochromatic), only shift S/L relative to base
-      const scaledS = baseS + ((originalS - baseS) * (monoRange / 100));
-      const scaledL = baseL + ((originalL - baseL) * (monoRange / 100));
-
-      const newS = Math.max(20, Math.min(100, scaledS));
-      const newL = Math.max(10, Math.min(90, scaledL));
-
-      return hslToRgb(baseH, newS, newL);
-    });
-
-    // Ensure base color is included
-    if (!monoPalette.some(color => perceptualColorDifference(color, baseColor) < 20)) {
-      monoPalette[0] = baseColor;
-    }
-
-    return monoPalette;
-  } catch (error) {
-    console.error("Error generating monochromatic palette:", error);
-    return [baseColor, ...imageColors.slice(0, Math.min(imageColors.length - 1, 8))];
-  }
-}
-
-    function generateAnalogousPalette(baseColor, imageColors) {
+    // UPDATED Harmony generation functions
+    function generateMonochromaticPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const analogousRange = 30;
+        
+        const monoPalette = imageColors.map((color, i) => {
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
+          
+          // Create MUCH more variation using multiple factors that don't repeat
+          const paletteVariation = paletteIndex * 17; // Use larger prime for more spread
+          const colorVariation = i * 23; // Another prime for color index
+          const combinedVariation = paletteVariation + colorVariation;
+          
+          // SATURATION: Use continuous mathematical functions instead of patterns
+          let saturationMultiplier = 0.3 + (Math.sin(combinedVariation * 0.1) + 1) * 0.35; // 0.3 to 1.0
+          let saturationOffset = Math.cos(paletteIndex * 0.7) * 30; // -30 to +30
+          
+          let newS = originalS * saturationMultiplier + saturationOffset;
+          newS = Math.max(5, Math.min(95, newS));
+          
+          // LIGHTNESS: Use different mathematical functions
+          let lightnessMultiplier = 0.4 + (Math.cos(combinedVariation * 0.13) + 1) * 0.4; // 0.4 to 1.2
+          let lightnessOffset = Math.sin(paletteIndex * 1.1) * 25; // -25 to +25
+          
+          let newL = originalL * lightnessMultiplier + lightnessOffset;
+          newL = Math.max(10, Math.min(90, newL));
+          
+          // HUE: Slight variation but still monochromatic
+          let hueOffset = Math.sin(combinedVariation * 0.07) * 8; // -8 to +8 degrees
+          let finalHue = (baseH + hueOffset + 360) % 360;
+          
+          // Add palette-specific global adjustments to ensure each palette looks different
+          if (paletteIndex % 3 === 0) {
+            // High contrast palettes
+            if (newL > 50) {
+              newL = Math.min(85, newL + 20);
+              newS = Math.min(90, newS + 15);
+            } else {
+              newL = Math.max(15, newL - 15);
+              newS = Math.max(20, newS - 10);
+            }
+          } else if (paletteIndex % 3 === 1) {
+            // Mid-tone palettes
+            newL = 35 + (newL - 35) * 0.6; // Compress towards mid-tones
+            newS = Math.max(25, Math.min(75, newS));
+          } else {
+            // Varied lightness palettes
+            newL = newL + Math.sin(i * 0.5) * 20;
+            newL = Math.max(20, Math.min(80, newL));
+          }
+          
+          // Additional variation for higher palette indices
+          if (paletteIndex >= 5) {
+            const extraVariation = (paletteIndex - 5) * 13;
+            newS = newS + Math.cos(extraVariation + i) * 15;
+            newL = newL + Math.sin(extraVariation + i * 0.3) * 18;
+            
+            newS = Math.max(10, Math.min(90, newS));
+            newL = Math.max(15, Math.min(85, newL));
+          }
+          
+          // Final micro-adjustments to prevent any identical colors
+          newS = newS + (combinedVariation % 7) - 3;
+          newL = newL + (combinedVariation % 9) - 4;
+          
+          newS = Math.max(5, Math.min(95, newS));
+          newL = Math.max(10, Math.min(90, newL));
+          
+          return hslToRgb(finalHue, newS, newL);
+        });
+
+        // Ensure we have the base color
+        if (!monoPalette.some(color => perceptualColorDifference(color, baseColor) < 20)) {
+          monoPalette[0] = baseColor;
+        }
+
+        return monoPalette;
+      } catch (error) {
+        console.error("Error generating monochromatic palette:", error);
+        return [baseColor, ...imageColors.slice(0, Math.min(imageColors.length - 1, 8))];
+      }
+    }
+
+    function generateAnalogousPalette(baseColor, imageColors, paletteIndex = 0) {
+      try {
+        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         
         const analogousPalette = imageColors.map((color, i) => {
           const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let hueDiff = originalH - baseH;
-          if (hueDiff > 180) hueDiff -= 360;
-          if (hueDiff < -180) hueDiff += 360;
+          // Create wider analogous range (±45°) with more variation
+          const paletteVariation = paletteIndex * 11;
+          const colorVariation = i * 19;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          const scaledHueDiff = hueDiff * (analogousRange / 180);
-          let newHue = baseH + scaledHueDiff;
-          if (newHue < 0) newHue += 360;
-          if (newHue >= 360) newHue -= 360;
+          // Create analogous positions with mathematical distribution
+          let hueOffset = Math.sin(combinedVariation * 0.08) * 45; // -45 to +45 degrees
+          let finalHue = (baseH + hueOffset + 360) % 360;
           
-          return hslToRgb(newHue, originalS, originalL);
+          // Add palette-specific hue shifts
+          finalHue = (finalHue + (paletteIndex * 7) % 30 - 15 + 360) % 360;
+          
+          // Vary saturation and lightness more dramatically
+          let satMultiplier = 0.5 + (Math.cos(combinedVariation * 0.11) + 1) * 0.4; // 0.5 to 1.3
+          let lightMultiplier = 0.6 + (Math.sin(combinedVariation * 0.09) + 1) * 0.3; // 0.6 to 1.2
+          
+          let newS = originalS * satMultiplier + Math.cos(paletteIndex * 0.5) * 20;
+          let newL = originalL * lightMultiplier + Math.sin(paletteIndex * 0.8) * 15;
+          
+          newS = Math.max(15, Math.min(95, newS));
+          newL = Math.max(15, Math.min(85, newL));
+          
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        if (!analogousPalette.some(color => perceptualColorDifference(color, baseColor) < 20)) {
-          analogousPalette[0] = baseColor;
-        }
-        
+
         return analogousPalette;
       } catch (error) {
         console.error("Error generating analogous palette:", error);
@@ -16916,52 +16993,38 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateComplementaryPalette(baseColor, imageColors) {
+    function generateComplementaryPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const complementH = (baseH + 180) % 360;
         
         const complementaryPalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 13;
+          const colorVariation = i * 21;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromComplement = Math.abs(h - complementH);
-          if (distFromComplement > 180) distFromComplement = 360 - distFromComplement;
+          // Decide whether this color should be base or complement oriented
+          let targetHue = Math.sin(combinedVariation * 0.1) > 0 ? baseH : complementH;
           
-          let newHue;
-          if (distFromBase <= distFromComplement) {
-            const shiftAmount = (distFromBase / 180) * 30;
-            newHue = (baseH + shiftAmount) % 360;
-          } else {
-            const shiftAmount = (distFromComplement / 180) * 30;
-            newHue = (complementH + shiftAmount) % 360;
-          }
+          // Add variation around the target hue
+          let hueOffset = Math.cos(combinedVariation * 0.07) * 25; // -25 to +25
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 5) % 20 - 10 + 360) % 360;
           
-          return hslToRgb(newHue, s, l);
+          // Create complementary-specific saturation/lightness patterns
+          let satMultiplier = 0.6 + (Math.sin(combinedVariation * 0.12) + 1) * 0.3; // 0.6 to 1.2
+          let lightMultiplier = 0.7 + (Math.cos(combinedVariation * 0.08) + 1) * 0.25; // 0.7 to 1.2
+          
+          let newS = originalS * satMultiplier + Math.sin(paletteIndex * 0.6) * 25;
+          let newL = originalL * lightMultiplier + Math.cos(paletteIndex * 0.9) * 20;
+          
+          newS = Math.max(20, Math.min(90, newS));
+          newL = Math.max(20, Math.min(80, newL));
+          
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false;
-        let hasComplement = false;
-        
-        for (const color of complementaryPalette) {
-          const [h] = rgbToHsl(...color);
-          const distFromBase = Math.abs(h - baseH);
-          const distFromComplement = Math.abs(h - complementH);
-          
-          if (distFromBase < 15) hasBase = true;
-          if (distFromComplement < 15) hasComplement = true;
-          
-          if (hasBase && hasComplement) break;
-        }
-        
-        if (!hasBase) complementaryPalette[0] = baseColor;
-        if (!hasComplement) {
-          const pureComplement = hslToRgb(complementH, baseS, baseL);
-          complementaryPalette[complementaryPalette.length - 1] = pureComplement;
-        }
-        
+
         return complementaryPalette;
       } catch (error) {
         console.error("Error generating complementary palette:", error);
@@ -16969,57 +17032,38 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateSplitComplementaryPalette(baseColor, imageColors) {
+    function generateSplitComplementaryPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const splitComp1H = (baseH + 150) % 360;
         const splitComp2H = (baseH + 210) % 360;
         
         const splitPalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 16;
+          const colorVariation = i * 27;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromSplit1 = Math.abs(h - splitComp1H);
-          if (distFromSplit1 > 180) distFromSplit1 = 360 - distFromSplit1;
+          // Choose between base and split complement hues
+          let targetHues = [baseH, splitComp1H, splitComp2H];
+          let targetHue = targetHues[Math.floor((combinedVariation * 0.1) % 3)];
           
-          let distFromSplit2 = Math.abs(h - splitComp2H);
-          if (distFromSplit2 > 180) distFromSplit2 = 360 - distFromSplit2;
+          let hueOffset = Math.sin(combinedVariation * 0.06) * 20; // -20 to +20
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 8) % 25 - 12 + 360) % 360;
           
-          const minDist = Math.min(distFromBase, distFromSplit1, distFromSplit2);
+          let satMultiplier = 0.5 + (Math.cos(combinedVariation * 0.14) + 1) * 0.4; // 0.5 to 1.3
+          let lightMultiplier = 0.6 + (Math.sin(combinedVariation * 0.11) + 1) * 0.35; // 0.6 to 1.3
           
-          let newHue;
-          if (minDist === distFromBase) {
-            newHue = baseH;
-          } else if (minDist === distFromSplit1) {
-            newHue = splitComp1H;
-          } else {
-            newHue = splitComp2H;
-          }
+          let newS = originalS * satMultiplier + Math.cos(paletteIndex * 0.7) * 30;
+          let newL = originalL * lightMultiplier + Math.sin(paletteIndex * 1.2) * 25;
           
-          const variation = (i % 5) - 2;
-          newHue = (newHue + variation + 360) % 360;
+          newS = Math.max(15, Math.min(95, newS));
+          newL = Math.max(15, Math.min(85, newL));
           
-          return hslToRgb(newHue, s, l);
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false, hasSplit1 = false, hasSplit2 = false;
-        
-        for (const color of splitPalette) {
-          const [h] = rgbToHsl(...color);
-          
-          if (Math.abs(h - baseH) < 15 || Math.abs(h - baseH - 360) < 15) hasBase = true;
-          if (Math.abs(h - splitComp1H) < 15) hasSplit1 = true;
-          if (Math.abs(h - splitComp2H) < 15) hasSplit2 = true;
-          
-          if (hasBase && hasSplit1 && hasSplit2) break;
-        }
-        
-        if (!hasBase) splitPalette[0] = baseColor;
-        if (!hasSplit1) splitPalette[1] = hslToRgb(splitComp1H, baseS, baseL);
-        if (!hasSplit2) splitPalette[2] = hslToRgb(splitComp2H, baseS, baseL);
-        
+
         return splitPalette;
       } catch (error) {
         console.error("Error generating split complementary palette:", error);
@@ -17027,57 +17071,38 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateTriadicPalette(baseColor, imageColors) {
+    function generateTriadicPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const triad1H = (baseH + 120) % 360;
         const triad2H = (baseH + 240) % 360;
         
         const triadicPalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 14;
+          const colorVariation = i * 31;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromTriad1 = Math.abs(h - triad1H);
-          if (distFromTriad1 > 180) distFromTriad1 = 360 - distFromTriad1;
+          // Choose between triadic hues
+          let targetHues = [baseH, triad1H, triad2H];
+          let targetHue = targetHues[Math.floor((combinedVariation * 0.09) % 3)];
           
-          let distFromTriad2 = Math.abs(h - triad2H);
-          if (distFromTriad2 > 180) distFromTriad2 = 360 - distFromTriad2;
+          let hueOffset = Math.cos(combinedVariation * 0.05) * 25; // -25 to +25
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 6) % 30 - 15 + 360) % 360;
           
-          const minDist = Math.min(distFromBase, distFromTriad1, distFromTriad2);
+          let satMultiplier = 0.6 + (Math.sin(combinedVariation * 0.13) + 1) * 0.35; // 0.6 to 1.3
+          let lightMultiplier = 0.5 + (Math.cos(combinedVariation * 0.10) + 1) * 0.4; // 0.5 to 1.3
           
-          let newHue;
-          if (minDist === distFromBase) {
-            newHue = baseH;
-          } else if (minDist === distFromTriad1) {
-            newHue = triad1H;
-          } else {
-            newHue = triad2H;
-          }
+          let newS = originalS * satMultiplier + Math.sin(paletteIndex * 0.8) * 25;
+          let newL = originalL * lightMultiplier + Math.cos(paletteIndex * 1.1) * 20;
           
-          const variation = (i % 7) - 3;
-          newHue = (newHue + variation + 360) % 360;
+          newS = Math.max(20, Math.min(90, newS));
+          newL = Math.max(20, Math.min(80, newL));
           
-          return hslToRgb(newHue, s, l);
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false, hasTriad1 = false, hasTriad2 = false;
-        
-        for (const color of triadicPalette) {
-          const [h] = rgbToHsl(...color);
-          
-          if (Math.abs(h - baseH) < 15 || Math.abs(h - baseH - 360) < 15) hasBase = true;
-          if (Math.abs(h - triad1H) < 15) hasTriad1 = true;
-          if (Math.abs(h - triad2H) < 15) hasTriad2 = true;
-          
-          if (hasBase && hasTriad1 && hasTriad2) break;
-        }
-        
-        if (!hasBase) triadicPalette[0] = baseColor;
-        if (!hasTriad1) triadicPalette[1] = hslToRgb(triad1H, baseS, baseL);
-        if (!hasTriad2) triadicPalette[2] = hslToRgb(triad2H, baseS, baseL);
-        
+
         return triadicPalette;
       } catch (error) {
         console.error("Error generating triadic palette:", error);
@@ -17085,7 +17110,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateTetradicPalette(baseColor, imageColors) {
+    function generateTetradicPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const tetrad1H = (baseH + 60) % 360;
@@ -17093,57 +17118,31 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         const tetrad3H = (baseH + 240) % 360;
         
         const tetradicPalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 18;
+          const colorVariation = i * 29;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromTetrad1 = Math.abs(h - tetrad1H);
-          if (distFromTetrad1 > 180) distFromTetrad1 = 360 - distFromTetrad1;
+          // Choose between tetradic hues
+          let targetHues = [baseH, tetrad1H, tetrad2H, tetrad3H];
+          let targetHue = targetHues[Math.floor((combinedVariation * 0.08) % 4)];
           
-          let distFromTetrad2 = Math.abs(h - tetrad2H);
-          if (distFromTetrad2 > 180) distFromTetrad2 = 360 - distFromTetrad2;
+          let hueOffset = Math.sin(combinedVariation * 0.04) * 30; // -30 to +30
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 9) % 35 - 17 + 360) % 360;
           
-          let distFromTetrad3 = Math.abs(h - tetrad3H);
-          if (distFromTetrad3 > 180) distFromTetrad3 = 360 - distFromTetrad3;
+          let satMultiplier = 0.4 + (Math.cos(combinedVariation * 0.15) + 1) * 0.45; // 0.4 to 1.3
+          let lightMultiplier = 0.7 + (Math.sin(combinedVariation * 0.12) + 1) * 0.3; // 0.7 to 1.3
           
-          const minDist = Math.min(distFromBase, distFromTetrad1, distFromTetrad2, distFromTetrad3);
+          let newS = originalS * satMultiplier + Math.cos(paletteIndex * 0.9) * 30;
+          let newL = originalL * lightMultiplier + Math.sin(paletteIndex * 1.3) * 25;
           
-          let newHue;
-          if (minDist === distFromBase) {
-            newHue = baseH;
-          } else if (minDist === distFromTetrad1) {
-            newHue = tetrad1H;
-          } else if (minDist === distFromTetrad2) {
-            newHue = tetrad2H;
-          } else {
-            newHue = tetrad3H;
-          }
+          newS = Math.max(15, Math.min(95, newS));
+          newL = Math.max(15, Math.min(85, newL));
           
-          const variation = (i % 9) - 4;
-          newHue = (newHue + variation + 360) % 360;
-          
-          return hslToRgb(newHue, s, l);
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false, hasTetrad1 = false, hasTetrad2 = false, hasTetrad3 = false;
-        
-        for (const color of tetradicPalette) {
-          const [h] = rgbToHsl(...color);
-          
-          if (Math.abs(h - baseH) < 15 || Math.abs(h - baseH - 360) < 15) hasBase = true;
-          if (Math.abs(h - tetrad1H) < 15) hasTetrad1 = true;
-          if (Math.abs(h - tetrad2H) < 15) hasTetrad2 = true;
-          if (Math.abs(h - tetrad3H) < 15) hasTetrad3 = true;
-          
-          if (hasBase && hasTetrad1 && hasTetrad2 && hasTetrad3) break;
-        }
-        
-        if (!hasBase) tetradicPalette[0] = baseColor;
-        if (!hasTetrad1) tetradicPalette[1] = hslToRgb(tetrad1H, baseS, baseL);
-        if (!hasTetrad2) tetradicPalette[2] = hslToRgb(tetrad2H, baseS, baseL);
-        if (!hasTetrad3) tetradicPalette[3] = hslToRgb(tetrad3H, baseS, baseL);
-        
+
         return tetradicPalette;
       } catch (error) {
         console.error("Error generating tetradic palette:", error);
@@ -17151,7 +17150,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateSquarePalette(baseColor, imageColors) {
+    function generateSquarePalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const square1H = (baseH + 90) % 360;
@@ -17159,57 +17158,31 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         const square3H = (baseH + 270) % 360;
         
         const squarePalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 15;
+          const colorVariation = i * 33;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromSquare1 = Math.abs(h - square1H);
-          if (distFromSquare1 > 180) distFromSquare1 = 360 - distFromSquare1;
+          // Choose between square hues
+          let targetHues = [baseH, square1H, square2H, square3H];
+          let targetHue = targetHues[Math.floor((combinedVariation * 0.07) % 4)];
           
-          let distFromSquare2 = Math.abs(h - square2H);
-          if (distFromSquare2 > 180) distFromSquare2 = 360 - distFromSquare2;
+          let hueOffset = Math.cos(combinedVariation * 0.03) * 25; // -25 to +25
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 7) % 30 - 15 + 360) % 360;
           
-          let distFromSquare3 = Math.abs(h - square3H);
-          if (distFromSquare3 > 180) distFromSquare3 = 360 - distFromSquare3;
+          let satMultiplier = 0.5 + (Math.sin(combinedVariation * 0.16) + 1) * 0.4; // 0.5 to 1.3
+          let lightMultiplier = 0.6 + (Math.cos(combinedVariation * 0.13) + 1) * 0.35; // 0.6 to 1.3
           
-          const minDist = Math.min(distFromBase, distFromSquare1, distFromSquare2, distFromSquare3);
+          let newS = originalS * satMultiplier + Math.sin(paletteIndex * 1.0) * 30;
+          let newL = originalL * lightMultiplier + Math.cos(paletteIndex * 1.4) * 25;
           
-          let newHue;
-          if (minDist === distFromBase) {
-            newHue = baseH;
-          } else if (minDist === distFromSquare1) {
-            newHue = square1H;
-          } else if (minDist === distFromSquare2) {
-            newHue = square2H;
-          } else {
-            newHue = square3H;
-          }
+          newS = Math.max(20, Math.min(90, newS));
+          newL = Math.max(20, Math.min(80, newL));
           
-          const variation = (i % 9) - 4;
-          newHue = (newHue + variation + 360) % 360;
-          
-          return hslToRgb(newHue, s, l);
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false, hasSquare1 = false, hasSquare2 = false, hasSquare3 = false;
-        
-        for (const color of squarePalette) {
-          const [h] = rgbToHsl(...color);
-          
-          if (Math.abs(h - baseH) < 15 || Math.abs(h - baseH - 360) < 15) hasBase = true;
-          if (Math.abs(h - square1H) < 15) hasSquare1 = true;
-          if (Math.abs(h - square2H) < 15) hasSquare2 = true;
-          if (Math.abs(h - square3H) < 15) hasSquare3 = true;
-          
-          if (hasBase && hasSquare1 && hasSquare2 && hasSquare3) break;
-        }
-        
-        if (!hasBase) squarePalette[0] = baseColor;
-        if (!hasSquare1) squarePalette[1] = hslToRgb(square1H, baseS, baseL);
-        if (!hasSquare2) squarePalette[2] = hslToRgb(square2H, baseS, baseL);
-        if (!hasSquare3) squarePalette[3] = hslToRgb(square3H, baseS, baseL);
-        
+
         return squarePalette;
       } catch (error) {
         console.error("Error generating square palette:", error);
@@ -17217,7 +17190,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    // Modified generateHarmonyPalettes function with background variations
+    // UPDATED generateHarmonyPalettes function with better variation
     async function generateHarmonyPalettes(imageColors) {
       const paletteCollectionName = `${harmonyCollection}PaletteColors`;
       
@@ -17233,8 +17206,44 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       
       for (let i = 0; i < palettesToGenerate; i++) {
         let palette = [];
-        const baseColorIndex = i % totalColors;
+        
+        // Create MORE varied base color selection
+        let baseColorIndex;
+        if (i < totalColors) {
+          baseColorIndex = i; // First round uses each color once
+        } else {
+          // After first round, use mathematical distribution to avoid simple cycling
+          baseColorIndex = (i * 7 + Math.floor(i / totalColors) * 3) % totalColors;
+        }
+        
         const baseColor = imageColors[baseColorIndex];
+        
+        // Create DIFFERENT color array ordering for each palette
+        const shuffledColors = [...imageColors];
+        
+        // More aggressive shuffling with palette-specific seed
+        const seed = window.harmonySeeds[harmonyType] + i * 31; // Use larger multiplier
+        
+        // Double shuffle for more randomization
+        for (let shuffle = 0; shuffle < 2; shuffle++) {
+          for (let j = shuffledColors.length - 1; j > 0; j--) {
+            const k = Math.floor(((seed + j + shuffle * 100) * 9301 + 49297) % 233280) % (j + 1);
+            [shuffledColors[j], shuffledColors[k]] = [shuffledColors[k], shuffledColors[j]];
+          }
+        }
+        
+        // Also modify some base properties of colors for extra variation
+        const modifiedColors = shuffledColors.map((color, idx) => {
+          if (idx === 0) return color; // Keep first color as is
+          
+          const [h, s, l] = rgbToHsl(...color);
+          const variation = (i + idx) * 0.1;
+          
+          const newS = Math.max(10, Math.min(90, s + Math.sin(variation) * 10));
+          const newL = Math.max(15, Math.min(85, l + Math.cos(variation) * 8));
+          
+          return hslToRgb(h, newS, newL);
+        });
         
         // Determine background variation for this palette
         let currentBgVariation = backgroundVariation;
@@ -17245,31 +17254,31 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         
         console.log(`Generating ${harmonyType} palette ${i} with ${currentBgVariation} background using base color:`, [...baseColor]);
         
-        // Generate the harmony palette
+        // Generate the harmony palette with MODIFIED parameters
         switch(harmonyType) {
           case 'Monochromatic':
-            palette = generateMonochromaticPalette(baseColor, imageColors);
+            palette = generateMonochromaticPalette(baseColor, modifiedColors, i);
             break;
           case 'Analogous':
-            palette = generateAnalogousPalette(baseColor, imageColors);
+            palette = generateAnalogousPalette(baseColor, modifiedColors, i);
             break;
           case 'Complementary':
-            palette = generateComplementaryPalette(baseColor, imageColors);
+            palette = generateComplementaryPalette(baseColor, modifiedColors, i);
             break;
           case 'Split Complementary':
-            palette = generateSplitComplementaryPalette(baseColor, imageColors);
+            palette = generateSplitComplementaryPalette(baseColor, modifiedColors, i);
             break;
           case 'Triadic':
-            palette = generateTriadicPalette(baseColor, imageColors);
+            palette = generateTriadicPalette(baseColor, modifiedColors, i);
             break;
           case 'Tetradic':
-            palette = generateTetradicPalette(baseColor, imageColors);
+            palette = generateTetradicPalette(baseColor, modifiedColors, i);
             break;
           case 'Square':
-            palette = generateSquarePalette(baseColor, imageColors);
+            palette = generateSquarePalette(baseColor, modifiedColors, i);
             break;
           default:
-            palette = [...imageColors];
+            palette = [...modifiedColors];
         }
         
         // Apply background variation to the first color (background color)
@@ -17280,6 +17289,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         // Store additional metadata about the palette
         palette._backgroundVariation = currentBgVariation;
         palette._harmonyType = harmonyType;
+        palette._paletteIndex = i;
         
         logPalette(palette, `${harmonyType} Palette ${i} (${currentBgVariation} bg)`);
         
@@ -17357,7 +17367,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
   }
 }
 
-// Function to apply harmony palette
+// Function to apply harmony palette (unchanged)
 async function applyHarmonyPalette(paletteIndex, paletteCollectionName) {
   try {
     const canvas = document.getElementById('layer_canvas_1');
@@ -17473,7 +17483,6 @@ async function applyHarmonyPalette(paletteIndex, paletteCollectionName) {
     setTimeout(() => document.body.removeChild(toast), 3000);
   }
 }
-
 
 
 
