@@ -8658,247 +8658,270 @@ async function processPreviewQueue() {
   // Process the next preview in the queue
   processPreviewQueue();
 }
-
 async function displayColorPalette(layerIndex, colors, collection = 'trending', maxVisibleColors = 6, totalLayers = 1) {
     const prefix = collection + '_';
-    const MAX_DISPLAY_COUNT = 8;
-    const MIN_DISPLAY_COUNT = 4;
-    
-    // AGGRESSIVE GREEN FILTER FUNCTION
-    function removeGreenFromColors(colorArray) {
-        if (!Array.isArray(colorArray)) return [];
-        
-        return colorArray.map(color => {
-            if (!Array.isArray(color) || color.length !== 3) return color;
-            
-            const [h, s, l] = rgbToHsl(...color);
-            
-            // Ultra-aggressive green removal (30-170 degrees - very wide range)
-            if (h >= 30 && h < 170) {
-                // Force to guaranteed safe non-green alternatives
-                const safeHues = [15, 200, 240, 290, 330]; // Orange, Blue, Purple, Pink, Red
-                const newHue = safeHues[Math.floor(Math.random() * safeHues.length)];
-                return hslToRgb(newHue, Math.max(30, s), Math.max(35, l));
-            }
-            return color;
-        });
-    }
+    const MAX_DISPLAY_COUNT = 8; // Maximum number of colors to display
+    const MIN_DISPLAY_COUNT = 4; // Minimum number of colors to display
     
     // Function to convert HEX to RGB
     function hexToRgb(hex) {
+        // Remove the # if it exists
         hex = hex.replace(/^#/, '');
+        
+        // Parse the hex values
         const r = parseInt(hex.substring(0, 2), 16);
         const g = parseInt(hex.substring(2, 4), 16);
         const b = parseInt(hex.substring(4, 6), 16);
+        
         return [r, g, b];
     }
 
     // Function to extract and cache original colors from the image
-    async function extractAndCacheOriginalColors(totalLayers) {
-        if (window.cachedOriginalColors) {
-            return removeGreenFromColors(window.cachedOriginalColors);
-        }
-        
-        try {
-            let originalCanvas;
-            
-            if (!originalCanvas) {
-                console.error('No original canvas found for color extraction');
-                return [];
-            }
-            
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = 200;
-            tempCanvas.height = 200;
-            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-            
-            const originalAspect = originalCanvas.width / originalCanvas.height;
-            let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-            
-            if (originalAspect > 1) {
-                drawWidth = 200;
-                drawHeight = 200 / originalAspect;
-                offsetY = (200 - drawHeight) / 2;
-            } else {
-                drawHeight = 200;
-                drawWidth = 200 * originalAspect;
-                offsetX = (200 - drawWidth) / 2;
-            }
-            
-            tempCtx.drawImage(originalCanvas, offsetX, offsetY, drawWidth, drawHeight);
-            
-            const imageData = tempCtx.getImageData(0, 0, 200, 200);
-            const originalColors = await getDistinctColors(imageData, 30, 100, 40);
-            
-            // Filter green from cached colors
-            window.cachedOriginalColors = removeGreenFromColors(originalColors || []);
-            
-            return window.cachedOriginalColors;
-            
-        } catch (error) {
-            console.error('Error extracting original colors:', error);
-            window.cachedOriginalColors = [];
-            return [];
-        }
-    }
+  async function extractAndCacheOriginalColors(totalLayers) {
+      // Check if we already have cached original colors
+      if (window.cachedOriginalColors) {
+          return window.cachedOriginalColors;
+      }
+      
+      try {
+          let originalCanvas;
+          
+          if (totalLayers === 1) {
+              originalCanvas = document.getElementById('layer_canvas_1');
+          } else {
+              // For multi-layer, we might want to use a combined canvas or the main canvas
+              originalCanvas = document.getElementById('layer_canvas_1'); // or combine all layers
+          }
+          
+          if (!originalCanvas) {
+              console.error('No original canvas found for color extraction');
+              return [];
+          }
+          
+          // Create a temporary canvas for color extraction
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = 200;
+          tempCanvas.height = 200;
+          const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+          
+          // Scale and draw the original image
+          const originalAspect = originalCanvas.width / originalCanvas.height;
+          let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+          
+          if (originalAspect > 1) {
+              drawWidth = 200;
+              drawHeight = 200 / originalAspect;
+              offsetY = (200 - drawHeight) / 2;
+          } else {
+              drawHeight = 200;
+              drawWidth = 200 * originalAspect;
+              offsetX = (200 - drawWidth) / 2;
+          }
+          
+          tempCtx.drawImage(originalCanvas, offsetX, offsetY, drawWidth, drawHeight);
+          
+          // Extract distinct colors
+          const imageData = tempCtx.getImageData(0, 0, 200, 200);
+          const originalColors = await getDistinctColors(imageData, 30, 50, 40);
+          
+          // Cache the colors globally
+          window.cachedOriginalColors = originalColors || [];
+          
+          console.log(`Extracted and cached ${window.cachedOriginalColors.length} distinct colors from original image`);
+          
+          return window.cachedOriginalColors;
+          
+      } catch (error) {
+          console.error('Error extracting original colors:', error);
+          window.cachedOriginalColors = [];
+          return [];
+      }
+  }
     
-    // Function to get persistent colors with green filtering
+    // Function to keep trying to get valid colors until successful
     async function getPersistentColors(inputColors, maxAttempts = 100) {
-        let validColors = [];
-        let attempts = 0;
+      let validColors = [];
+      let attempts = 0;
+      
+      // Keep trying until we get valid colors
+      while (validColors.length === 0 && attempts < maxAttempts) {
+        attempts++;
         
-        while (validColors.length === 0 && attempts < maxAttempts) {
-            attempts++;
-            
-            if (attempts === 1 && Array.isArray(inputColors)) {
-                validColors = inputColors.filter(color => 
-                    Array.isArray(color) && 
-                    color.length === 3 && 
-                    color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-                );
-            }
-            
-            if (validColors.length > 0) {
-                break;
-            }
-            
-            try {
-                if (typeof window.distinctColorsArrayColorPallet === 'function') {
-                    const newColors = await window.distinctColorsArrayColorPallet();
-                    if (Array.isArray(newColors)) {
-                        validColors = newColors.filter(color => 
-                            Array.isArray(color) && 
-                            color.length === 3 && 
-                            color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-                        );
-                    }
-                } else if (window.distinctColorsArrayColorPallet) {
-                    const newColors = window.distinctColorsArrayColorPallet;
-                    if (Array.isArray(newColors)) {
-                        validColors = newColors.filter(color => 
-                            Array.isArray(color) && 
-                            color.length === 3 && 
-                            color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
-                        );
-                    }
-                }
-            } catch (e) {
-                // Ignore errors
-            }
-            
-            if (validColors.length === 0) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
+        // First try the input colors
+        if (attempts === 1 && Array.isArray(inputColors)) {
+          validColors = inputColors.filter(color => 
+            Array.isArray(color) && 
+            color.length === 3 && 
+            color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+          );
         }
         
-        // Generate safe non-green colors if still no valid colors
-        if (validColors.length === 0) {
-            validColors = [];
-            const safeHues = [15, 200, 240, 290, 330]; // Orange, Blue, Purple, Pink, Red
-            for (let i = 0; i < 9; i++) {
-                const hue = safeHues[i % safeHues.length];
-                validColors.push(hslToRgb(hue, 70 + Math.random() * 25, 45 + Math.random() * 30));
-            }
+        // If we have valid colors, use them
+        if (validColors.length > 0) {
+          break;
         }
         
-        // Always filter green from final result
-        return removeGreenFromColors(validColors);
-    }
-    
-    function rgbToHex(r, g, b) {
-        return '#' + [r, g, b].map(x => {
-            const hex = x.toString(16);
-            return hex.length === 1 ? '0' + hex : hex;
-        }).join('');
-    }
-    
-    function rgbToHsl(r, g, b) {
+        // Try to get colors from distinctColorsArrayColorPallet
         try {
-            r /= 255;
-            g /= 255;
-            b /= 255;
-            
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
-            let h, s, l = (max + min) / 2;
-            
-            if (max === min) {
-                h = s = 0;
-            } else {
-                const d = max - min;
-                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                
-                switch (max) {
-                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                    case g: h = (b - r) / d + 2; break;
-                    case b: h = (r - g) / d + 4; break;
-                }
-                h /= 6;
+          if (typeof window.distinctColorsArrayColorPallet === 'function') {
+            // Try to get as function
+            const newColors = await window.distinctColorsArrayColorPallet();
+            if (Array.isArray(newColors)) {
+              validColors = newColors.filter(color => 
+                Array.isArray(color) && 
+                color.length === 3 && 
+                color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+              );
             }
-            
-            return [h * 360, s * 100, l * 100];
+          } else if (window.distinctColorsArrayColorPallet) {
+            // Try to get as variable
+            const newColors = window.distinctColorsArrayColorPallet;
+            if (Array.isArray(newColors)) {
+              validColors = newColors.filter(color => 
+                Array.isArray(color) && 
+                color.length === 3 && 
+                color.every(value => typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 255)
+              );
+            }
+          }
         } catch (e) {
-            return [Math.random() * 360, 70 + Math.random() * 30, 45 + Math.random() * 25];
+          // Ignore errors and keep trying
         }
+        
+        // If still no valid colors, wait a bit and try again
+        if (validColors.length === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      // If we STILL don't have valid colors after all attempts,
+      // generate completely random ones with good distribution
+      if (validColors.length === 0) {
+        validColors = [];
+        for (let i = 0; i < 9; i++) {
+          const hue = i * 40; // Spread across color wheel
+          validColors.push(hslToRgb(hue, 70 + Math.random() * 25, 45 + Math.random() * 30));
+        }
+      }
+      
+      return validColors;
+    }
+    
+    // Function to convert RGB to HEX
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      }).join('');
+    }
+    
+    // Helper functions for color manipulation
+    function rgbToHsl(r, g, b) {
+      try {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+        
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+        
+        if (max === min) {
+          h = s = 0;
+        } else {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          
+          switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+          }
+          h /= 6;
+        }
+        
+        return [h * 360, s * 100, l * 100];
+      } catch (e) {
+        // In case of error, return a random HSL value
+        return [
+          Math.random() * 360,
+          70 + Math.random() * 30,
+          45 + Math.random() * 25
+        ];
+      }
     }
     
     function hslToRgb(h, s, l) {
-        try {
-            h /= 360;
-            s /= 100;
-            l /= 100;
-            
-            let r, g, b;
-            
-            if (s === 0) {
-                r = g = b = l;
-            } else {
-                const hue2rgb = (p, q, t) => {
-                    if (t < 0) t += 1;
-                    if (t > 1) t -= 1;
-                    if (t < 1/6) return p + (q - p) * 6 * t;
-                    if (t < 1/2) return q;
-                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                    return p;
-                };
-                
-                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                const p = 2 * l - q;
-                
-                r = hue2rgb(p, q, h + 1/3);
-                g = hue2rgb(p, q, h);
-                b = hue2rgb(p, q, h - 1/3);
-            }
-            
-            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-        } catch (e) {
-            return [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)];
+      try {
+        h /= 360;
+        s /= 100;
+        l /= 100;
+        
+        let r, g, b;
+        
+        if (s === 0) {
+          r = g = b = l;
+        } else {
+          const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+          };
+          
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          
+          r = hue2rgb(p, q, h + 1/3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1/3);
         }
+        
+        return [
+          Math.round(r * 255),
+          Math.round(g * 255),
+          Math.round(b * 255)
+        ];
+      } catch (e) {
+        // In case of error, generate a completely random RGB value
+        return [
+          Math.floor(Math.random() * 256),
+          Math.floor(Math.random() * 256),
+          Math.floor(Math.random() * 256)
+        ];
+      }
     }
     
-    // Updated hue-shifted palettes with green filtering
+    // NEW: Function to generate hue-shifted palettes for first 5 palettes
     function generateHueShiftedPalettes(originalColors, collection) {
         const hueShiftedPalettes = [];
-        const hueShifts = [60, 120, 180, 240, 300];
+        
+        // Define hue shifts for first 5 palettes
+        const hueShifts = [
+            60,   // Palette 0: +60 degrees (more yellow/green)
+            120,  // Palette 1: +120 degrees (complementary)
+            180,  // Palette 2: +180 degrees (opposite)
+            240,  // Palette 3: +240 degrees (triadic)
+            300   // Palette 4: +300 degrees (triadic)
+        ];
         
         for (let i = 0; i < 5; i++) {
             const hueShift = hueShifts[i];
             const shiftedPalette = originalColors.map(color => {
                 const [h, s, l] = rgbToHsl(...color);
                 let newHue = (h + hueShift) % 360;
-                
-                // Force away from green range
-                if (newHue >= 30 && newHue < 170) {
-                    newHue = newHue < 100 ? 15 : 200; // Orange or Blue
-                }
-                
                 let newSat = s;
                 let newLight = l;
                 
+                // Apply collection-specific adjustments
                 if (collection === 'ss') {
+                    // SS: Brighter, more vibrant
                     newSat = Math.min(100, s * 1.2);
                     newLight = Math.min(90, Math.max(40, l * 1.1));
                 } else if (collection === 'aw') {
+                    // AW: More muted, darker
                     newSat = Math.max(20, s * 0.8);
                     newLight = Math.min(80, Math.max(25, l * 0.9));
                 }
@@ -8906,38 +8929,41 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 return hslToRgb(newHue, newSat, newLight);
             });
             
-            hueShiftedPalettes.push(removeGreenFromColors(shiftedPalette));
+            hueShiftedPalettes.push(shiftedPalette);
         }
         
         return hueShiftedPalettes;
     }
     
+    // Function to determine if a color is a background color (light/neutral)
     function isBackgroundColor(color) {
         const [h, s, l] = rgbToHsl(...color);
+        
+        // Background colors are typically:
+        // 1. High lightness (> 80)
+        // 2. Low saturation (< 20) 
+        // 3. Or very light with any saturation (> 90 lightness)
         return (l > 80 && s < 20) || l > 90;
     }
     
-    // Updated getColorFamily - completely excludes green
+    // Get color family (hue range) for a color
     function getColorFamily(color) {
         const [h, s, l] = rgbToHsl(...color);
         
+        // Define color families with hue ranges
         if (h >= 345 || h < 15) return 'red';
-        if (h >= 15 && h < 50) return 'orange';
-        if (h >= 50 && h < 80) return 'yellow';
-        // NO GREEN RANGE - skip 80-140
-        if (h >= 140 && h < 180) return 'cyan';
-        if (h >= 180 && h < 220) return 'blue';
-        if (h >= 220 && h < 260) return 'purple';
-        if (h >= 260 && h < 300) return 'pink';
-        if (h >= 300 && h < 345) return 'magenta';
-        
-        // Force green range to other families
-        if (h >= 80 && h < 110) return 'yellow';
-        if (h >= 110 && h < 140) return 'cyan';
+        if (h >= 15 && h < 45) return 'orange';
+        if (h >= 45 && h < 75) return 'yellow';
+        if (h >= 75 && h < 165) return 'green';
+        if (h >= 165 && h < 195) return 'cyan';
+        if (h >= 195 && h < 255) return 'blue';
+        if (h >= 255 && h < 285) return 'purple';
+        if (h >= 285 && h < 345) return 'pink';
         
         return 'neutral';
     }
     
+    // Group colors by their color families
     function groupColorsByFamily(colors) {
         const families = {};
         
@@ -8954,36 +8980,41 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             });
         });
         
+        // Sort colors within each family by lightness to maintain shade relationships
         Object.keys(families).forEach(family => {
-            families[family].sort((a, b) => a.hsl[2] - b.hsl[2]);
+            families[family].sort((a, b) => a.hsl[2] - b.hsl[2]); // Sort by lightness
         });
         
         return families;
     }
     
+    // Generate a new color in target family that matches the lightness and saturation of source color
     function generateMatchingColor(sourceColor, targetHueRange) {
         const [sourceH, sourceS, sourceL] = rgbToHsl(...sourceColor);
         const isSourceBackground = isBackgroundColor(sourceColor);
         
-        // Safe hue ranges - NO GREEN
+        // Define hue ranges for each color family
         const hueRanges = {
             'red': [345, 15],
-            'orange': [15, 50],
-            'yellow': [50, 80],
-            'cyan': [140, 180],
-            'blue': [180, 220],
-            'purple': [220, 260],
-            'pink': [260, 300],
-            'magenta': [300, 345]
+            'orange': [15, 45],
+            'yellow': [45, 75],
+            'green': [75, 165],
+            'cyan': [165, 195],
+            'blue': [195, 255],
+            'purple': [255, 285],
+            'pink': [285, 345]
         };
         
         const range = hueRanges[targetHueRange];
         if (!range) {
-            return hslToRgb(200, sourceS, sourceL); // Default to blue
+            // Fallback to random hue if family not found
+            return hslToRgb(Math.random() * 360, sourceS, sourceL);
         }
         
+        // Generate hue within the target family range
         let newHue;
         if (targetHueRange === 'red' && range[0] > range[1]) {
+            // Handle red wraparound
             if (Math.random() > 0.5) {
                 newHue = range[0] + Math.random() * (360 - range[0]);
             } else {
@@ -8993,86 +9024,59 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             newHue = range[0] + Math.random() * (range[1] - range[0]);
         }
         
+        // For background colors, maintain their light characteristics
         if (isSourceBackground) {
+            // Keep background colors light and neutral
             const newSat = Math.max(0, Math.min(15, sourceS + (Math.random() - 0.5) * 10));
             const newLight = Math.max(80, Math.min(95, sourceL + (Math.random() - 0.5) * 10));
             return hslToRgb(newHue, newSat, newLight);
         } else {
+            // For regular colors, keep similar saturation and lightness but add slight variation
             const newSat = Math.max(5, Math.min(100, sourceS + (Math.random() - 0.5) * 20));
             const newLight = Math.max(5, Math.min(95, sourceL + (Math.random() - 0.5) * 15));
             return hslToRgb(newHue, newSat, newLight);
         }
     }
     
-    // Updated generateDiversePalettes with aggressive green filtering
-    function generateDiversePalettes(baseColors, collection = 'trending') {
+    // Generate diverse palettes by replacing color families
+    // Generate diverse palettes by replacing color families
+    function generateDiversePalettes(baseColors) {
         const palettes = [];
         
-        // Filter green from base colors first
-        const filteredBaseColors = removeGreenFromColors(baseColors);
+        // Group base colors by families
+        const baseFamilies = groupColorsByFamily(baseColors);
+        const availableFamilyNames = Object.keys(baseFamilies);
         
-        const baseFamilies = groupColorsByFamily(filteredBaseColors);
-        const availableFamilyNames = Object.keys(baseFamilies).filter(name => name !== 'green');
+        // All possible target families
+        const allFamilies = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink'];
         
-        // NO GREEN in target families
-        const allFamilies = ['red', 'orange', 'yellow', 'cyan', 'blue', 'purple', 'pink', 'magenta'];
-        
-        const collectionSettings = {
-            'ss': {
-                saturationMultiplier: 1.2,
-                lightnessMultiplier: 1.1,
-                minSaturation: 60,
-                maxSaturation: 100,
-                minLightness: 40,
-                maxLightness: 90
-            },
-            'aw': {
-                saturationMultiplier: 0.8,
-                lightnessMultiplier: 0.9,
-                minSaturation: 20,
-                maxSaturation: 80,
-                minLightness: 25,
-                maxLightness: 75
-            },
-            'trending': {
-                saturationMultiplier: 1.0,
-                lightnessMultiplier: 1.0,
-                minSaturation: 30,
-                maxSaturation: 90,
-                minLightness: 30,
-                maxLightness: 85
-            }
-        };
-        
-        const settings = collectionSettings[collection] || collectionSettings.trending;
-        
+        // Generate 20 unique palettes with much more variation
         for (let i = 0; i < 20; i++) {
             const newPalette = [];
+            
+            // Create family mapping for this palette with more diversity
             const familyMapping = {};
             const usedTargetFamilies = new Set();
             
+            // For each original family, assign a new target family
             availableFamilyNames.forEach((originalFamily, index) => {
                 let targetFamily;
+                let attempts = 0;
                 
-                if (collection === 'ss') {
-                    targetFamily = allFamilies[(index + i * 2) % allFamilies.length];
-                } else if (collection === 'aw') {
-                    if (i % 2 === 0) {
-                        targetFamily = allFamilies[(index + 1) % allFamilies.length];
-                    } else {
-                        targetFamily = allFamilies[(index + 4) % allFamilies.length];
-                    }
+                // Use different strategies for different palette indices to ensure variety
+                if (i < 8) {
+                    // First 8 palettes: Sequential family shifts
+                    targetFamily = allFamilies[(index + i) % allFamilies.length];
+                } else if (i < 16) {
+                    // Next 8 palettes: Reverse sequential with offsets
+                    targetFamily = allFamilies[(allFamilies.length - 1 - index + (i - 8) * 2) % allFamilies.length];
                 } else {
-                    if (i < 8) {
-                        targetFamily = allFamilies[(index + i) % allFamilies.length];
-                    } else if (i < 16) {
-                        targetFamily = allFamilies[(allFamilies.length - 1 - index + (i - 8) * 2) % allFamilies.length];
-                    } else {
-                        const baseIndex = (index * 3 + i * 5) % allFamilies.length;
-                        targetFamily = allFamilies[baseIndex];
-                    }
+                    // Last 4 palettes: More random but controlled
+                    const baseIndex = (index * 3 + i * 5) % allFamilies.length;
+                    targetFamily = allFamilies[baseIndex];
                 }
                 
+                // If this target family is already used, find an alternative
                 let fallbackAttempts = 0;
                 while (usedTargetFamilies.has(targetFamily) && fallbackAttempts < allFamilies.length) {
                     targetFamily = allFamilies[(allFamilies.indexOf(targetFamily) + 1) % allFamilies.length];
@@ -9083,640 +9087,529 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 usedTargetFamilies.add(targetFamily);
             });
             
-            filteredBaseColors.forEach((originalColor, colorIndex) => {
+            // Generate new colors based on family mapping with additional variation
+            baseColors.forEach((originalColor, colorIndex) => {
                 const originalFamily = getColorFamily(originalColor);
-                let targetFamily = familyMapping[originalFamily] || 'blue';
+                const targetFamily = familyMapping[originalFamily] || 'blue'; // fallback
                 
+                // Generate new color in target family with variation based on palette index
                 let newColor = generateMatchingColor(originalColor, targetFamily);
-                let [h, s, l] = rgbToHsl(...newColor);
                 
-                // Force away from green range
-                if (h >= 30 && h < 170) {
-                    const safeHues = [15, 200, 240, 290, 330];
-                    h = safeHues[Math.floor(Math.random() * safeHues.length)];
-                }
-                
-                const baseHueVariation = ((i * 15 + colorIndex * 5) % 30 - 15);
-                const baseSatVariation = ((i * 8 + colorIndex * 3) % 20 - 10);
-                const baseLightVariation = ((i * 6 + colorIndex * 2) % 16 - 8);
-                
-                s = s * settings.saturationMultiplier;
-                l = l * settings.lightnessMultiplier;
-                
-                let newHue = (h + baseHueVariation + 360) % 360;
-                
-                // Check again after variation
-                if (newHue >= 30 && newHue < 170) {
-                    newHue = newHue < 100 ? 15 : 200;
-                }
-                
-                const newSat = Math.max(settings.minSaturation, 
-                                      Math.min(settings.maxSaturation, s + baseSatVariation));
-                const newLight = Math.max(settings.minLightness, 
-                                        Math.min(settings.maxLightness, l + baseLightVariation));
-                
-                if (isBackgroundColor(originalColor)) {
-                    if (collection === 'ss') {
-                        newColor = hslToRgb(newHue, Math.min(25, newSat), Math.max(85, newLight));
-                    } else if (collection === 'aw') {
-                        newColor = hslToRgb(newHue, Math.min(30, newSat), Math.min(80, Math.max(70, newLight)));
-                    } else {
-                        newColor = hslToRgb(newHue, Math.min(20, newSat), Math.max(80, newLight));
-                    }
-                } else {
+                // Add extra variation for later palettes to ensure they're different
+                if (i >= 10) {
+                    const [h, s, l] = rgbToHsl(...newColor);
+                    
+                    // Add controlled randomness that varies by palette index
+                    const hueVariation = ((i - 10) * 15 + colorIndex * 5) % 30 - 15; // -15 to +15 degrees
+                    const satVariation = ((i - 10) * 8 + colorIndex * 3) % 20 - 10; // -10 to +10%
+                    const lightVariation = ((i - 10) * 6 + colorIndex * 2) % 16 - 8; // -8 to +8%
+                    
+                    const newHue = (h + hueVariation + 360) % 360;
+                    const newSat = Math.max(5, Math.min(100, s + satVariation));
+                    const newLight = Math.max(10, Math.min(90, l + lightVariation));
+                    
                     newColor = hslToRgb(newHue, newSat, newLight);
                 }
                 
                 newPalette.push(newColor);
             });
             
-            // Final green filter for this palette
-            palettes.push(removeGreenFromColors(newPalette));
+            palettes.push(newPalette);
         }
         
         return palettes;
     }
     
+    // Calculate color difference using CIEDE2000 simplified version
     function colorDifference(rgb1, rgb2) {
-        const hsl1 = rgbToHsl(...rgb1);
-        const hsl2 = rgbToHsl(...rgb2);
-        
-        let hueDiff = Math.abs(hsl1[0] - hsl2[0]);
-        hueDiff = Math.min(hueDiff, 360 - hueDiff);
-        
-        const satDiff = Math.abs(hsl1[1] - hsl2[1]);
-        const lightDiff = Math.abs(hsl1[2] - hsl2[2]);
-        
-        return hueDiff * 1.5 + satDiff + lightDiff * 1.2;
+      // Convert to HSL for a perceptually better difference calculation
+      const hsl1 = rgbToHsl(...rgb1);
+      const hsl2 = rgbToHsl(...rgb2);
+      
+      // Calculate differences in hue, saturation, and lightness
+      let hueDiff = Math.abs(hsl1[0] - hsl2[0]);
+      // Handle the color wheel wraparound
+      hueDiff = Math.min(hueDiff, 360 - hueDiff);
+      
+      const satDiff = Math.abs(hsl1[1] - hsl2[1]);
+      const lightDiff = Math.abs(hsl1[2] - hsl2[2]);
+      
+      // Weight the differences (hue is more important for visual distinctness)
+      return hueDiff * 1.5 + satDiff + lightDiff * 1.2;
     }
     
+    // Get color name to categorize colors
     function getColorName(rgb) {
-        try {
-            const [r, g, b] = rgb;
-            const rNorm = r / 255;
-            const gNorm = g / 255;
-            const bNorm = b / 255;
-            const max = Math.max(rNorm, gNorm, bNorm);
-            const min = Math.min(rNorm, gNorm, bNorm);
-            const diff = max - min;
-            
-            let h = 0;
-            if (max !== min) {
-                if (max === rNorm) {
-                    h = (60 * ((gNorm - bNorm) / diff) + 360) % 360;
-                } else if (max === gNorm) {
-                    h = (60 * ((bNorm - rNorm) / diff) + 120) % 360;
-                } else {
-                    h = (60 * ((rNorm - gNorm) / diff) + 240) % 360;
-                }
-            }
-            
-            const v = max;
-            
-            let hueName;
-            if (h < 15 || h >= 345) hueName = "Red";
-            else if (h >= 15 && h < 45) hueName = "Orange";
-            else if (h >= 45 && h < 75) hueName = "Yellow";
-            else if (h >= 75 && h < 165) hueName = "Blue"; // Changed from Green to Blue
-            else if (h >= 165 && h < 195) hueName = "Cyan";
-            else if (h >= 195 && h < 255) hueName = "Blue";
-            else if (h >= 255 && h < 285) hueName = "Purple";
-            else if (h >= 285 && h < 345) hueName = "Pink";
-            
-            let shadePrefix = "";
-            if (v < 0.4) shadePrefix = "Dark";
-            else if (v > 0.7) shadePrefix = "Light";
-            
-            return shadePrefix ? `${shadePrefix} ${hueName}` : hueName;
-        } catch (e) {
-            return "Color";
+      try {
+        const [r, g, b] = rgb;
+        
+        // Convert RGB to HSV for better color categorization
+        const rNorm = r / 255;
+        const gNorm = g / 255;
+        const bNorm = b / 255;
+        const max = Math.max(rNorm, gNorm, bNorm);
+        const min = Math.min(rNorm, gNorm, bNorm);
+        const diff = max - min;
+        
+        // Calculate Hue
+        let h = 0;
+        if (max !== min) {
+          if (max === rNorm) {
+            h = (60 * ((gNorm - bNorm) / diff) + 360) % 360;
+          } else if (max === gNorm) {
+            h = (60 * ((bNorm - rNorm) / diff) + 120) % 360;
+          } else {
+            h = (60 * ((rNorm - gNorm) / diff) + 240) % 360;
+          }
         }
+        
+        // Calculate Value (brightness)
+        const v = max;
+        
+        // Determine hue category
+        let hueName;
+        if (h < 15 || h >= 345) hueName = "Red";
+        else if (h >= 15 && h < 45) hueName = "Orange";
+        else if (h >= 45 && h < 75) hueName = "Yellow";
+        else if (h >= 75 && h < 165) hueName = "Green";
+        else if (h >= 165 && h < 195) hueName = "Cyan";
+        else if (h >= 195 && h < 255) hueName = "Blue";
+        else if (h >= 255 && h < 285) hueName = "Purple";
+        else if (h >= 285 && h < 345) hueName = "Pink";
+        
+        // Simplified shade prefix
+        let shadePrefix = "";
+        if (v < 0.4) shadePrefix = "Dark";
+        else if (v > 0.7) shadePrefix = "Light";
+        
+        return shadePrefix ? `${shadePrefix} ${hueName}` : hueName;
+      } catch (e) {
+        return "Color";
+      }
     }
     
+    // Apply collection-specific color adjustments with proper background handling
     function applyCollectionAdjustments(colors, collection) {
-        return removeGreenFromColors(colors.map(color => {
+        return colors.map(color => {
             try {
                 const [h, s, l] = rgbToHsl(...color);
                 const isBackground = isBackgroundColor(color);
                 
                 if (collection === 'ss') {
                     if (isBackground) {
-                        const newSat = Math.min(25, s + 10);
-                        const newLight = Math.max(85, Math.min(95, l + 5));
+                        // For background colors in SS, keep them light and bright
+                        // but add a slight warm or cool tint
+                        const newSat = Math.min(25, s + 10); // Slight increase in saturation
+                        const newLight = Math.max(115, Math.min(95, l + 5)); // Keep very light
                         return hslToRgb(h, newSat, newLight);
                     } else {
-                        const newSat = Math.min(100, s * 1.6);
-                        const newLight = Math.max(40, Math.min(85, l * 1.8));
+                        // For regular colors in SS, make them more vibrant and bright
+                        const newSat = Math.min(100, s * 1.6); // Increase saturation more
+                        const newLight = Math.max(40, Math.min(85, l * 1.8)); // Brighter but not washed out
                         return hslToRgb(h, newSat, newLight);
                     }
                 } else if (collection === 'aw') {
                     if (isBackground) {
-                        const newSat = Math.min(20, s + 5);
-                        const newLight = Math.max(75, Math.min(90, l - 5));
+                        // For background colors in AW, make them slightly warmer/earthier
+                        const newSat = Math.min(20, s + 5); // Very slight saturation increase
+                        const newLight = Math.max(75, Math.min(90, l - 5)); // Slightly less bright
                         return hslToRgb(h, newSat, newLight);
                     } else {
-                        const newSat = Math.max(20, s * 0.8);
-                        const newLight = Math.max(25, Math.min(75, l * 0.9));
+                        // For regular colors in AW, make them more muted and earthy
+                        const newSat = Math.max(20, s * 0.8); // Reduce saturation
+                        const newLight = Math.max(25, Math.min(75, l * 0.9)); // Slightly darker
                         return hslToRgb(h, newSat, newLight);
                     }
                 } else {
+                    // For trending or other collections, return unchanged
                     return color;
                 }
             } catch (e) {
+                // If adjustment fails, return original color
                 return color;
             }
-        }));
+        });
     }
     
+    // Modified: Function to prepare display colors with one from each color family
     function prepareDisplayColors(colors) {
-        let validColors = removeGreenFromColors(colors.filter(color => 
-            Array.isArray(color) && 
-            color.length === 3 && 
-            color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
-        ));
-        
-        if (validColors.length === 0) {
-            validColors = [];
-            const safeHues = [15, 200, 240, 290, 330]; // Orange, Blue, Purple, Pink, Red
-            for (let i = 0; i < MIN_DISPLAY_COUNT; i++) {
-                const hue = safeHues[i % safeHues.length];
-                validColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
-            }
-            return validColors;
+      // Make sure we have valid colors
+      let validColors = colors.filter(color => 
+        Array.isArray(color) && 
+        color.length === 3 && 
+        color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
+      );
+      
+      // If no valid colors, generate new ones with good distribution
+      if (validColors.length === 0) {
+        validColors = [];
+        for (let i = 0; i < MIN_DISPLAY_COUNT; i++) {
+          // Generate colors with evenly distributed hues
+          const hue = i * (360 / MIN_DISPLAY_COUNT);
+          validColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
         }
+        return validColors;
+      }
+      
+      // Define the color families (hue ranges)
+      const colorFamilies = [
+        { name: "Red", range: [345, 15] },        // Red wraps around 0
+        { name: "Orange", range: [15, 45] },      // Orange
+        { name: "Yellow", range: [45, 75] },      // Yellow
+        { name: "Green", range: [75, 165] },      // Green
+        { name: "Cyan", range: [165, 195] },      // Cyan
+        { name: "Blue", range: [195, 255] },      // Blue
+        { name: "Purple", range: [255, 285] },    // Purple
+        { name: "Pink", range: [285, 345] }       // Pink
+      ];
+      
+      // Categorize all colors by family
+      const colorsByFamily = {};
+      colorFamilies.forEach(family => {
+        colorsByFamily[family.name] = [];
+      });
+      
+      // Group colors by family
+      validColors.forEach(color => {
+        const [h, s, l] = rgbToHsl(...color);
         
-        // Safe color families - NO GREEN
-        const colorFamilies = [
-            { name: "Red", range: [345, 15] },
-            { name: "Orange", range: [15, 50] },
-            { name: "Yellow", range: [50, 80] },
-            { name: "Cyan", range: [140, 180] },
-            { name: "Blue", range: [180, 220] },
-            { name: "Purple", range: [220, 260] },
-            { name: "Pink", range: [260, 300] },
-            { name: "Magenta", range: [300, 345] }
-        ];
-        
-        const colorsByFamily = {};
-        colorFamilies.forEach(family => {
-            colorsByFamily[family.name] = [];
-        });
-        
-        validColors.forEach(color => {
-            const [h, s, l] = rgbToHsl(...color);
-            
-            let foundFamily = false;
-            for (const family of colorFamilies) {
-                if (family.name === "Red") {
-                    if (h >= family.range[0] || h < family.range[1]) {
-                        colorsByFamily[family.name].push(color);
-                        foundFamily = true;
-                        break;
-                    }
-                } else if (h >= family.range[0] && h < family.range[1]) {
-                    colorsByFamily[family.name].push(color);
-                    foundFamily = true;
-                    break;
-                }
-            }
-            
-            if (!foundFamily) {
-                colorsByFamily["Blue"].push(color); // Default to blue for unmatched colors
-            }
-        });
-        
-        let displayColors = [validColors[0]];
-        
-        const sortedFamilies = Object.entries(colorsByFamily)
-            .sort((a, b) => b[1].length - a[1].length)
-            .filter(([_, colors]) => colors.length > 0);
-        
-        let optimalDisplayCount = Math.min(MAX_DISPLAY_COUNT, Math.max(MIN_DISPLAY_COUNT, sortedFamilies.length + 1));
-        
-        const [firstColorH] = rgbToHsl(...validColors[0]);
-        let firstColorFamily = null;
-        
+        let foundFamily = false;
         for (const family of colorFamilies) {
+          // Special case for red which wraps around 0/360
+          if (family.name === "Red") {
+            if (h >= family.range[0] || h < family.range[1]) {
+              colorsByFamily[family.name].push(color);
+              foundFamily = true;
+              break;
+            }
+          } else if (h >= family.range[0] && h < family.range[1]) {
+            colorsByFamily[family.name].push(color);
+            foundFamily = true;
+            break;
+          }
+        }
+        
+        // If no family found (edge case), add to closest family
+        if (!foundFamily) {
+          let closestFamily = colorFamilies[0];
+          let minDistance = 360;
+          
+          for (const family of colorFamilies) {
+            // Find the midpoint of the family range
+            let midpoint;
             if (family.name === "Red") {
-                if (firstColorH >= family.range[0] || firstColorH < family.range[1]) {
-                    firstColorFamily = family.name;
-                    break;
-                }
-            } else if (firstColorH >= family.range[0] && firstColorH < family.range[1]) {
-                firstColorFamily = family.name;
-                break;
-            }
-        }
-        
-        for (const [familyName, familyColors] of sortedFamilies) {
-            if (familyName === firstColorFamily) continue;
-            if (displayColors.length >= optimalDisplayCount) break;
-            
-            let bestColor = familyColors[0];
-            let highestSat = 0;
-            
-            for (const color of familyColors) {
-                const [_, s] = rgbToHsl(...color);
-                if (s > highestSat) {
-                    highestSat = s;
-                    bestColor = color;
-                }
-            }
-            
-            displayColors.push(bestColor);
-        }
-        
-        if (displayColors.length < MIN_DISPLAY_COUNT) {
-            const allRemainingColors = validColors.filter(color => 
-                !displayColors.some(c => 
-                    c[0] === color[0] && c[1] === color[1] && c[2] === color[2]
-                )
-            );
-            
-            const colorDistances = allRemainingColors.map(color => {
-                const minDistance = Math.min(...displayColors.map(selectedColor => 
-                    colorDifference(color, selectedColor)
-                ));
-                return { color, distance: minDistance };
-            });
-            
-            colorDistances.sort((a, b) => b.distance - a.distance);
-            
-            for (const { color } of colorDistances) {
-                displayColors.push(color);
-                if (displayColors.length >= MIN_DISPLAY_COUNT) break;
-            }
-        }
-        
-        if (displayColors.length < MIN_DISPLAY_COUNT) {
-            const displayedHues = displayColors.map(color => rgbToHsl(...color)[0]);
-            const hueBuckets = Array(8).fill(0);
-            
-            displayedHues.forEach(hue => {
-                const bucketIndex = Math.floor(hue / 45) % 8;
-                hueBuckets[bucketIndex]++;
-            });
-            
-            const safeHues = [15, 200, 240, 290, 330]; // Safe non-green hues
-            for (let i = 0; i < 8; i++) {
-                if (hueBuckets[i] === 0 && displayColors.length < MIN_DISPLAY_COUNT) {
-                    const baseHue = safeHues[i % safeHues.length];
-                    const newColor = hslToRgb(
-                        baseHue,
-                        70 + Math.random() * 30,
-                        45 + Math.random() * 25
-                    );
-                    displayColors.push(newColor);
-                }
-            }
-        }
-        
-        return removeGreenFromColors(displayColors);
-    }
-
-    // GET VALIDATED COLORS WITH GREEN FILTERING
-    const rawValidatedColors = await getPersistentColors(colors);
-    const validatedColors = removeGreenFromColors(rawValidatedColors);
-
-    if (totalLayers === 1) {
-        // Generate palettes with green-free colors
-        let allPalettes = [];
-        
-        // First 5 palettes: hue shifting with green filtering
-        const hueShiftedPalettes = generateHueShiftedPalettes(validatedColors, collection);
-        allPalettes = [...hueShiftedPalettes];
-        
-        // Generate diverse palettes with green filtering
-        const diversePalettes = generateDiversePalettes(validatedColors, collection);
-        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 20)];
-        
-        // Initialize storage
-        window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
-        window[`${collection}PaletteHueShifted`] = window[`${collection}PaletteHueShifted`] || {};
-        
-        // STORE FILTERED PALETTES
-        for (let i = 0; i < 25; i++) {
-            let paletteColors = allPalettes[i] || allPalettes[0];
-            
-            // Apply final green filter before storing
-            paletteColors = removeGreenFromColors(paletteColors);
-            
-            // Verify colors are valid after filtering
-            paletteColors = paletteColors.filter(color => 
-                Array.isArray(color) && 
-                color.length === 3 && 
-                color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
-            );
-            
-            // If we lost colors due to filtering, generate safe replacements
-            while (paletteColors.length < 6) {
-                const safeHues = [15, 200, 240, 290, 330]; // Orange, Blue, Purple, Pink, Red
-                const randomHue = safeHues[Math.floor(Math.random() * safeHues.length)];
-                const newColor = hslToRgb(
-                    randomHue,
-                    60 + Math.random() * 30,
-                    45 + Math.random() * 30
-                );
-                paletteColors.push(newColor);
-            }
-            
-            // Store ALL colors in the palette data structure
-            window[`${collection}PaletteColors`][i] = [...paletteColors];
-            
-            // Mark hue-shifted palettes
-            if (i < 5) {
-                window[`${collection}PaletteHueShifted`][i] = true;
-            }
-        }
-        
-        // Initialize preview cache
-        if (!window.palettePreviewCache) {
-            window.palettePreviewCache = {};
-        }
-        if (!window.palettePreviewCache[collection]) {
-            window.palettePreviewCache[collection] = {};
-        }
-        
-        // Create preview canvases
-        if (!window.previewCanvases) {
-            window.previewCanvases = {};
-            
-            const originalCanvas = document.getElementById('layer_canvas_1');
-            if (originalCanvas) {
-                const previewCanvas = document.createElement('canvas');
-                previewCanvas.width = 200;
-                previewCanvas.height = 200;
-                const previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
-                
-                previewCtx.drawImage(originalCanvas, 0, 0, 200, 200);
-                window.previewCanvases['original'] = previewCanvas.toDataURL();
-            }
-        }
-        
-        // Create all palette containers
-        const paletteContainers = [];
-        
-        for (let i = 0; i < 25; i++) {
-            const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
-            if (!paletteContainer) continue;
-            
-            paletteContainer.innerHTML = '';
-            
-            // Get palette colors from stored data
-            const paletteColors = window[`${collection}PaletteColors`][i];
-            
-            if (!paletteColors || paletteColors.length === 0) {
-                console.error(`No stored palette found for ${collection}[${i}]`);
-                continue;
-            }
-            
-            // Create container for the palette
-            const clickableContainer = document.createElement('div');
-            clickableContainer.classList.add('palette-clickable-container');
-            paletteContainer.appendChild(clickableContainer);
-            
-            clickableContainer.dataset.paletteIndex = i;
-            clickableContainer.dataset.collection = collection;
-            
-            // Add preview image container
-            const previewContainer = document.createElement('div');
-            previewContainer.classList.add('palette-preview-container');
-            clickableContainer.appendChild(previewContainer);
-            
-            // Create small preview canvas
-            const previewCanvas = document.createElement('canvas');
-            previewCanvas.width = 200;
-            previewCanvas.height = 200;
-            previewCanvas.classList.add('palette-preview-canvas');
-            previewContainer.appendChild(previewCanvas);
-            
-            // Display colors underneath preview
-            const swatchContainer = document.createElement('div');
-            swatchContainer.classList.add('swatch-container');
-            clickableContainer.appendChild(swatchContainer);
-            
-            // Prepare display colors
-            const displayColors = prepareDisplayColors(paletteColors);
-            
-            // Display color swatches
-            displayColors.forEach((color, idx) => {
-                const swatch = document.createElement('div');
-                swatch.classList.add('color-swatch');
-                swatch.style.backgroundColor = `rgb(${color.join(',')})`;
-                
-                const hexValue = rgbToHex(color[0], color[1], color[2]);
-                swatch.title = ` ${hexValue}`;
-                
-                if (collection === 'ss') {
-                    swatch.classList.add('ss-swatch');
-                } else if (collection === 'aw') {
-                    swatch.classList.add('aw-swatch');
-                }
-                
-                swatchContainer.appendChild(swatch);
-            });
-            
-            // Click handler
-            clickableContainer.addEventListener('click', function() {
-                const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
-                const collectionName = this.dataset.collection;
-                
-                const fullPalette = window[`${collectionName}PaletteColors`] && 
-                                  window[`${collectionName}PaletteColors`][paletteIndex];
-                
-                if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
-                    window.processPallet(null, totalLayers, null, 0, null, fullPalette, paletteIndex, collectionName);
-                }
-            });
-            
-            // Add "Show All" button
-            const showAllButton = document.createElement('div');
-            showAllButton.classList.add('show-all-colors-btn');
-            showAllButton.innerHTML = '+';
-            showAllButton.title = 'Show all colors in palette';
-            clickableContainer.appendChild(showAllButton);
-            
-            showAllButton.addEventListener('click', function(e) {
-                e.stopPropagation();
-                
-                const fullPalette = window[`${collection}PaletteColors`][i];
-                if (!fullPalette || fullPalette.length === 0) {
-                    return;
-                }
-                
-                showFullPaletteModal(fullPalette, collection, i);
-            });
-            
-            paletteContainers.push({
-                index: i,
-                canvas: previewCanvas,
-                colors: paletteColors
-            });
-        }
-        
-        // Generate previews with delays
-        for (let i = 0; i < paletteContainers.length; i++) {
-            const item = paletteContainers[i];
-            
-            setTimeout(() => {
-                generateAndShowPreview(item.canvas, item.colors, item.index, collection);
-            }, i * 50);
-        }
-    } else {
-        // Multi-layer logic with green filtering
-        const paletteContainer = document.getElementById(`${prefix}colorPalette_${layerIndex}`);
-        if (!paletteContainer) return;
-        
-        window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
-        window[`${collection}PaletteHueShifted`] = window[`${collection}PaletteHueShifted`] || {};
-        
-        let paletteColors;
-        if (window[`${collection}PaletteColors`][layerIndex]) {
-            paletteColors = removeGreenFromColors(window[`${collection}PaletteColors`][layerIndex]);
-        } else {
-            if (layerIndex < 5) {
-                const hueShiftedPalettes = generateHueShiftedPalettes(validatedColors, collection);
-                paletteColors = hueShiftedPalettes[layerIndex] || [...validatedColors];
-                window[`${collection}PaletteHueShifted`][layerIndex] = true;
+              // Red wraps around
+              midpoint = (family.range[0] + family.range[1] + 360) / 2 % 360;
             } else {
-                const diversePalettes = generateDiversePalettes(validatedColors, collection);
-                paletteColors = diversePalettes[layerIndex % diversePalettes.length] || [...validatedColors];
+              midpoint = (family.range[0] + family.range[1]) / 2;
             }
             
-            paletteColors = removeGreenFromColors(paletteColors);
-            window[`${collection}PaletteColors`][layerIndex] = [...paletteColors];
+            // Calculate distance to midpoint, accounting for wrap-around
+            let distance = Math.abs(h - midpoint);
+            distance = Math.min(distance, 360 - distance);
+            
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestFamily = family;
+            }
+          }
+          
+          colorsByFamily[closestFamily.name].push(color);
+        }
+      });
+      
+      // Always include the first color (may be background or most important)
+      let displayColors = [validColors[0]];
+      
+      // Select one representative color from each family (with colors available)
+      // Sort families by number of colors (descending) to prioritize families with more colors
+      const sortedFamilies = Object.entries(colorsByFamily)
+        .sort((a, b) => b[1].length - a[1].length)
+        .filter(([_, colors]) => colors.length > 0);
+      
+      // Determine optimal number of colors to display
+      let optimalDisplayCount = Math.min(
+        MAX_DISPLAY_COUNT,
+        Math.max(MIN_DISPLAY_COUNT, sortedFamilies.length + 1) // +1 for the first color
+      );
+      
+      // Check if the first color already belongs to a family
+      const [firstColorH, firstColorS, firstColorL] = rgbToHsl(...validColors[0]);
+      let firstColorFamily = null;
+      
+      for (const family of colorFamilies) {
+        if (family.name === "Red") {
+          if (firstColorH >= family.range[0] || firstColorH < family.range[1]) {
+            firstColorFamily = family.name;
+            break;
+          }
+        } else if (firstColorH >= family.range[0] && firstColorH < family.range[1]) {
+          firstColorFamily = family.name;
+          break;
+        }
+      }
+      
+      // Select one representative from each family (excluding first color's family)
+      for (const [familyName, familyColors] of sortedFamilies) {
+        // Skip this family if it's the same as the first color's family
+        if (familyName === firstColorFamily) continue;
+        
+        // If we've reached our optimal display count, break
+        if (displayColors.length >= optimalDisplayCount) break;
+        
+        // Select the most saturated color from this family for better visibility
+        let bestColor = familyColors[0];
+        let highestSat = 0;
+        
+        for (const color of familyColors) {
+          const [_, s, __] = rgbToHsl(...color);
+          if (s > highestSat) {
+            highestSat = s;
+            bestColor = color;
+          }
         }
         
-        // Continue with rest of multi-layer logic...
+        // Add the representative color from this family
+        displayColors.push(bestColor);
+      }
+      
+      // If we still don't have enough colors, add from the remaining colors
+      // sorted by their perceptual distance from already selected colors
+      if (displayColors.length < MIN_DISPLAY_COUNT) {
+        // Flatten all colors from all families
+        const allRemainingColors = validColors.filter(color => 
+          !displayColors.some(c => 
+            c[0] === color[0] && c[1] === color[1] && c[2] === color[2]
+          )
+        );
+        
+        // For each remaining color, calculate minimum distance to any selected color
+        const colorDistances = allRemainingColors.map(color => {
+          const minDistance = Math.min(...displayColors.map(selectedColor => 
+            colorDifference(color, selectedColor)
+          ));
+          return { color, distance: minDistance };
+        });
+        
+        // Sort by distance (descending) - most distinct colors first
+        colorDistances.sort((a, b) => b.distance - a.distance);
+        
+        // Add colors until we reach the minimum
+        for (const { color } of colorDistances) {
+          displayColors.push(color);
+          if (displayColors.length >= MIN_DISPLAY_COUNT) break;
+        }
+      }
+      
+      // If we still need more colors, generate completely new ones in empty hue regions
+      if (displayColors.length < MIN_DISPLAY_COUNT) {
+        // Find which hue regions are not represented
+        const displayedHues = displayColors.map(color => rgbToHsl(...color)[0]);
+        
+        // Create hue "buckets" of 45 degrees each
+        const hueBuckets = Array(8).fill(0);
+        
+        displayedHues.forEach(hue => {
+          const bucketIndex = Math.floor(hue / 45) % 8;
+          hueBuckets[bucketIndex]++;
+        });
+        
+        // Generate new colors in empty buckets
+        for (let i = 0; i < 8; i++) {
+          if (hueBuckets[i] === 0 && displayColors.length < MIN_DISPLAY_COUNT) {
+            // Generate a color in this empty hue region
+            const baseHue = i * 45 + 22.5; // Middle of the bucket
+            const newColor = hslToRgb(
+              baseHue,
+              70 + Math.random() * 30,
+              45 + Math.random() * 25
+            );
+            displayColors.push(newColor);
+          }
+        }
+      }
+      
+      return displayColors;
     }
 
-
+    // Generate and show preview function
     async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex, collection) {
-    try {
-        console.log(`=== PREVIEW GENERATION DEBUG ===`);
-        console.log(`Collection: ${collection}, Palette Index: ${paletteIndex}`);
-        console.log(`Preview colors being sent:`, paletteColors);
-        
-        // Check cache first
-        if (window.palettePreviewCache && 
-            window.palettePreviewCache[collection] && 
-            window.palettePreviewCache[collection][paletteIndex]) {
+        try {
+            // Check cache first
+            if (window.palettePreviewCache && 
+                window.palettePreviewCache[collection] && 
+                window.palettePreviewCache[collection][paletteIndex]) {
+                
+                const cachedPreview = window.palettePreviewCache[collection][paletteIndex];
+                const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+                
+                // **REMOVED WHITE BACKGROUND FILL**
+                ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(
+                            previewCanvas.width / img.width,
+                            previewCanvas.height / img.height
+                        );
+                        const scaledWidth = img.width * scale;
+                        const scaledHeight = img.height * scale;
+                        const x = (previewCanvas.width - scaledWidth) / 2;
+                        const y = (previewCanvas.height - scaledHeight) / 2;
+                        
+                        ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+                        markPreviewReady(previewCanvas);
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        drawFallbackPreview(previewCanvas, collection, paletteIndex);
+                        resolve();
+                    };
+                    img.src = cachedPreview;
+                });
+            }
             
-            console.log(`Using cached preview for ${collection}[${paletteIndex}]`);
-            const cachedPreview = window.palettePreviewCache[collection][paletteIndex];
+            // Get the original canvas
+            const originalCanvas = totalLayers === 1 
+                ? document.getElementById('layer_canvas_1')
+                : document.getElementById(`layer_canvas_${paletteIndex + 1}`);
+            
+            if (!originalCanvas) {
+                console.error('No original canvas found for preview');
+                drawFallbackPreview(previewCanvas, collection, paletteIndex);
+                return;
+            }
+            
+            // **CREATE 200x200 PREVIEW PROCESSING CANVAS WITH TRANSPARENCY**
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 200;
+            tempCanvas.height = 200;
+            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+            
+            // **DO NOT FILL WITH WHITE - KEEP TRANSPARENT**
+            
+            // Scale and draw the original image to 200x200 maintaining aspect ratio
+            const originalAspect = originalCanvas.width / originalCanvas.height;
+            let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+            
+            if (originalAspect > 1) {
+                drawWidth = 200;
+                drawHeight = 200 / originalAspect;
+                offsetY = (200 - drawHeight) / 2;
+            } else {
+                drawHeight = 200;
+                drawWidth = 200 * originalAspect;
+                offsetX = (200 - drawWidth) / 2;
+            }
+            
+            // Draw the original image directly (preserving transparency)
+            tempCtx.drawImage(originalCanvas, offsetX, offsetY, drawWidth, drawHeight);
+            
+            // **EMBEDDED PROCESSPALLETE LOGIC STARTS HERE**
+            
+            // Get image data for processing
+            const imageData = tempCtx.getImageData(0, 0, 200, 200);
+            
+            // Extract original colors from the scaled image
+            const originalColors = await getDistinctColors(imageData, 30, 50, 40);
+            
+            if (!originalColors || originalColors.length === 0) {
+                console.error('No original colors found for preview');
+                // Draw the original scaled image anyway (preserving transparency)
+                const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+                ctx.clearRect(0, 0, 200, 200); // Clear instead of white fill
+                ctx.drawImage(tempCanvas, 0, 0, 200, 200);
+                cachePreview(previewCanvas, collection, paletteIndex);
+                markPreviewReady(previewCanvas);
+                return;
+            }
+            
+            // Apply collection-specific adjustments to palette colors
+            let adjustedPaletteColors = applyCollectionAdjustments([...paletteColors], collection);
+            
+            // **ALWAYS USE COLOR REPLACEMENT PROCESSING (REMOVED HUE SHIFTING)**
+            let processedImageData;
+            
+            // **COLOR REPLACEMENT PROCESSING FOR ALL PALETTES**
+            const colorMappings = [];
+            for (let i = 0; i < Math.min(originalColors.length, adjustedPaletteColors.length); i++) {
+                colorMappings.push({
+                    originalColor: originalColors[i],
+                    targetColor: adjustedPaletteColors[i % adjustedPaletteColors.length]
+                });
+            }
+            
+            // Apply color mappings
+            if (typeof ColorProcessor !== 'undefined') {
+                const colorProcessor = new ColorProcessor();
+                const tempImageUrl = tempCanvas.toDataURL('image/png'); // PNG preserves transparency
+                processedImageData = await colorProcessor.applyMultipleColorMappings(
+                    tempImageUrl,
+                    colorMappings
+                );
+            } else {
+                // Fallback: Simple color replacement
+                const pixels = imageData.data;
+                const tolerance = 30;
+                
+                for (let i = 0; i < pixels.length; i += 4) {
+                    const a = pixels[i + 3];
+                    
+                    // **ONLY PROCESS NON-TRANSPARENT PIXELS**
+                    if (a > 0) {
+                        const currentColor = [pixels[i], pixels[i + 1], pixels[i + 2]];
+                        
+                        let closestMapping = null;
+                        let minDistance = Infinity;
+                        
+                        for (const mapping of colorMappings) {
+                            const distance = colorDifference(currentColor, mapping.originalColor);
+                            if (distance < minDistance && distance < tolerance) {
+                                minDistance = distance;
+                                closestMapping = mapping;
+                            }
+                        }
+                        
+                        if (closestMapping) {
+                            pixels[i] = closestMapping.targetColor[0];
+                            pixels[i + 1] = closestMapping.targetColor[1];
+                            pixels[i + 2] = closestMapping.targetColor[2];
+                            // Keep original alpha: pixels[i + 3] = a;
+                        }
+                    }
+                }
+                
+                tempCtx.putImageData(imageData, 0, 0);
+                processedImageData = tempCanvas.toDataURL('image/png'); // PNG preserves transparency
+            }
+            
+            // **DRAW RESULT WITHOUT WHITE BACKGROUND**
             const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            ctx.clearRect(0, 0, 200, 200); // Clear instead of white fill
             
             return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0, 200, 200);
+                const resultImg = new Image();
+                resultImg.onload = () => {
+                    ctx.drawImage(resultImg, 0, 0, 200, 200);
+                    cachePreview(previewCanvas, collection, paletteIndex, processedImageData);
                     markPreviewReady(previewCanvas);
                     resolve();
                 };
-                img.onerror = () => {
-                    console.log(`Cached preview failed to load, generating new one`);
+                resultImg.onerror = (e) => {
+                    console.error("Error loading processed preview:", e);
                     drawFallbackPreview(previewCanvas, collection, paletteIndex);
                     resolve();
                 };
-                img.src = cachedPreview;
+                resultImg.src = processedImageData;
             });
-        }
-        
-        // Get the original canvas
-        const originalCanvas = totalLayers === 1 
-            ? document.getElementById('layer_canvas_1')
-            : document.getElementById(`layer_canvas_${paletteIndex + 1}`);
-        
-        if (!originalCanvas) {
-            console.error('No original canvas found for preview');
+            
+        } catch (error) {
+            console.error("Error generating preview:", error);
             drawFallbackPreview(previewCanvas, collection, paletteIndex);
-            return;
         }
-        
-        console.log(`Original canvas found: ${originalCanvas.id}, dimensions: ${originalCanvas.width}x${originalCanvas.height}`);
-        
-        // FIXED: Create temp canvas with FULL RESOLUTION, not 200x200
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = originalCanvas.width;  // Use full width
-        tempCanvas.height = originalCanvas.height; // Use full height
-        tempCanvas.id = 'temp_export_canvas_1'; // This ID makes processPallet run in export mode
-        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-        
-        // FIXED: Draw the original image at FULL RESOLUTION
-        tempCtx.drawImage(originalCanvas, 0, 0);
-        
-        console.log(`Temp canvas created: ${tempCanvas.width}x${tempCanvas.height} (FULL RESOLUTION)`);
-        
-        // Validate paletteColors before processing
-        if (!paletteColors || !Array.isArray(paletteColors) || paletteColors.length === 0) {
-            console.error(`Invalid paletteColors for preview:`, paletteColors);
-            drawFallbackPreview(previewCanvas, collection, paletteIndex);
-            return;
-        }
-        
-        // Validate each color
-        const validColors = paletteColors.filter(color => 
-            Array.isArray(color) && 
-            color.length === 3 && 
-            color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
-        );
-        
-        if (validColors.length === 0) {
-            console.error(`No valid colors found in paletteColors:`, paletteColors);
-            drawFallbackPreview(previewCanvas, collection, paletteIndex);
-            return;
-        }
-        
-        if (validColors.length !== paletteColors.length) {
-            console.warn(`Some invalid colors filtered out. Original: ${paletteColors.length}, Valid: ${validColors.length}`);
-        }
-        
-        // CRITICAL FIX: Pass the palette array directly instead of collection name
-        // This ensures the preview uses the exact same palette as what's displayed
-        console.log(`Calling processPallet with palette array directly:`, validColors);
-        
-        await processPallet(
-            tempCtx,        // layerCtx
-            1,              // totalLayers
-            tempCanvas,     // layerCanvas
-            0,              // currentLayerIndex
-            null,           // oldColorArray
-            validColors,    // PASS THE ACTUAL PALETTE ARRAY, NOT COLLECTION NAME
-            paletteIndex,   // paletteIndex
-            collection      // collectionName
-        );
-        
-        console.log(`processPallet completed for preview`);
-        
-        // FIXED: Scale down the FULL RESOLUTION result to 200x200 for display
-        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-        ctx.clearRect(0, 0, 200, 200);
-        
-        // Calculate scaling to fit the full image into the 200x200 preview canvas
-        const scale = Math.min(200 / tempCanvas.width, 200 / tempCanvas.height);
-        const scaledWidth = tempCanvas.width * scale;
-        const scaledHeight = tempCanvas.height * scale;
-        const x = (200 - scaledWidth) / 2;
-        const y = (200 - scaledHeight) / 2;
-        
-        // Draw the processed full-resolution image scaled down to the preview canvas
-        ctx.drawImage(tempCanvas, x, y, scaledWidth, scaledHeight);
-        
-        // Cache the result (store the scaled preview, not the full resolution)
-        cachePreview(previewCanvas, collection, paletteIndex, previewCanvas.toDataURL());
-        markPreviewReady(previewCanvas);
-        
-        console.log(`Preview generated successfully for ${collection}[${paletteIndex}] using full resolution`);
-        console.log(`=== END PREVIEW DEBUG ===\n`);
-        
-    } catch (error) {
-        console.error("Error generating preview:", error);
-        console.error("Error stack:", error.stack);
-        console.log(`Falling back to fallback preview for ${collection}[${paletteIndex}]`);
-        drawFallbackPreview(previewCanvas, collection, paletteIndex);
     }
-}
+
     // Modified cache function with safer implementation
     function cachePreview(canvas, collection, index, highResUrl) {
       // Initialize cache objects if they don't exist
@@ -10016,6 +9909,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
     
     // Ensure we have valid colors to work with
+    const validatedColors = await getPersistentColors(colors);
     
     // Main processing logic for single layer
     if (totalLayers === 1) {
@@ -10027,7 +9921,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         allPalettes = [...hueShiftedPalettes];
         
         // Remaining 5 palettes: Use family replacement as before
-        const diversePalettes = generateDiversePalettes(validatedColors,collection);
+        const diversePalettes = generateDiversePalettes(validatedColors);
         allPalettes = [...allPalettes, ...diversePalettes.slice(0, 20)];
         
         // Initialize preview cache if needed
@@ -10151,21 +10045,19 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             });
             
             // Click handler to use the FULL palette
-          // Click handler to use the FULL palette
-          clickableContainer.addEventListener('click', function() {
-              const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
-              const collectionName = this.dataset.collection;
-              
-              // Get the FULL palette from storage
-              const fullPalette = window[`${collectionName}PaletteColors`] && 
-                                window[`${collectionName}PaletteColors`][paletteIndex];
-              
-              // FIXED: Call processPallet with the FULL palette array directly
-              if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
-                  console.log(`Applying palette ${paletteIndex} from ${collectionName}:`, fullPalette);
-                  window.processPallet(null, totalLayers, null, 0, null, fullPalette, paletteIndex, collectionName);
-              }
-          });
+            clickableContainer.addEventListener('click', function() {
+                const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
+                const collectionName = this.dataset.collection;
+                
+                // Get the FULL palette from storage
+                const fullPalette = window[`${collectionName}PaletteColors`] && 
+                                  window[`${collectionName}PaletteColors`][paletteIndex];
+                
+                // Call processPallet with the FULL palette from storage
+                if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
+                    window.processPallet(null, totalLayers, null, 0, null, fullPalette, paletteIndex, collectionName);
+                }
+            });
             
             // Add "Show All" button
             const showAllButton = document.createElement('div');
@@ -10222,7 +10114,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             window[`${collection}PaletteHueShifted`][layerIndex] = true;
         } else {
             // Use family replacement for layers 5+
-            const diversePalettes = generateDiversePalettes(validatedColors,collection);
+            const diversePalettes = generateDiversePalettes(validatedColors);
             paletteColors = diversePalettes[layerIndex % diversePalettes.length] || [...validatedColors];
         }
         
@@ -10909,7 +10801,7 @@ function hslToRgbforsingle(h, s, l) {
             return colors;
         }
     
-    function generateUniqueRGBColorArray(count) {
+    {% comment %} function generateUniqueRGBColorArray(count) {
         const colors = [];
     
         while (colors.length < count) {
@@ -10926,7 +10818,7 @@ function hslToRgbforsingle(h, s, l) {
         }
     
         return colors;
-    }
+    } {% endcomment %}
 
       function showLayerInfo() {
         contextMenu.style.display = 'none';
@@ -16804,84 +16696,140 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }, 3000);
     }
     
-    // New function to create background variations
-    // New function to create background variations
+    // Function to create background variations
     function createBackgroundVariations(baseColor, variationType) {
       const [h, s, l] = rgbToHsl(...baseColor);
       
       switch (variationType) {
         case 'dark':
-          // Create dark background (low lightness, maintain some saturation)
           return hslToRgb(h, Math.max(s * 0.6, 8), Math.max(l * 0.25, 3));
           
         case 'faint':
-          // Apply SS collection logic - light and bright with slight warm/cool tint
-          const newSat = Math.min(25, s + 10); // Slight increase in saturation
-          const newLight = Math.max(85, Math.min(95, l + 5)); // Keep very light
+          const newSat = Math.min(25, s + 10);
+          const newLight = Math.max(85, Math.min(95, l + 5));
           return hslToRgb(h, newSat, newLight);
           
         case 'regular':
         default:
-          // Keep original color but ensure it's suitable as background
           return hslToRgb(h, Math.max(s * 0.7, 12), Math.min(Math.max(l * 0.9, 15), 75));
       }
     }
     
-    // Harmony generation functions
-  function generateMonochromaticPalette(baseColor, imageColors) {
-  try {
-    const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-    const monoRange = 40; // how much we allow lightness/saturation shift
-
-    const monoPalette = imageColors.map((color, i) => {
-      const [originalH, originalS, originalL] = rgbToHsl(...color);
-
-      // Keep hue fixed (monochromatic), only shift S/L relative to base
-      const scaledS = baseS + ((originalS - baseS) * (monoRange / 100));
-      const scaledL = baseL + ((originalL - baseL) * (monoRange / 100));
-
-      const newS = Math.max(20, Math.min(100, scaledS));
-      const newL = Math.max(10, Math.min(90, scaledL));
-
-      return hslToRgb(baseH, newS, newL);
-    });
-
-    // Ensure base color is included
-    if (!monoPalette.some(color => perceptualColorDifference(color, baseColor) < 20)) {
-      monoPalette[0] = baseColor;
-    }
-
-    return monoPalette;
-  } catch (error) {
-    console.error("Error generating monochromatic palette:", error);
-    return [baseColor, ...imageColors.slice(0, Math.min(imageColors.length - 1, 8))];
-  }
-}
-
-    function generateAnalogousPalette(baseColor, imageColors) {
+    // UPDATED Harmony generation functions
+    function generateMonochromaticPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const analogousRange = 30;
+        
+        const monoPalette = imageColors.map((color, i) => {
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
+          
+          // Create MUCH more variation using multiple factors that don't repeat
+          const paletteVariation = paletteIndex * 17; // Use larger prime for more spread
+          const colorVariation = i * 23; // Another prime for color index
+          const combinedVariation = paletteVariation + colorVariation;
+          
+          // SATURATION: Use continuous mathematical functions instead of patterns
+          let saturationMultiplier = 0.3 + (Math.sin(combinedVariation * 0.1) + 1) * 0.35; // 0.3 to 1.0
+          let saturationOffset = Math.cos(paletteIndex * 0.7) * 30; // -30 to +30
+          
+          let newS = originalS * saturationMultiplier + saturationOffset;
+          newS = Math.max(5, Math.min(95, newS));
+          
+          // LIGHTNESS: Use different mathematical functions
+          let lightnessMultiplier = 0.4 + (Math.cos(combinedVariation * 0.13) + 1) * 0.4; // 0.4 to 1.2
+          let lightnessOffset = Math.sin(paletteIndex * 1.1) * 25; // -25 to +25
+          
+          let newL = originalL * lightnessMultiplier + lightnessOffset;
+          newL = Math.max(10, Math.min(90, newL));
+          
+          // HUE: Slight variation but still monochromatic
+          let hueOffset = Math.sin(combinedVariation * 0.07) * 8; // -8 to +8 degrees
+          let finalHue = (baseH + hueOffset + 360) % 360;
+          
+          // Add palette-specific global adjustments to ensure each palette looks different
+          if (paletteIndex % 3 === 0) {
+            // High contrast palettes
+            if (newL > 50) {
+              newL = Math.min(85, newL + 20);
+              newS = Math.min(90, newS + 15);
+            } else {
+              newL = Math.max(15, newL - 15);
+              newS = Math.max(20, newS - 10);
+            }
+          } else if (paletteIndex % 3 === 1) {
+            // Mid-tone palettes
+            newL = 35 + (newL - 35) * 0.6; // Compress towards mid-tones
+            newS = Math.max(25, Math.min(75, newS));
+          } else {
+            // Varied lightness palettes
+            newL = newL + Math.sin(i * 0.5) * 20;
+            newL = Math.max(20, Math.min(80, newL));
+          }
+          
+          // Additional variation for higher palette indices
+          if (paletteIndex >= 5) {
+            const extraVariation = (paletteIndex - 5) * 13;
+            newS = newS + Math.cos(extraVariation + i) * 15;
+            newL = newL + Math.sin(extraVariation + i * 0.3) * 18;
+            
+            newS = Math.max(10, Math.min(90, newS));
+            newL = Math.max(15, Math.min(85, newL));
+          }
+          
+          // Final micro-adjustments to prevent any identical colors
+          newS = newS + (combinedVariation % 7) - 3;
+          newL = newL + (combinedVariation % 9) - 4;
+          
+          newS = Math.max(5, Math.min(95, newS));
+          newL = Math.max(10, Math.min(90, newL));
+          
+          return hslToRgb(finalHue, newS, newL);
+        });
+
+        // Ensure we have the base color
+        if (!monoPalette.some(color => perceptualColorDifference(color, baseColor) < 20)) {
+          monoPalette[0] = baseColor;
+        }
+
+        return monoPalette;
+      } catch (error) {
+        console.error("Error generating monochromatic palette:", error);
+        return [baseColor, ...imageColors.slice(0, Math.min(imageColors.length - 1, 8))];
+      }
+    }
+
+    function generateAnalogousPalette(baseColor, imageColors, paletteIndex = 0) {
+      try {
+        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         
         const analogousPalette = imageColors.map((color, i) => {
           const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let hueDiff = originalH - baseH;
-          if (hueDiff > 180) hueDiff -= 360;
-          if (hueDiff < -180) hueDiff += 360;
+          // Create wider analogous range (±45°) with more variation
+          const paletteVariation = paletteIndex * 11;
+          const colorVariation = i * 19;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          const scaledHueDiff = hueDiff * (analogousRange / 180);
-          let newHue = baseH + scaledHueDiff;
-          if (newHue < 0) newHue += 360;
-          if (newHue >= 360) newHue -= 360;
+          // Create analogous positions with mathematical distribution
+          let hueOffset = Math.sin(combinedVariation * 0.08) * 45; // -45 to +45 degrees
+          let finalHue = (baseH + hueOffset + 360) % 360;
           
-          return hslToRgb(newHue, originalS, originalL);
+          // Add palette-specific hue shifts
+          finalHue = (finalHue + (paletteIndex * 7) % 30 - 15 + 360) % 360;
+          
+          // Vary saturation and lightness more dramatically
+          let satMultiplier = 0.5 + (Math.cos(combinedVariation * 0.11) + 1) * 0.4; // 0.5 to 1.3
+          let lightMultiplier = 0.6 + (Math.sin(combinedVariation * 0.09) + 1) * 0.3; // 0.6 to 1.2
+          
+          let newS = originalS * satMultiplier + Math.cos(paletteIndex * 0.5) * 20;
+          let newL = originalL * lightMultiplier + Math.sin(paletteIndex * 0.8) * 15;
+          
+          newS = Math.max(15, Math.min(95, newS));
+          newL = Math.max(15, Math.min(85, newL));
+          
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        if (!analogousPalette.some(color => perceptualColorDifference(color, baseColor) < 20)) {
-          analogousPalette[0] = baseColor;
-        }
-        
+
         return analogousPalette;
       } catch (error) {
         console.error("Error generating analogous palette:", error);
@@ -16889,52 +16837,38 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateComplementaryPalette(baseColor, imageColors) {
+    function generateComplementaryPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const complementH = (baseH + 180) % 360;
         
         const complementaryPalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 13;
+          const colorVariation = i * 21;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromComplement = Math.abs(h - complementH);
-          if (distFromComplement > 180) distFromComplement = 360 - distFromComplement;
+          // Decide whether this color should be base or complement oriented
+          let targetHue = Math.sin(combinedVariation * 0.1) > 0 ? baseH : complementH;
           
-          let newHue;
-          if (distFromBase <= distFromComplement) {
-            const shiftAmount = (distFromBase / 180) * 30;
-            newHue = (baseH + shiftAmount) % 360;
-          } else {
-            const shiftAmount = (distFromComplement / 180) * 30;
-            newHue = (complementH + shiftAmount) % 360;
-          }
+          // Add variation around the target hue
+          let hueOffset = Math.cos(combinedVariation * 0.07) * 25; // -25 to +25
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 5) % 20 - 10 + 360) % 360;
           
-          return hslToRgb(newHue, s, l);
+          // Create complementary-specific saturation/lightness patterns
+          let satMultiplier = 0.6 + (Math.sin(combinedVariation * 0.12) + 1) * 0.3; // 0.6 to 1.2
+          let lightMultiplier = 0.7 + (Math.cos(combinedVariation * 0.08) + 1) * 0.25; // 0.7 to 1.2
+          
+          let newS = originalS * satMultiplier + Math.sin(paletteIndex * 0.6) * 25;
+          let newL = originalL * lightMultiplier + Math.cos(paletteIndex * 0.9) * 20;
+          
+          newS = Math.max(20, Math.min(90, newS));
+          newL = Math.max(20, Math.min(80, newL));
+          
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false;
-        let hasComplement = false;
-        
-        for (const color of complementaryPalette) {
-          const [h] = rgbToHsl(...color);
-          const distFromBase = Math.abs(h - baseH);
-          const distFromComplement = Math.abs(h - complementH);
-          
-          if (distFromBase < 15) hasBase = true;
-          if (distFromComplement < 15) hasComplement = true;
-          
-          if (hasBase && hasComplement) break;
-        }
-        
-        if (!hasBase) complementaryPalette[0] = baseColor;
-        if (!hasComplement) {
-          const pureComplement = hslToRgb(complementH, baseS, baseL);
-          complementaryPalette[complementaryPalette.length - 1] = pureComplement;
-        }
-        
+
         return complementaryPalette;
       } catch (error) {
         console.error("Error generating complementary palette:", error);
@@ -16942,57 +16876,38 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateSplitComplementaryPalette(baseColor, imageColors) {
+    function generateSplitComplementaryPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const splitComp1H = (baseH + 150) % 360;
         const splitComp2H = (baseH + 210) % 360;
         
         const splitPalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 16;
+          const colorVariation = i * 27;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromSplit1 = Math.abs(h - splitComp1H);
-          if (distFromSplit1 > 180) distFromSplit1 = 360 - distFromSplit1;
+          // Choose between base and split complement hues
+          let targetHues = [baseH, splitComp1H, splitComp2H];
+          let targetHue = targetHues[Math.floor((combinedVariation * 0.1) % 3)];
           
-          let distFromSplit2 = Math.abs(h - splitComp2H);
-          if (distFromSplit2 > 180) distFromSplit2 = 360 - distFromSplit2;
+          let hueOffset = Math.sin(combinedVariation * 0.06) * 20; // -20 to +20
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 8) % 25 - 12 + 360) % 360;
           
-          const minDist = Math.min(distFromBase, distFromSplit1, distFromSplit2);
+          let satMultiplier = 0.5 + (Math.cos(combinedVariation * 0.14) + 1) * 0.4; // 0.5 to 1.3
+          let lightMultiplier = 0.6 + (Math.sin(combinedVariation * 0.11) + 1) * 0.35; // 0.6 to 1.3
           
-          let newHue;
-          if (minDist === distFromBase) {
-            newHue = baseH;
-          } else if (minDist === distFromSplit1) {
-            newHue = splitComp1H;
-          } else {
-            newHue = splitComp2H;
-          }
+          let newS = originalS * satMultiplier + Math.cos(paletteIndex * 0.7) * 30;
+          let newL = originalL * lightMultiplier + Math.sin(paletteIndex * 1.2) * 25;
           
-          const variation = (i % 5) - 2;
-          newHue = (newHue + variation + 360) % 360;
+          newS = Math.max(15, Math.min(95, newS));
+          newL = Math.max(15, Math.min(85, newL));
           
-          return hslToRgb(newHue, s, l);
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false, hasSplit1 = false, hasSplit2 = false;
-        
-        for (const color of splitPalette) {
-          const [h] = rgbToHsl(...color);
-          
-          if (Math.abs(h - baseH) < 15 || Math.abs(h - baseH - 360) < 15) hasBase = true;
-          if (Math.abs(h - splitComp1H) < 15) hasSplit1 = true;
-          if (Math.abs(h - splitComp2H) < 15) hasSplit2 = true;
-          
-          if (hasBase && hasSplit1 && hasSplit2) break;
-        }
-        
-        if (!hasBase) splitPalette[0] = baseColor;
-        if (!hasSplit1) splitPalette[1] = hslToRgb(splitComp1H, baseS, baseL);
-        if (!hasSplit2) splitPalette[2] = hslToRgb(splitComp2H, baseS, baseL);
-        
+
         return splitPalette;
       } catch (error) {
         console.error("Error generating split complementary palette:", error);
@@ -17000,57 +16915,38 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateTriadicPalette(baseColor, imageColors) {
+    function generateTriadicPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const triad1H = (baseH + 120) % 360;
         const triad2H = (baseH + 240) % 360;
         
         const triadicPalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 14;
+          const colorVariation = i * 31;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromTriad1 = Math.abs(h - triad1H);
-          if (distFromTriad1 > 180) distFromTriad1 = 360 - distFromTriad1;
+          // Choose between triadic hues
+          let targetHues = [baseH, triad1H, triad2H];
+          let targetHue = targetHues[Math.floor((combinedVariation * 0.09) % 3)];
           
-          let distFromTriad2 = Math.abs(h - triad2H);
-          if (distFromTriad2 > 180) distFromTriad2 = 360 - distFromTriad2;
+          let hueOffset = Math.cos(combinedVariation * 0.05) * 25; // -25 to +25
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 6) % 30 - 15 + 360) % 360;
           
-          const minDist = Math.min(distFromBase, distFromTriad1, distFromTriad2);
+          let satMultiplier = 0.6 + (Math.sin(combinedVariation * 0.13) + 1) * 0.35; // 0.6 to 1.3
+          let lightMultiplier = 0.5 + (Math.cos(combinedVariation * 0.10) + 1) * 0.4; // 0.5 to 1.3
           
-          let newHue;
-          if (minDist === distFromBase) {
-            newHue = baseH;
-          } else if (minDist === distFromTriad1) {
-            newHue = triad1H;
-          } else {
-            newHue = triad2H;
-          }
+          let newS = originalS * satMultiplier + Math.sin(paletteIndex * 0.8) * 25;
+          let newL = originalL * lightMultiplier + Math.cos(paletteIndex * 1.1) * 20;
           
-          const variation = (i % 7) - 3;
-          newHue = (newHue + variation + 360) % 360;
+          newS = Math.max(20, Math.min(90, newS));
+          newL = Math.max(20, Math.min(80, newL));
           
-          return hslToRgb(newHue, s, l);
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false, hasTriad1 = false, hasTriad2 = false;
-        
-        for (const color of triadicPalette) {
-          const [h] = rgbToHsl(...color);
-          
-          if (Math.abs(h - baseH) < 15 || Math.abs(h - baseH - 360) < 15) hasBase = true;
-          if (Math.abs(h - triad1H) < 15) hasTriad1 = true;
-          if (Math.abs(h - triad2H) < 15) hasTriad2 = true;
-          
-          if (hasBase && hasTriad1 && hasTriad2) break;
-        }
-        
-        if (!hasBase) triadicPalette[0] = baseColor;
-        if (!hasTriad1) triadicPalette[1] = hslToRgb(triad1H, baseS, baseL);
-        if (!hasTriad2) triadicPalette[2] = hslToRgb(triad2H, baseS, baseL);
-        
+
         return triadicPalette;
       } catch (error) {
         console.error("Error generating triadic palette:", error);
@@ -17058,7 +16954,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateTetradicPalette(baseColor, imageColors) {
+    function generateTetradicPalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const tetrad1H = (baseH + 60) % 360;
@@ -17066,57 +16962,31 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         const tetrad3H = (baseH + 240) % 360;
         
         const tetradicPalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 18;
+          const colorVariation = i * 29;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromTetrad1 = Math.abs(h - tetrad1H);
-          if (distFromTetrad1 > 180) distFromTetrad1 = 360 - distFromTetrad1;
+          // Choose between tetradic hues
+          let targetHues = [baseH, tetrad1H, tetrad2H, tetrad3H];
+          let targetHue = targetHues[Math.floor((combinedVariation * 0.08) % 4)];
           
-          let distFromTetrad2 = Math.abs(h - tetrad2H);
-          if (distFromTetrad2 > 180) distFromTetrad2 = 360 - distFromTetrad2;
+          let hueOffset = Math.sin(combinedVariation * 0.04) * 30; // -30 to +30
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 9) % 35 - 17 + 360) % 360;
           
-          let distFromTetrad3 = Math.abs(h - tetrad3H);
-          if (distFromTetrad3 > 180) distFromTetrad3 = 360 - distFromTetrad3;
+          let satMultiplier = 0.4 + (Math.cos(combinedVariation * 0.15) + 1) * 0.45; // 0.4 to 1.3
+          let lightMultiplier = 0.7 + (Math.sin(combinedVariation * 0.12) + 1) * 0.3; // 0.7 to 1.3
           
-          const minDist = Math.min(distFromBase, distFromTetrad1, distFromTetrad2, distFromTetrad3);
+          let newS = originalS * satMultiplier + Math.cos(paletteIndex * 0.9) * 30;
+          let newL = originalL * lightMultiplier + Math.sin(paletteIndex * 1.3) * 25;
           
-          let newHue;
-          if (minDist === distFromBase) {
-            newHue = baseH;
-          } else if (minDist === distFromTetrad1) {
-            newHue = tetrad1H;
-          } else if (minDist === distFromTetrad2) {
-            newHue = tetrad2H;
-          } else {
-            newHue = tetrad3H;
-          }
+          newS = Math.max(15, Math.min(95, newS));
+          newL = Math.max(15, Math.min(85, newL));
           
-          const variation = (i % 9) - 4;
-          newHue = (newHue + variation + 360) % 360;
-          
-          return hslToRgb(newHue, s, l);
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false, hasTetrad1 = false, hasTetrad2 = false, hasTetrad3 = false;
-        
-        for (const color of tetradicPalette) {
-          const [h] = rgbToHsl(...color);
-          
-          if (Math.abs(h - baseH) < 15 || Math.abs(h - baseH - 360) < 15) hasBase = true;
-          if (Math.abs(h - tetrad1H) < 15) hasTetrad1 = true;
-          if (Math.abs(h - tetrad2H) < 15) hasTetrad2 = true;
-          if (Math.abs(h - tetrad3H) < 15) hasTetrad3 = true;
-          
-          if (hasBase && hasTetrad1 && hasTetrad2 && hasTetrad3) break;
-        }
-        
-        if (!hasBase) tetradicPalette[0] = baseColor;
-        if (!hasTetrad1) tetradicPalette[1] = hslToRgb(tetrad1H, baseS, baseL);
-        if (!hasTetrad2) tetradicPalette[2] = hslToRgb(tetrad2H, baseS, baseL);
-        if (!hasTetrad3) tetradicPalette[3] = hslToRgb(tetrad3H, baseS, baseL);
-        
+
         return tetradicPalette;
       } catch (error) {
         console.error("Error generating tetradic palette:", error);
@@ -17124,7 +16994,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    function generateSquarePalette(baseColor, imageColors) {
+    function generateSquarePalette(baseColor, imageColors, paletteIndex = 0) {
       try {
         const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
         const square1H = (baseH + 90) % 360;
@@ -17132,57 +17002,31 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         const square3H = (baseH + 270) % 360;
         
         const squarePalette = imageColors.map((color, i) => {
-          const [h, s, l] = rgbToHsl(...color);
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
           
-          let distFromBase = Math.abs(h - baseH);
-          if (distFromBase > 180) distFromBase = 360 - distFromBase;
+          const paletteVariation = paletteIndex * 15;
+          const colorVariation = i * 33;
+          const combinedVariation = paletteVariation + colorVariation;
           
-          let distFromSquare1 = Math.abs(h - square1H);
-          if (distFromSquare1 > 180) distFromSquare1 = 360 - distFromSquare1;
+          // Choose between square hues
+          let targetHues = [baseH, square1H, square2H, square3H];
+          let targetHue = targetHues[Math.floor((combinedVariation * 0.07) % 4)];
           
-          let distFromSquare2 = Math.abs(h - square2H);
-          if (distFromSquare2 > 180) distFromSquare2 = 360 - distFromSquare2;
+          let hueOffset = Math.cos(combinedVariation * 0.03) * 25; // -25 to +25
+          let finalHue = (targetHue + hueOffset + (paletteIndex * 7) % 30 - 15 + 360) % 360;
           
-          let distFromSquare3 = Math.abs(h - square3H);
-          if (distFromSquare3 > 180) distFromSquare3 = 360 - distFromSquare3;
+          let satMultiplier = 0.5 + (Math.sin(combinedVariation * 0.16) + 1) * 0.4; // 0.5 to 1.3
+          let lightMultiplier = 0.6 + (Math.cos(combinedVariation * 0.13) + 1) * 0.35; // 0.6 to 1.3
           
-          const minDist = Math.min(distFromBase, distFromSquare1, distFromSquare2, distFromSquare3);
+          let newS = originalS * satMultiplier + Math.sin(paletteIndex * 1.0) * 30;
+          let newL = originalL * lightMultiplier + Math.cos(paletteIndex * 1.4) * 25;
           
-          let newHue;
-          if (minDist === distFromBase) {
-            newHue = baseH;
-          } else if (minDist === distFromSquare1) {
-            newHue = square1H;
-          } else if (minDist === distFromSquare2) {
-            newHue = square2H;
-          } else {
-            newHue = square3H;
-          }
+          newS = Math.max(20, Math.min(90, newS));
+          newL = Math.max(20, Math.min(80, newL));
           
-          const variation = (i % 9) - 4;
-          newHue = (newHue + variation + 360) % 360;
-          
-          return hslToRgb(newHue, s, l);
+          return hslToRgb(finalHue, newS, newL);
         });
-        
-        let hasBase = false, hasSquare1 = false, hasSquare2 = false, hasSquare3 = false;
-        
-        for (const color of squarePalette) {
-          const [h] = rgbToHsl(...color);
-          
-          if (Math.abs(h - baseH) < 15 || Math.abs(h - baseH - 360) < 15) hasBase = true;
-          if (Math.abs(h - square1H) < 15) hasSquare1 = true;
-          if (Math.abs(h - square2H) < 15) hasSquare2 = true;
-          if (Math.abs(h - square3H) < 15) hasSquare3 = true;
-          
-          if (hasBase && hasSquare1 && hasSquare2 && hasSquare3) break;
-        }
-        
-        if (!hasBase) squarePalette[0] = baseColor;
-        if (!hasSquare1) squarePalette[1] = hslToRgb(square1H, baseS, baseL);
-        if (!hasSquare2) squarePalette[2] = hslToRgb(square2H, baseS, baseL);
-        if (!hasSquare3) squarePalette[3] = hslToRgb(square3H, baseS, baseL);
-        
+
         return squarePalette;
       } catch (error) {
         console.error("Error generating square palette:", error);
@@ -17190,7 +17034,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }
     }
     
-    // Modified generateHarmonyPalettes function with background variations
+    // UPDATED generateHarmonyPalettes function with better variation
     async function generateHarmonyPalettes(imageColors) {
       const paletteCollectionName = `${harmonyCollection}PaletteColors`;
       
@@ -17206,8 +17050,44 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       
       for (let i = 0; i < palettesToGenerate; i++) {
         let palette = [];
-        const baseColorIndex = i % totalColors;
+        
+        // Create MORE varied base color selection
+        let baseColorIndex;
+        if (i < totalColors) {
+          baseColorIndex = i; // First round uses each color once
+        } else {
+          // After first round, use mathematical distribution to avoid simple cycling
+          baseColorIndex = (i * 7 + Math.floor(i / totalColors) * 3) % totalColors;
+        }
+        
         const baseColor = imageColors[baseColorIndex];
+        
+        // Create DIFFERENT color array ordering for each palette
+        const shuffledColors = [...imageColors];
+        
+        // More aggressive shuffling with palette-specific seed
+        const seed = window.harmonySeeds[harmonyType] + i * 31; // Use larger multiplier
+        
+        // Double shuffle for more randomization
+        for (let shuffle = 0; shuffle < 2; shuffle++) {
+          for (let j = shuffledColors.length - 1; j > 0; j--) {
+            const k = Math.floor(((seed + j + shuffle * 100) * 9301 + 49297) % 233280) % (j + 1);
+            [shuffledColors[j], shuffledColors[k]] = [shuffledColors[k], shuffledColors[j]];
+          }
+        }
+        
+        // Also modify some base properties of colors for extra variation
+        const modifiedColors = shuffledColors.map((color, idx) => {
+          if (idx === 0) return color; // Keep first color as is
+          
+          const [h, s, l] = rgbToHsl(...color);
+          const variation = (i + idx) * 0.1;
+          
+          const newS = Math.max(10, Math.min(90, s + Math.sin(variation) * 10));
+          const newL = Math.max(15, Math.min(85, l + Math.cos(variation) * 8));
+          
+          return hslToRgb(h, newS, newL);
+        });
         
         // Determine background variation for this palette
         let currentBgVariation = backgroundVariation;
@@ -17218,31 +17098,31 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         
         console.log(`Generating ${harmonyType} palette ${i} with ${currentBgVariation} background using base color:`, [...baseColor]);
         
-        // Generate the harmony palette
+        // Generate the harmony palette with MODIFIED parameters
         switch(harmonyType) {
           case 'Monochromatic':
-            palette = generateMonochromaticPalette(baseColor, imageColors);
+            palette = generateMonochromaticPalette(baseColor, modifiedColors, i);
             break;
           case 'Analogous':
-            palette = generateAnalogousPalette(baseColor, imageColors);
+            palette = generateAnalogousPalette(baseColor, modifiedColors, i);
             break;
           case 'Complementary':
-            palette = generateComplementaryPalette(baseColor, imageColors);
+            palette = generateComplementaryPalette(baseColor, modifiedColors, i);
             break;
           case 'Split Complementary':
-            palette = generateSplitComplementaryPalette(baseColor, imageColors);
+            palette = generateSplitComplementaryPalette(baseColor, modifiedColors, i);
             break;
           case 'Triadic':
-            palette = generateTriadicPalette(baseColor, imageColors);
+            palette = generateTriadicPalette(baseColor, modifiedColors, i);
             break;
           case 'Tetradic':
-            palette = generateTetradicPalette(baseColor, imageColors);
+            palette = generateTetradicPalette(baseColor, modifiedColors, i);
             break;
           case 'Square':
-            palette = generateSquarePalette(baseColor, imageColors);
+            palette = generateSquarePalette(baseColor, modifiedColors, i);
             break;
           default:
-            palette = [...imageColors];
+            palette = [...modifiedColors];
         }
         
         // Apply background variation to the first color (background color)
@@ -17253,6 +17133,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         // Store additional metadata about the palette
         palette._backgroundVariation = currentBgVariation;
         palette._harmonyType = harmonyType;
+        palette._paletteIndex = i;
         
         logPalette(palette, `${harmonyType} Palette ${i} (${currentBgVariation} bg)`);
         
@@ -17330,7 +17211,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
   }
 }
 
-// Function to apply harmony palette
+// Function to apply harmony palette (unchanged)
 async function applyHarmonyPalette(paletteIndex, paletteCollectionName) {
   try {
     const canvas = document.getElementById('layer_canvas_1');
@@ -17446,7 +17327,6 @@ async function applyHarmonyPalette(paletteIndex, paletteCollectionName) {
     setTimeout(() => document.body.removeChild(toast), 3000);
   }
 }
-
 
 
 
