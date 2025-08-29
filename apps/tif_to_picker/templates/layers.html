@@ -9442,285 +9442,224 @@ function generateDiversePalettes(baseColors, collection = 'trending') {
     const baseFamilies = groupColorsByFamily(baseColors);
     const availableFamilyNames = Object.keys(baseFamilies);
     
-    // Get major family from first color
-    const majorFamily = getColorFamily(baseColors[0]);
+    // All possible target families with more nuanced categorization
+    const warmFamilies = ['red', 'orange', 'yellow', 'pink'];
+    const coolFamilies = ['green', 'cyan', 'blue', 'purple'];
+    const allFamilies = [...warmFamilies, ...coolFamilies];
+    const alternativeFamilies = ['red', 'orange', 'yellow', 'blue', 'purple', 'pink'];
     
-    // All possible target families with additional colors
-    const allFamilies = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink', 
-                        'teal', 'coral', 'lavender', 'maroon'];
-    
-    // Collection-specific adjustments
+    // Collection-specific adjustments - ENHANCED FOR SS BRIGHTNESS
     const collectionSettings = {
         'ss': {
-            saturationMultiplier: 1.2,    // More vibrant
-            lightnessMultiplier: 1.1,     // Brighter
-            minSaturation: 60,            // Keep colors vibrant
+            saturationMultiplier: 1.3,    // Increased from 1.2
+            lightnessMultiplier: 1.2,     // Increased from 1.1
+            minSaturation: 70,            // Increased from 60
             maxSaturation: 100,
-            minLightness: 40,
-            maxLightness: 90
+            minLightness: 50,             // Increased from 40
+            maxLightness: 95,             // Increased from 90
+            preferredFamilies: ['cyan', 'yellow', 'pink', 'orange', 'red'] // Bright, cheerful colors
         },
         'aw': {
-            saturationMultiplier: 0.8,    // More muted
-            lightnessMultiplier: 0.9,     // Darker
-            minSaturation: 20,
-            maxSaturation: 80,
-            minLightness: 25,
-            maxLightness: 75
+            saturationMultiplier: 0.7,    // More muted
+            lightnessMultiplier: 0.85,    // Darker
+            minSaturation: 15,
+            maxSaturation: 70,
+            minLightness: 20,
+            maxLightness: 70,
+            preferredFamilies: ['purple', 'blue', 'red', 'orange', 'pink'] // Rich, deep colors
         },
         'trending': {
-            saturationMultiplier: 1.0,    // Balanced
+            saturationMultiplier: 1.0,
             lightnessMultiplier: 1.0,
             minSaturation: 30,
             maxSaturation: 90,
             minLightness: 30,
-            maxLightness: 85
+            maxLightness: 85,
+            preferredFamilies: allFamilies // All colors
         }
     };
     
     const settings = collectionSettings[collection] || collectionSettings.trending;
     
-    // Track used color combinations to avoid repetition
-    const usedColorCombinations = new Set();
+    // Track how many times green and cyan are replaced
+    let greenReplacementCount = 0;
+    let cyanReplacementCount = 0;
+    const maxGreenReplacements = 3;
+    const maxCyanReplacements = 3;
     
-    // For trending collection, generate bright, dark, and normal versions for each family
-    if (collection === 'trending') {
-        const variations = ['bright', 'dark', 'normal'];
+    // Generate 20 unique palettes with collection-specific variations
+    for (let i = 0; i < 20; i++) {
+        const newPalette = [];
+        const familyMapping = {};
+        const usedTargetFamilies = new Set();
         
-        variations.forEach(variation => {
-            // Generate 20 unique palettes with collection-specific variations
-            for (let i = 0; i < 20; i++) {
-                const newPalette = [];
-                const familyMapping = {};
-                const usedTargetFamilies = new Set();
+        // For each original family, assign a new target family
+        availableFamilyNames.forEach((originalFamily, index) => {
+            let targetFamily;
+            
+            // Check if we've reached the replacement limits for green or cyan
+            const greenLimitReached = originalFamily === 'green' && greenReplacementCount >= maxGreenReplacements;
+            const cyanLimitReached = originalFamily === 'cyan' && cyanReplacementCount >= maxCyanReplacements;
+            
+            if (greenLimitReached || cyanLimitReached) {
+                // Use alternative families when green/cyan limits are reached
+                targetFamily = getCollectionSpecificFamily(collection, i, index, alternativeFamilies, usedTargetFamilies, originalFamily);
+            } else {
+                // Normal replacement logic
+                targetFamily = getCollectionSpecificFamily(collection, i, index, allFamilies, usedTargetFamilies, originalFamily);
                 
-                // For each palette, replace the first family with a different color from allFamilies
-                const replacementFamily = allFamilies[i % allFamilies.length];
-                familyMapping[majorFamily] = replacementFamily;
-                usedTargetFamilies.add(replacementFamily);
-                
-                // For other families, assign new target families
-                availableFamilyNames.filter(family => family !== majorFamily).forEach((originalFamily, index) => {
-                    let targetFamily;
-                    
-                    // More diverse family selection to reduce repetition
-                    const replacementFamilyIndex = allFamilies.indexOf(replacementFamily);
-                    const familyIndex = (replacementFamilyIndex + index * 3 + i * 2) % allFamilies.length;
-                    targetFamily = allFamilies[familyIndex];
-                    
-                    // Find alternative if target family is already used
-                    let fallbackAttempts = 0;
-                    let originalTarget = targetFamily;
-                    while (usedTargetFamilies.has(targetFamily) && fallbackAttempts < allFamilies.length) {
-                        // Try a more distant alternative instead of just the next one
-                        targetFamily = allFamilies[(allFamilies.indexOf(originalTarget) + 
-                                                  Math.floor(fallbackAttempts * 2) + 4) % allFamilies.length];
-                        fallbackAttempts++;
-                    }
-                    
-                    familyMapping[originalFamily] = targetFamily;
-                    usedTargetFamilies.add(targetFamily);
-                });
-                
-                // Generate new colors based on family mapping with collection-specific adjustments
-                baseColors.forEach((originalColor, colorIndex) => {
-                    const originalFamily = getColorFamily(originalColor);
-                    const targetFamily = familyMapping[originalFamily] || allFamilies[0];
-                    
-                    // Generate base color in target family
-                    let newColor = generateMatchingColor(originalColor, targetFamily);
-                    
-                    // Apply collection-specific adjustments
-                    let [h, s, l] = rgbToHsl(...newColor);
-                    
-                    // Special handling for major family colors (first color family)
-                    let isMajorFamilyColor = (originalFamily === majorFamily);
-                    
-                    // More varied base variations to reduce repetition
-                    const baseHueVariation = ((i * 23 + colorIndex * 17 + variation.length * 7) % 45 - 22);
-                    const baseSatVariation = ((i * 13 + colorIndex * 9 + variation.length * 5) % 25 - 12);
-                    const baseLightVariation = ((i * 11 + colorIndex * 7 + variation.length * 3) % 20 - 10);
-                    
-                    // Apply variation-specific adjustments
-                    let variationSettings = {...settings};
-                    
-                    if (variation === 'bright') {
-                        variationSettings = {
-                            ...variationSettings,
-                            saturationMultiplier: isMajorFamilyColor ? 1.3 : 1.2,
-                            lightnessMultiplier: isMajorFamilyColor ? 1.3 : 1.2,
-                            minLightness: isMajorFamilyColor ? 65 : 60,
-                            maxLightness: isMajorFamilyColor ? 98 : 95
-                        };
-                    } else if (variation === 'dark') {
-                        variationSettings = {
-                            ...variationSettings,
-                            saturationMultiplier: isMajorFamilyColor ? 0.8 : 0.9,
-                            lightnessMultiplier: isMajorFamilyColor ? 0.6 : 0.7,
-                            minLightness: isMajorFamilyColor ? 10 : 15,
-                            maxLightness: isMajorFamilyColor ? 40 : 45
-                        };
-                    } else {
-                        // Normal variation - enhance major family colors
-                        if (isMajorFamilyColor) {
-                            variationSettings = {
-                                ...variationSettings,
-                                saturationMultiplier: 1.1,
-                                lightnessMultiplier: 1.1,
-                                minLightness: 35,
-                                maxLightness: 90
-                            };
-                        }
-                    }
-                    
-                    // Apply collection-specific adjustments
-                    s = s * variationSettings.saturationMultiplier;
-                    l = l * variationSettings.lightnessMultiplier;
-                    
-                    // Add controlled variations with more diversity
-                    const newHue = (h + baseHueVariation + 360) % 360;
-                    const newSat = Math.max(variationSettings.minSaturation, 
-                                          Math.min(variationSettings.maxSaturation, s + baseSatVariation));
-                    const newLight = Math.max(variationSettings.minLightness, 
-                                            Math.min(variationSettings.maxLightness, l + baseLightVariation));
-                    
-                    // Special handling for background colors
-                    if (isBackgroundColor(originalColor)) {
-                        if (variation === 'bright') {
-                            // Bright backgrounds: Very light
-                            newColor = hslToRgb(newHue, 
-                                              Math.min(20, newSat), 
-                                              Math.max(90, newLight));
-                        } else if (variation === 'dark') {
-                            // Dark backgrounds: Very dark
-                            newColor = hslToRgb(newHue, 
-                                              Math.min(20, newSat), 
-                                              Math.min(20, newLight));
-                        } else {
-                            // Normal backgrounds: Balanced
-                            newColor = hslToRgb(newHue, 
-                                              Math.min(20, newSat), 
-                                              Math.max(80, newLight));
-                        }
-                    } else {
-                        newColor = hslToRgb(newHue, newSat, newLight);
-                    }
-                    
-                    newPalette.push(newColor);
-                });
-                
-                // Check if this color combination is unique before adding
-                const paletteSignature = newPalette.map(c => c.join(',')).join('|');
-                if (!usedColorCombinations.has(paletteSignature)) {
-                    usedColorCombinations.add(paletteSignature);
-                    palettes.push(newPalette);
+                // Count replacements for green and cyan
+                if (originalFamily === 'green' && targetFamily !== 'green') {
+                    greenReplacementCount++;
+                } else if (originalFamily === 'cyan' && targetFamily !== 'cyan') {
+                    cyanReplacementCount++;
                 }
             }
+            
+            familyMapping[originalFamily] = targetFamily;
+            usedTargetFamilies.add(targetFamily);
         });
-    } else {
-        // Original logic for other collections
-        // Generate 20 unique palettes with collection-specific variations
-        for (let i = 0; i < 20; i++) {
-            const newPalette = [];
-            const familyMapping = {};
-            const usedTargetFamilies = new Set();
+        
+        // Generate new colors with collection-specific adjustments
+        baseColors.forEach((originalColor, colorIndex) => {
+            const originalFamily = getColorFamily(originalColor);
+            const targetFamily = familyMapping[originalFamily] || allFamilies[0];
             
-            // For each original family, assign a new target family
-            availableFamilyNames.forEach((originalFamily, index) => {
-                let targetFamily;
-                
-                // Collection-specific family selection strategy
+            let newColor = generateMatchingColor(originalColor, targetFamily);
+            let [h, s, l] = rgbToHsl(...newColor);
+            
+            // Collection-specific variations
+            const variations = getCollectionVariations(collection, i, colorIndex);
+            
+            // Apply adjustments and variations - ENSURING BRIGHTNESS FOR SS
+            if (collection === 'ss') {
+                // Force brighter colors for SS
+                s = Math.max(settings.minSaturation, Math.min(settings.maxSaturation, 
+                    (s * settings.saturationMultiplier + variations.sat) * 1.1));
+                l = Math.max(settings.minLightness, Math.min(settings.maxLightness, 
+                    (l * settings.lightnessMultiplier + variations.light) * 1.1));
+            } else {
+                s = Math.max(settings.minSaturation, Math.min(settings.maxSaturation, 
+                    s * settings.saturationMultiplier + variations.sat));
+                l = Math.max(settings.minLightness, Math.min(settings.maxLightness, 
+                    l * settings.lightnessMultiplier + variations.light));
+            }
+            
+            const newHue = (h + variations.hue + 360) % 360;
+            
+            // Background color handling - BRIGHTER FOR SS
+            if (isBackgroundColor(originalColor)) {
                 if (collection === 'ss') {
-                    // SS: Prefer brighter, more contrasting combinations
-                    targetFamily = allFamilies[(index + i * 2) % allFamilies.length];
+                    newColor = hslToRgb(newHue, Math.min(20, s), Math.max(92, l)); // Brighter backgrounds
                 } else if (collection === 'aw') {
-                    // AW: Prefer adjacent or complementary colors
-                    if (i % 2 === 0) {
-                        // Adjacent colors
-                        targetFamily = allFamilies[(index + 1) % allFamilies.length];
-                    } else {
-                        // Complementary colors
-                        targetFamily = allFamilies[(index + 4) % allFamilies.length];
-                    }
+                    newColor = hslToRgb(newHue, Math.min(15, s), Math.min(70, Math.max(60, l)));
                 } else {
-                    // Trending: Mix of strategies
-                    if (i < 8) {
-                        targetFamily = allFamilies[(index + i) % allFamilies.length];
-                    } else if (i < 16) {
-                        targetFamily = allFamilies[(allFamilies.length - 1 - index + (i - 8) * 2) % allFamilies.length];
-                    } else {
-                        const baseIndex = (index * 3 + i * 5) % allFamilies.length;
-                        targetFamily = allFamilies[baseIndex];
-                    }
+                    newColor = hslToRgb(newHue, Math.min(20, s), Math.max(85, l));
                 }
-                
-                // Find alternative if target family is already used
-                let fallbackAttempts = 0;
-                while (usedTargetFamilies.has(targetFamily) && fallbackAttempts < allFamilies.length) {
-                    targetFamily = allFamilies[(allFamilies.indexOf(targetFamily) + 1) % allFamilies.length];
-                    fallbackAttempts++;
-                }
-                
-                familyMapping[originalFamily] = targetFamily;
-                usedTargetFamilies.add(targetFamily);
-            });
+            } else {
+                newColor = hslToRgb(newHue, s, l);
+            }
             
-            // Generate new colors based on family mapping with collection-specific adjustments
-            baseColors.forEach((originalColor, colorIndex) => {
-                const originalFamily = getColorFamily(originalColor);
-                const targetFamily = familyMapping[originalFamily] || allFamilies[0];
-                
-                // Generate base color in target family
-                let newColor = generateMatchingColor(originalColor, targetFamily);
-                
-                // Apply collection-specific adjustments
-                let [h, s, l] = rgbToHsl(...newColor);
-                
-                // Base variations
-                const baseHueVariation = ((i * 15 + colorIndex * 5) % 30 - 15);
-                const baseSatVariation = ((i * 8 + colorIndex * 3) % 20 - 10);
-                const baseLightVariation = ((i * 6 + colorIndex * 2) % 16 - 8);
-                
-                // Apply collection-specific adjustments
-                s = s * settings.saturationMultiplier;
-                l = l * settings.lightnessMultiplier;
-                
-                // Add controlled variations
-                const newHue = (h + baseHueVariation + 360) % 360;
-                const newSat = Math.max(settings.minSaturation, 
-                                      Math.min(settings.maxSaturation, s + baseSatVariation));
-                const newLight = Math.max(settings.minLightness, 
-                                        Math.min(settings.maxLightness, l + baseLightVariation));
-                
-                // Special handling for background colors
-                if (isBackgroundColor(originalColor)) {
-                    if (collection === 'ss') {
-                        // SS backgrounds: Bright and clean
-                        newColor = hslToRgb(newHue, 
-                                          Math.min(25, newSat), 
-                                          Math.max(85, newLight));
-                    } else if (collection === 'aw') {
-                        // AW backgrounds: Warmer, slightly muted
-                        newColor = hslToRgb(newHue, 
-                                          Math.min(30, newSat), 
-                                          Math.min(80, Math.max(70, newLight)));
-                    } else {
-                        // Trending backgrounds: Balanced
-                        newColor = hslToRgb(newHue, 
-                                          Math.min(20, newSat), 
-                                          Math.max(80, newLight));
-                    }
-                } else {
-                    newColor = hslToRgb(newHue, newSat, newLight);
-                }
-                
-                newPalette.push(newColor);
-            });
-            
-            palettes.push(newPalette);
-        }
+            newPalette.push(newColor);
+        });
+        
+        palettes.push(newPalette);
     }
     
     return palettes;
+}
+
+// Collection-specific family selection logic - OPTIMIZED FOR SS BRIGHTNESS
+function getCollectionSpecificFamily(collection, paletteIndex, colorIndex, familyPool, usedFamilies, originalFamily) {
+    let targetFamily;
+    const poolIndex = familyPool.indexOf(originalFamily);
+    const totalFamilies = familyPool.length;
+    
+    if (collection === 'ss') {
+        // SS: Focus on bright, vibrant families
+        const brightFamilies = ['yellow', 'orange', 'pink', 'cyan', 'red'];
+        const availableBrightFamilies = brightFamilies.filter(f => familyPool.includes(f));
+        
+        if (availableBrightFamilies.length > 0 && Math.random() > 0.3) {
+            // 70% chance to use bright families for SS
+            targetFamily = availableBrightFamilies[
+                (paletteIndex + colorIndex) % availableBrightFamilies.length
+            ];
+        } else {
+            // Fallback to regular logic
+            const strategies = [
+                () => familyPool[(poolIndex + 4) % totalFamilies], // Complementary
+                () => familyPool[(poolIndex + 2) % totalFamilies], // Split complementary
+                () => familyPool[(poolIndex + 3) % totalFamilies], // Triadic
+                () => brightFamilies[(paletteIndex + colorIndex) % brightFamilies.length] // Force bright
+            ];
+            targetFamily = strategies[paletteIndex % strategies.length]();
+        }
+    } 
+    else if (collection === 'aw') {
+        // AW: Focus on rich, deep families
+        const richFamilies = ['purple', 'blue', 'red', 'orange'];
+        const availableRichFamilies = richFamilies.filter(f => familyPool.includes(f));
+        
+        if (availableRichFamilies.length > 0 && Math.random() > 0.4) {
+            targetFamily = availableRichFamilies[
+                (paletteIndex + colorIndex * 2) % availableRichFamilies.length
+            ];
+        } else {
+            const strategies = [
+                () => originalFamily, // Monochromatic
+                () => familyPool[(poolIndex + 1) % totalFamilies], // Analogous
+                () => familyPool[(poolIndex - 1 + totalFamilies) % totalFamilies], // Analogous other direction
+                () => richFamilies[(paletteIndex) % richFamilies.length] // Force rich
+            ];
+            targetFamily = strategies[paletteIndex % strategies.length]();
+        }
+    } 
+    else {
+        // Trending: Mixed approach
+        if (paletteIndex < 8) {
+            targetFamily = familyPool[(poolIndex + paletteIndex) % totalFamilies];
+        } else if (paletteIndex < 16) {
+            targetFamily = familyPool[(totalFamilies - 1 - poolIndex + paletteIndex) % totalFamilies];
+        } else {
+            targetFamily = familyPool[(poolIndex * 3 + paletteIndex * 5) % totalFamilies];
+        }
+    }
+    
+    // Ensure unique families in palette
+    let attempts = 0;
+    while (usedFamilies.has(targetFamily) && attempts < totalFamilies * 2) {
+        targetFamily = familyPool[(familyPool.indexOf(targetFamily) + 1) % totalFamilies];
+        attempts++;
+    }
+    
+    return targetFamily;
+}
+
+// Collection-specific variation patterns - BRIGHTER FOR SS
+function getCollectionVariations(collection, paletteIndex, colorIndex) {
+    if (collection === 'ss') {
+        // SS: More positive variations for brightness
+        return {
+            hue: ((paletteIndex * 17 + colorIndex * 5) % 30 - 15),
+            sat: Math.max(0, ((paletteIndex * 7 + colorIndex * 3) % 15 - 5)), // Less saturation reduction
+            light: Math.max(0, ((paletteIndex * 9 + colorIndex * 2) % 15 - 5)) // Less lightness reduction
+        };
+    } 
+    else if (collection === 'aw') {
+        return {
+            hue: ((paletteIndex * 7 + colorIndex * 3) % 16 - 8),
+            sat: ((paletteIndex * 5 + colorIndex * 2) % 12 - 6),
+            light: ((paletteIndex * 4 + colorIndex * 2) % 10 - 5)
+        };
+    } 
+    else {
+        return {
+            hue: ((paletteIndex * 15 + colorIndex * 5) % 30 - 15),
+            sat: ((paletteIndex * 8 + colorIndex * 3) % 20 - 10),
+            light: ((paletteIndex * 6 + colorIndex * 2) % 16 - 8)
+        };
+    }
 }
     // Calculate color difference using CIEDE2000 simplified version
     function colorDifference(rgb1, rgb2) {
@@ -10152,11 +10091,10 @@ async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex
         // **GET IMAGE DATA FROM 600x600 FOR PROCESSING**
         const imageData = processingCtx.getImageData(0, 0, 600, 600);
         
-        // Apply collection-specific adjustments to palette colors
-        let adjustedPaletteColors = applyCollectionAdjustments([...paletteColors], collection);
-        
-        // **ALWAYS USE COLOR REPLACEMENT PROCESSING (REMOVED HUE SHIFTING)**
-        let processedImageData;
+        // **DO NOT APPLY COLLECTION ADJUSTMENTS AGAIN - PALETTE COLORS ARE ALREADY ADJUSTED**
+        // The paletteColors parameter already contains collection-specific adjustments
+        // from the generateDiversePalettes function
+        const adjustedPaletteColors = [...paletteColors];
         
         // **COLOR REPLACEMENT PROCESSING FOR ALL PALETTES**
         const colorMappings = [];
@@ -10248,7 +10186,8 @@ async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex
         drawFallbackPreview(previewCanvas, collection, paletteIndex);
     }
 }
-    function cachePreview(canvas, collection, index, highResUrl) {
+
+function cachePreview(canvas, collection, index, highResUrl) {
       // Initialize cache objects if they don't exist
       if (!window.palettePreviewCache) {
         window.palettePreviewCache = {};
