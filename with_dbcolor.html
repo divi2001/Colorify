@@ -2,25 +2,152 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>20 Color Palettes</title>
+  <title>Color Palettes with Mixed Collections</title>
   <style>
-    body { font-family: system-ui, sans-serif; padding: 20px; }
-    .family { margin-bottom: 20px; }
-    .swatch { display:inline-block; width:40px; height:40px; border-radius:6px; margin:3px; border:1px solid #ccc; }
-    .palette { display:flex; align-items:center; margin: 12px 0; flex-wrap:wrap; }
-    .palette span { width:100px; font-size:14px; margin-right:10px; }
-    .palette div { width:40px; height:40px; border-radius:6px; margin:2px; border:1px solid #ccc; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      padding: 20px; 
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+    h2 {
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    .family { 
+      margin-bottom: 20px; 
+    }
+    .swatch { 
+      display: inline-block; 
+      width: 40px; 
+      height: 40px; 
+      border-radius: 6px; 
+      margin: 3px; 
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      vertical-align: middle;
+    }
+    .palette { 
+      display: flex; 
+      align-items: center; 
+      margin: 15px 0; 
+      flex-wrap: wrap;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border-left: 4px solid #3498db;
+    }
+    .palette span { 
+      width: 120px; 
+      font-size: 15px; 
+      margin-right: 15px;
+      font-weight: 600;
+    }
+    .palette div { 
+      width: 40px; 
+      height: 40px; 
+      border-radius: 6px; 
+      margin: 3px; 
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .collection { 
+      margin-bottom: 40px; 
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    }
+    .collection h3 { 
+      background: #2c3e50; 
+      color: white;
+      padding: 12px 15px; 
+      border-radius: 6px; 
+      margin-top: 0;
+    }
+    .family-mapping {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    .family-map-item {
+      background: #edf2f7;
+      padding: 6px 10px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+    }
+    .family-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: inline-block;
+      margin: 0 5px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .arrow {
+      margin: 0 5px;
+      color: #718096;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    .header p {
+      color: #7f8c8d;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .color-name {
+      font-size: 12px;
+      text-align: center;
+      margin-top: 5px;
+      color: #7f8c8d;
+    }
+    .family-title {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    .ss-highlight {
+      background-color: #ffeaa7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
-  <h2>Color Classification (Green Excluded)</h2>
-  <div id="families"></div>
+  <div class="container">
+    <div class="header">
+      <h1>Color Palette Generator with Mixed Collections</h1>
+      <p>Trending collection now includes lighter SS (Spring/Summer) shades. <span class="ss-highlight">Yellow highlights</span> indicate SS-inspired colors.</p>
+    </div>
 
-  <h2>Original Palette (20 colors)</h2>
-  <div id="original"></div>
+    <h2>Color Classification</h2>
+    <div id="families"></div>
 
-  <h2>Generated Palettes</h2>
-  <div id="palettes"></div>
+    <h2>Original Palette (20 colors)</h2>
+    <div id="original"></div>
+
+    <h2>Generated Palettes by Collection</h2>
+    <div id="collections"></div>
+  </div>
 
 <script>
 function rgbToHsl(r, g, b) {
@@ -53,30 +180,33 @@ function hslToRgb(h, s, l) {
     r=Math.round((r+m)*255); g=Math.round((g+m)*255); b=Math.round((b+m)*255);
     return [r,g,b];
 }
-function hexToRgb(hex) {
-    hex=hex.replace("#","");
-    let bigint=parseInt(hex,16);
-    return [(bigint>>16)&255,(bigint>>8)&255,bigint&255];
-}
-function shuffleArray(arr) { return arr.sort(()=>Math.random()-0.5); }
-function isBackgroundColor(color){ return false; }
-
 function getColorFamily(color) {
     const [h] = rgbToHsl(...color);
 
-    if ((h >= 0 && h < 15) || (h >= 345 && h < 360)) return 'red'; // 🔴 keep reds at both ends
+    if ((h >= 0 && h < 15) || (h >= 345 && h < 360)) return 'red';
     if (h >= 15 && h < 50) return 'orange';
     if (h >= 50 && h < 80) return 'yellow';
     if (h >= 80 && h < 140) return 'green';
     if (h >= 140 && h < 180) return 'cyan';
     if (h >= 180 && h <= 240) return 'blue';
     if (h > 240 && h < 300) return 'purple';
-    if (h >= 300 && h < 345) return 'magenta'; // 💗 pink/magenta only
+    if (h >= 300 && h < 345) return 'magenta';
     return 'neutral';
 }
-
-
-
+function getFamilyColor(family) {
+    const familyColors = {
+        'red': [255, 0, 0],
+        'orange': [255, 165, 0],
+        'yellow': [255, 255, 0],
+        'green': [0, 128, 0],
+        'cyan': [0, 255, 255],
+        'blue': [0, 0, 255],
+        'purple': [128, 0, 128],
+        'magenta': [255, 0, 255],
+        'neutral': [128, 128, 128]
+    };
+    return familyColors[family] || [200, 200, 200];
+}
 function groupColorsByFamily(colors) {
     const families = {};
     colors.forEach((color) => {
@@ -86,82 +216,197 @@ function groupColorsByFamily(colors) {
     });
     return families;
 }
-
-// === palette generation ===
-function applyBrightnessLevelWithYellow(baseLightness, level, hue) {
-    const isYellow = hue >= 50 && hue <= 70;
-    const variations = {
-        'very-bright': 90,
-        'bright': 80,
-        'dark': 30,
-        'very-dark': 20,
-        'normal': isYellow ? 65 : baseLightness
+function applySSEffect(color, intensity = 0.5) {
+    const [h, s, l] = rgbToHsl(...color);
+    
+    // SS effect: increase lightness and slightly reduce saturation for pastel effect
+    const newL = Math.min(95, l + (95 - l) * intensity);
+    const newS = Math.max(20, s - (s * intensity * 0.3));
+    
+    return hslToRgb(h, newS, newL);
+}
+function generateMatchingColor(originalColor, targetFamily) {
+    const [h, s, l] = rgbToHsl(...originalColor);
+    
+    // Define target hue ranges for each family
+    const familyHueRanges = {
+        'red': [0, 15],
+        'orange': [15, 50],
+        'yellow': [50, 80],
+        'green': [80, 140],
+        'cyan': [140, 180],
+        'blue': [180, 240],
+        'purple': [240, 300],
+        'magenta': [300, 345]
     };
-    let newLightness = variations[level] || baseLightness;
-    return Math.max(10, Math.min(95, newLightness));
+    
+    // Get target hue range
+    const [minHue, maxHue] = familyHueRanges[targetFamily] || [0, 360];
+    const targetHue = minHue + Math.random() * (maxHue - minHue);
+    
+    // Adjust saturation and lightness based on target family
+    let newS = s;
+    let newL = l;
+    
+    if (targetFamily === 'yellow') {
+        newS = Math.min(100, s + 10);
+        newL = Math.max(30, Math.min(80, l));
+    } else if (targetFamily === 'blue') {
+        newL = Math.max(20, Math.min(70, l));
+    } else if (targetFamily === 'red') {
+        newS = Math.min(100, s + 5);
+    }
+    
+    return hslToRgb(targetHue, newS, newL);
 }
-function generateBrightnessPattern(length) {
-    const levels = ['very-bright','bright','normal','dark','very-dark'];
-    return Array.from({length},()=>levels[Math.floor(Math.random()*levels.length)]);
-}
-function generateDiversePalettes(baseColors) {
+function generateDiversePalettes(baseColors, collection = 'trending') {
     const palettes = [];
-
-    // 🔹 group input colors dynamically into families
-    const groupedColors = {};
-    baseColors.forEach(c => {
-        const fam = getColorFamily(c);
-        if (!groupedColors[fam]) groupedColors[fam] = [];
-        groupedColors[fam].push(c);
-    });
-
-    // 🔹 pick one representative color from each family (shuffled)
-    let firstColors = [];
-    Object.values(groupedColors).forEach(family => {
-        firstColors.push(...shuffleArray(family).slice(0, 1));
-    });
-    firstColors = shuffleArray(firstColors).slice(0, 2); // only 2 palettes for now
-
-    // 🔹 Convert base colors into HSL
-    const baseHslValues = baseColors.map(color => {
-        const hsl = rgbToHsl(...color);
-        return { h: hsl[0], s: hsl[1], l: hsl[2], isBackground: false };
-    });
-
-    // 🔹 Generate palettes
-    firstColors.forEach(mappingColor => {
+    const familyMappings = [];
+    const ssIndices = []; // Track which colors have SS influence
+    
+    // Group base colors by families
+    const baseFamilies = groupColorsByFamily(baseColors);
+    const availableFamilyNames = Object.keys(baseFamilies);
+    
+    // All possible target families
+    const allFamilies = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'magenta'];
+    
+    // Collection-specific adjustments
+    const collectionSettings = {
+        'ss': {
+            saturationMultiplier: 1.2,
+            lightnessMultiplier: 1.1,
+            minSaturation: 60,
+            maxSaturation: 100,
+            minLightness: 40,
+            maxLightness: 90,
+            hueVariation: 15,
+            satVariation: 20,
+            lightVariation: 16
+        },
+        'aw': {
+            saturationMultiplier: 0.8,
+            lightnessMultiplier: 0.9,
+            minSaturation: 20,
+            maxSaturation: 80,
+            minLightness: 25,
+            maxLightness: 75,
+            hueVariation: 10,
+            satVariation: 15,
+            lightVariation: 12
+        },
+        'trending': {
+            saturationMultiplier: 1.0,
+            lightnessMultiplier: 1.0,
+            minSaturation: 30,
+            maxSaturation: 90,
+            minLightness: 30,
+            maxLightness: 85,
+            hueVariation: 20,
+            satVariation: 25,
+            lightVariation: 20,
+            ssInfluence: 0.6 // How much SS influences trending
+        }
+    };
+    
+    const settings = collectionSettings[collection] || collectionSettings.trending;
+    
+    // Generate 5 unique palettes with collection-specific variations
+    for (let i = 0; i < 5; i++) {
         const newPalette = [];
-        const mappingHsl = rgbToHsl(...mappingColor);
-        const firstColorOriginal = baseHslValues[0];
-        const brightnessPattern = generateBrightnessPattern(baseColors.length);
-
-        baseColors.forEach((originalColor, idx) => {
-            const originalHsl = baseHslValues[idx];
-            const brightness = brightnessPattern[idx];
-
-            if (idx === 0) {
-                // anchor color
-                let [h, s, l] = mappingHsl;
-                s = Math.max(60, s);
-                l = applyBrightnessLevelWithYellow(l, brightness, h);
-                newPalette.push(hslToRgb(h, s, l));
+        const paletteSSIndices = [];
+        const familyMapping = {};
+        const usedTargetFamilies = new Set();
+        
+        // For each original family, assign a new target family
+        availableFamilyNames.forEach((originalFamily, index) => {
+            let targetFamily;
+            
+            // Collection-specific family selection strategy
+            if (collection === 'ss') {
+                targetFamily = allFamilies[(index + i * 2) % allFamilies.length];
+            } else if (collection === 'aw') {
+                if (i % 2 === 0) {
+                    targetFamily = allFamilies[(index + 1) % allFamilies.length];
+                } else {
+                    targetFamily = allFamilies[(index + 4) % allFamilies.length];
+                }
             } else {
-                // shift relative hues
-                let hueDiff = (originalHsl.h - firstColorOriginal.h + 360) % 360;
-                let newHue = (mappingHsl[0] + hueDiff) % 360;
-                let newSat = Math.max(20, Math.min(95, originalHsl.s));
-                let newLight = applyBrightnessLevelWithYellow(originalHsl.l, brightness, newHue);
-                newPalette.push(hslToRgb(newHue, newSat, newLight));
+                if (i < 2) {
+                    targetFamily = allFamilies[(index + i) % allFamilies.length];
+                } else if (i < 4) {
+                    targetFamily = allFamilies[(allFamilies.length - 1 - index + (i - 2) * 2) % allFamilies.length];
+                } else {
+                    const baseIndex = (index * 3 + i * 5) % allFamilies.length;
+                    targetFamily = allFamilies[baseIndex];
+                }
             }
+            
+            // Find alternative if target family is already used
+            let fallbackAttempts = 0;
+            while (usedTargetFamilies.has(targetFamily) && fallbackAttempts < allFamilies.length) {
+                targetFamily = allFamilies[(allFamilies.indexOf(targetFamily) + 1) % allFamilies.length];
+                fallbackAttempts++;
+            }
+            
+            familyMapping[originalFamily] = targetFamily;
+            usedTargetFamilies.add(targetFamily);
         });
+        
+        // Store the family mapping for this palette
+        familyMappings.push(familyMapping);
+        
+        // Generate new colors based on family mapping
+        baseColors.forEach((originalColor, colorIndex) => {
+            const originalFamily = getColorFamily(originalColor);
+            const targetFamily = familyMapping[originalFamily] || allFamilies[0];
+            
+            // Generate base color in target family
+            let newColor = generateMatchingColor(originalColor, targetFamily);
+            
+            // Apply collection-specific adjustments
+            let [h, s, l] = rgbToHsl(...newColor);
+            
+            // Base variations
+            const baseHueVariation = ((i * settings.hueVariation/2 + colorIndex * 5) % settings.hueVariation - settings.hueVariation/2);
+            const baseSatVariation = ((i * 8 + colorIndex * 3) % settings.satVariation - settings.satVariation/2);
+            const baseLightVariation = ((i * 6 + colorIndex * 2) % settings.lightVariation - settings.lightVariation/2);
+            
+            // Apply collection-specific adjustments
+            s = s * settings.saturationMultiplier;
+            l = l * settings.lightnessMultiplier;
+            
+            // Add controlled variations
+            const newHue = (h + baseHueVariation + 360) % 360;
+            const newSat = Math.max(settings.minSaturation, Math.min(settings.maxSaturation, s + baseSatVariation));
+            const newLight = Math.max(settings.minLightness, Math.min(settings.maxLightness, l + baseLightVariation));
+            
+            newColor = hslToRgb(newHue, newSat, newLight);
+            
+            // For Trending collection, apply SS effect to some colors
+            if (collection === 'trending') {
+                // Apply SS effect to about 30-40% of colors in trending
+                const shouldApplySS = Math.random() < 0.35;
+                if (shouldApplySS) {
+                    newColor = applySSEffect(newColor, settings.ssInfluence);
+                    paletteSSIndices.push(colorIndex);
+                }
+            } else if (collection === 'ss') {
+                // Always apply SS effect for SS collection
+                newColor = applySSEffect(newColor, 0.8);
+            }
+            
+            newPalette.push(newColor);
+        });
+        
         palettes.push(newPalette);
-    });
-
-    return palettes;
+        ssIndices.push(paletteSSIndices);
+    }
+    
+    return { palettes, familyMappings, ssIndices };
 }
-// === run demo ===
-// 20 distinct base colors
-const baseColors=[
+
+const baseColors = [
   [255,0,0], [0,0,255], [255,165,0], [255,255,0], [128,0,128],
   [255,105,180], [0,255,255], [255,20,147], [75,0,130], [255,99,71],
   [0,191,255], [255,140,0], [186,85,211], [199,21,133], [220,20,60],
@@ -169,46 +414,119 @@ const baseColors=[
 ];
 
 // Show families
-const families=groupColorsByFamily(baseColors);
-const familyDiv=document.getElementById("families");
-Object.entries(families).forEach(([name,colors])=>{
-    const div=document.createElement("div");
-    div.className="family";
-    div.innerHTML=`<strong>${name}:</strong> `;
-    colors.forEach(c=>{
-        const sw=document.createElement("div");
-        sw.className="swatch";
-        sw.style.background=`rgb(${c.color.join(",")})`;
+const families = groupColorsByFamily(baseColors);
+const familyDiv = document.getElementById("families");
+Object.entries(families).forEach(([name, colors]) => {
+    const div = document.createElement("div");
+    div.className = "family";
+    div.innerHTML = `<div class="family-title">${name}:</div> `;
+    colors.forEach(c => {
+        const sw = document.createElement("div");
+        sw.className = "swatch";
+        sw.style.background = `rgb(${c.color.join(",")})`;
         div.appendChild(sw);
     });
     familyDiv.appendChild(div);
 });
 
 // Show original palette
-const orig=document.getElementById("original");
-const row=document.createElement("div");
-row.className="palette";
-row.innerHTML=`<span>Original:</span>`;
-baseColors.forEach(c=>{
-    const d=document.createElement("div");
-    d.style.background=`rgb(${c.join(",")})`;
+const orig = document.getElementById("original");
+const row = document.createElement("div");
+row.className = "palette";
+row.innerHTML = `<span>Original Colors:</span>`;
+baseColors.forEach(c => {
+    const d = document.createElement("div");
+    d.style.background = `rgb(${c.join(",")})`;
     row.appendChild(d);
+    
+    const family = getColorFamily(c);
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "color-name";
+    nameDiv.textContent = family.charAt(0);
+    row.appendChild(nameDiv);
 });
 orig.appendChild(row);
 
-// Show generated palettes
-const palettes=generateDiversePalettes(baseColors);
-const palettesDiv=document.getElementById("palettes");
-palettes.forEach((palette,i)=>{
-    const row=document.createElement("div");
-    row.className="palette";
-    row.innerHTML=`<span>Palette ${i+1}:</span>`;
-    palette.forEach(c=>{
-        const d=document.createElement("div");
-        d.style.background=`rgb(${c.join(",")})`;
-        row.appendChild(d);
+// Show generated palettes for all collections
+const collectionsDiv = document.getElementById("collections");
+const collections = ['trending', 'ss', 'aw'];
+
+collections.forEach(collection => {
+    const collectionDiv = document.createElement("div");
+    collectionDiv.className = "collection";
+    collectionDiv.innerHTML = `<h3>${collection.toUpperCase()} Collection</h3>`;
+    
+    const { palettes, familyMappings, ssIndices } = generateDiversePalettes(baseColors, collection);
+    
+    palettes.forEach((palette, i) => {
+        const mapping = familyMappings[i];
+        const paletteSS = ssIndices[i];
+        
+        // Create family mapping visualization
+        const mappingDiv = document.createElement("div");
+        mappingDiv.className = "family-mapping";
+        
+        Object.entries(mapping).forEach(([originalFamily, targetFamily]) => {
+            const mapItem = document.createElement("div");
+            mapItem.className = "family-map-item";
+            
+            const origSwatch = document.createElement("div");
+            origSwatch.className = "family-swatch";
+            origSwatch.style.background = `rgb(${getFamilyColor(originalFamily).join(",")})`;
+            
+            const targetSwatch = document.createElement("div");
+            targetSwatch.className = "family-swatch";
+            targetSwatch.style.background = `rgb(${getFamilyColor(targetFamily).join(",")})`;
+            
+            mapItem.appendChild(origSwatch);
+            mapItem.appendChild(document.createTextNode(originalFamily));
+            mapItem.appendChild(document.createElement("span")).className = "arrow";
+            mapItem.lastChild.textContent = "→";
+            mapItem.appendChild(targetSwatch);
+            mapItem.appendChild(document.createTextNode(targetFamily));
+            
+            mappingDiv.appendChild(mapItem);
+        });
+        
+        collectionDiv.appendChild(mappingDiv);
+        
+        // Create palette visualization
+        const row = document.createElement("div");
+        row.className = "palette";
+        row.innerHTML = `<span>Palette ${i+1}:</span>`;
+        
+        palette.forEach((c, idx) => {
+            const d = document.createElement("div");
+            d.style.background = `rgb(${c.join(",")})`;
+            
+            // Highlight SS-inspired colors in trending collection
+            if (collection === 'trending' && paletteSS.includes(idx)) {
+                d.style.boxShadow = "0 0 0 2px #ffeaa7, 0 2px 4px rgba(0,0,0,0.2)";
+            }
+            
+            row.appendChild(d);
+            
+            const originalFamily = getColorFamily(baseColors[idx]);
+            const newFamily = getColorFamily(c);
+            
+            const nameDiv = document.createElement("div");
+            nameDiv.className = "color-name";
+            
+            let nameText = `${originalFamily.charAt(0)}→${newFamily.charAt(0)}`;
+            if (collection === 'trending' && paletteSS.includes(idx)) {
+                nameText += " (SS)";
+                nameDiv.style.fontWeight = "600";
+                nameDiv.style.color = "#e17055";
+            }
+            
+            nameDiv.textContent = nameText;
+            row.appendChild(nameDiv);
+        });
+        
+        collectionDiv.appendChild(row);
     });
-    palettesDiv.appendChild(row);
+    
+    collectionsDiv.appendChild(collectionDiv);
 });
 </script>
 </body>
