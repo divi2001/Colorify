@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <hr />
             <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
               {% if layers|length == 1 %}
-              {% for i in "01234567890123456789012345" %}
+              {% for i in "0123456789012345678901234" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="trending_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                           <button type="button" 
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <hr />
       <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
           {% if layers|length == 1 %}
-              {% for i in "0123456789" %}
+              {% for i in "0123456789012345678901234" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="ss_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                     
@@ -682,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       {% if layers|length == 1 %}
-          {% for i in "0123456789" %}
+          {% for i in "0123456789012345678901234" %}
               <div class="layer-toggle-item d-flex flex-column gap-2">
                   <div id="aw_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                   <div class="d-flex align-items-center justify-content-between w-100">
@@ -9433,63 +9433,67 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
 
     // Generate and show preview function
-    async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex, collection) {
-        try {
-            // Check cache first
-            if (window.palettePreviewCache && 
-                window.palettePreviewCache[collection] && 
-                window.palettePreviewCache[collection][paletteIndex]) {
-                
-                const cachedPreview = window.palettePreviewCache[collection][paletteIndex];
-                const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-                
-                // **REMOVED WHITE BACKGROUND FILL**
-                ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-                
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const scale = Math.min(
-                            previewCanvas.width / img.width,
-                            previewCanvas.height / img.height
-                        );
-                        const scaledWidth = img.width * scale;
-                        const scaledHeight = img.height * scale;
-                        const x = (previewCanvas.width - scaledWidth) / 2;
-                        const y = (previewCanvas.height - scaledHeight) / 2;
-                        
-                        ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-                        markPreviewReady(previewCanvas);
-                        resolve();
-                    };
-                    img.onerror = () => {
-                        drawFallbackPreview(previewCanvas, collection, paletteIndex);
-                        resolve();
-                    };
-                    img.src = cachedPreview;
-                });
-            }
+async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex, collection) {
+    try {
+        // Check cache first
+        if (window.palettePreviewCache && 
+            window.palettePreviewCache[collection] && 
+            window.palettePreviewCache[collection][paletteIndex]) {
             
-            // Get the original canvas
-            const originalCanvas = totalLayers === 1 
-                ? document.getElementById('layer_canvas_1')
-                : document.getElementById(`layer_canvas_${paletteIndex + 1}`);
+            const cachedPreview = window.palettePreviewCache[collection][paletteIndex];
+            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
             
-            if (!originalCanvas) {
-                console.error('No original canvas found for preview');
-                drawFallbackPreview(previewCanvas, collection, paletteIndex);
-                return;
-            }
+            // **REMOVED WHITE BACKGROUND FILL**
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
             
-            // **CREATE 200x200 PREVIEW PROCESSING CANVAS WITH TRANSPARENCY**
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(
+                        previewCanvas.width / img.width,
+                        previewCanvas.height / img.height
+                    );
+                    const scaledWidth = img.width * scale;
+                    const scaledHeight = img.height * scale;
+                    const x = (previewCanvas.width - scaledWidth) / 2;
+                    const y = (previewCanvas.height - scaledHeight) / 2;
+                    
+                    ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+                    markPreviewReady(previewCanvas);
+                    resolve();
+                };
+                img.onerror = () => {
+                    drawFallbackPreview(previewCanvas, collection, paletteIndex);
+                    resolve();
+                };
+                img.src = cachedPreview;
+            });
+        }
+        
+        // Get the original canvas
+        const originalCanvas = totalLayers === 1 
+            ? document.getElementById('layer_canvas_1')
+            : document.getElementById(`layer_canvas_${paletteIndex + 1}`);
+        
+        if (!originalCanvas) {
+            console.error('No original canvas found for preview');
+            drawFallbackPreview(previewCanvas, collection, paletteIndex);
+            return;
+        }
+        
+        // **EXTRACT COLORS FROM ORIGINAL IMAGE FIRST**
+        const originalImageData = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height);
+        const originalColors = await getDistinctColors(originalImageData, 30, 50, 40);
+        
+        if (!originalColors || originalColors.length === 0) {
+            console.error('No original colors found for preview');
+            // Create 200x200 preview from original image without processing
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = 200;
             tempCanvas.height = 200;
             const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
             
-            // **DO NOT FILL WITH WHITE - KEEP TRANSPARENT**
-            
-            // Scale and draw the original image to 200x200 maintaining aspect ratio
+            // Scale original to 200x200
             const originalAspect = originalCanvas.width / originalCanvas.height;
             let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
             
@@ -9503,113 +9507,140 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 offsetX = (200 - drawWidth) / 2;
             }
             
-            // Draw the original image directly (preserving transparency)
             tempCtx.drawImage(originalCanvas, offsetX, offsetY, drawWidth, drawHeight);
             
-            // **EMBEDDED PROCESSPALLETE LOGIC STARTS HERE**
+            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+            ctx.clearRect(0, 0, 200, 200);
+            ctx.drawImage(tempCanvas, 0, 0, 200, 200);
+            cachePreview(previewCanvas, collection, paletteIndex);
+            markPreviewReady(previewCanvas);
+            return;
+        }
+        
+        // **CREATE 600x600 PROCESSING CANVAS WITH TRANSPARENCY**
+        const processingCanvas = document.createElement('canvas');
+        processingCanvas.width = 600;
+        processingCanvas.height = 600;
+        const processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
+        
+        // **DO NOT FILL WITH WHITE - KEEP TRANSPARENT**
+        
+        // Scale and draw the original image to 600x600 maintaining aspect ratio
+        const originalAspect = originalCanvas.width / originalCanvas.height;
+        let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+        
+        if (originalAspect > 1) {
+            drawWidth = 600;
+            drawHeight = 600 / originalAspect;
+            offsetY = (600 - drawHeight) / 2;
+        } else {
+            drawHeight = 600;
+            drawWidth = 600 * originalAspect;
+            offsetX = (600 - drawWidth) / 2;
+        }
+        
+        // Draw the original image to 600x600 (preserving transparency)
+        processingCtx.drawImage(originalCanvas, offsetX, offsetY, drawWidth, drawHeight);
+        
+        // **GET IMAGE DATA FROM 600x600 FOR PROCESSING**
+        const imageData = processingCtx.getImageData(0, 0, 600, 600);
+        
+        // Apply collection-specific adjustments to palette colors
+        let adjustedPaletteColors = applyCollectionAdjustments([...paletteColors], collection);
+        
+        // **ALWAYS USE COLOR REPLACEMENT PROCESSING (REMOVED HUE SHIFTING)**
+        let processedImageData;
+        
+        // **COLOR REPLACEMENT PROCESSING FOR ALL PALETTES**
+        const colorMappings = [];
+        for (let i = 0; i < Math.min(originalColors.length, adjustedPaletteColors.length); i++) {
+            colorMappings.push({
+                originalColor: originalColors[i],
+                targetColor: adjustedPaletteColors[i % adjustedPaletteColors.length]
+            });
+        }
+        
+        // Apply color mappings to 600x600 image
+        if (typeof ColorProcessor !== 'undefined') {
+            const colorProcessor = new ColorProcessor();
+            const processingImageUrl = processingCanvas.toDataURL('image/png'); // PNG preserves transparency
+            processedImageData = await colorProcessor.applyMultipleColorMappings(
+                processingImageUrl,
+                colorMappings
+            );
+        } else {
+            // Fallback: Simple color replacement on 600x600 image
+            const pixels = imageData.data;
+            const tolerance = 30;
             
-            // Get image data for processing
-            const imageData = tempCtx.getImageData(0, 0, 200, 200);
-            
-            // Extract original colors from the scaled image
-            const originalColors = await getDistinctColors(imageData, 30, 50, 40);
-            
-            if (!originalColors || originalColors.length === 0) {
-                console.error('No original colors found for preview');
-                // Draw the original scaled image anyway (preserving transparency)
-                const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-                ctx.clearRect(0, 0, 200, 200); // Clear instead of white fill
-                ctx.drawImage(tempCanvas, 0, 0, 200, 200);
-                cachePreview(previewCanvas, collection, paletteIndex);
-                markPreviewReady(previewCanvas);
-                return;
-            }
-            
-            // Apply collection-specific adjustments to palette colors
-            let adjustedPaletteColors = applyCollectionAdjustments([...paletteColors], collection);
-            
-            // **ALWAYS USE COLOR REPLACEMENT PROCESSING (REMOVED HUE SHIFTING)**
-            let processedImageData;
-            
-            // **COLOR REPLACEMENT PROCESSING FOR ALL PALETTES**
-            const colorMappings = [];
-            for (let i = 0; i < Math.min(originalColors.length, adjustedPaletteColors.length); i++) {
-                colorMappings.push({
-                    originalColor: originalColors[i],
-                    targetColor: adjustedPaletteColors[i % adjustedPaletteColors.length]
-                });
-            }
-            
-            // Apply color mappings
-            if (typeof ColorProcessor !== 'undefined') {
-                const colorProcessor = new ColorProcessor();
-                const tempImageUrl = tempCanvas.toDataURL('image/png'); // PNG preserves transparency
-                processedImageData = await colorProcessor.applyMultipleColorMappings(
-                    tempImageUrl,
-                    colorMappings
-                );
-            } else {
-                // Fallback: Simple color replacement
-                const pixels = imageData.data;
-                const tolerance = 30;
+            for (let i = 0; i < pixels.length; i += 4) {
+                const a = pixels[i + 3];
                 
-                for (let i = 0; i < pixels.length; i += 4) {
-                    const a = pixels[i + 3];
+                // **ONLY PROCESS NON-TRANSPARENT PIXELS**
+                if (a > 0) {
+                    const currentColor = [pixels[i], pixels[i + 1], pixels[i + 2]];
                     
-                    // **ONLY PROCESS NON-TRANSPARENT PIXELS**
-                    if (a > 0) {
-                        const currentColor = [pixels[i], pixels[i + 1], pixels[i + 2]];
-                        
-                        let closestMapping = null;
-                        let minDistance = Infinity;
-                        
-                        for (const mapping of colorMappings) {
-                            const distance = colorDifference(currentColor, mapping.originalColor);
-                            if (distance < minDistance && distance < tolerance) {
-                                minDistance = distance;
-                                closestMapping = mapping;
-                            }
-                        }
-                        
-                        if (closestMapping) {
-                            pixels[i] = closestMapping.targetColor[0];
-                            pixels[i + 1] = closestMapping.targetColor[1];
-                            pixels[i + 2] = closestMapping.targetColor[2];
-                            // Keep original alpha: pixels[i + 3] = a;
+                    let closestMapping = null;
+                    let minDistance = Infinity;
+                    
+                    for (const mapping of colorMappings) {
+                        const distance = colorDifference(currentColor, mapping.originalColor);
+                        if (distance < minDistance && distance < tolerance) {
+                            minDistance = distance;
+                            closestMapping = mapping;
                         }
                     }
+                    
+                    if (closestMapping) {
+                        pixels[i] = closestMapping.targetColor[0];
+                        pixels[i + 1] = closestMapping.targetColor[1];
+                        pixels[i + 2] = closestMapping.targetColor[2];
+                        // Keep original alpha: pixels[i + 3] = a;
+                    }
                 }
-                
-                tempCtx.putImageData(imageData, 0, 0);
-                processedImageData = tempCanvas.toDataURL('image/png'); // PNG preserves transparency
             }
             
-            // **DRAW RESULT WITHOUT WHITE BACKGROUND**
-            const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-            ctx.clearRect(0, 0, 200, 200); // Clear instead of white fill
-            
-            return new Promise((resolve) => {
-                const resultImg = new Image();
-                resultImg.onload = () => {
-                    ctx.drawImage(resultImg, 0, 0, 200, 200);
-                    cachePreview(previewCanvas, collection, paletteIndex, processedImageData);
-                    markPreviewReady(previewCanvas);
-                    resolve();
-                };
-                resultImg.onerror = (e) => {
-                    console.error("Error loading processed preview:", e);
-                    drawFallbackPreview(previewCanvas, collection, paletteIndex);
-                    resolve();
-                };
-                resultImg.src = processedImageData;
-            });
-            
-        } catch (error) {
-            console.error("Error generating preview:", error);
-            drawFallbackPreview(previewCanvas, collection, paletteIndex);
+            processingCtx.putImageData(imageData, 0, 0);
+            processedImageData = processingCanvas.toDataURL('image/png'); // PNG preserves transparency
         }
+        
+        // **CREATE 200x200 PREVIEW FROM PROCESSED 600x600 IMAGE**
+        return new Promise((resolve) => {
+            const resultImg = new Image();
+            resultImg.onload = () => {
+                // Create 200x200 preview canvas
+                const previewTempCanvas = document.createElement('canvas');
+                previewTempCanvas.width = 200;
+                previewTempCanvas.height = 200;
+                const previewTempCtx = previewTempCanvas.getContext('2d', { willReadFrequently: true });
+                
+                // Scale down the 600x600 processed image to 200x200
+                previewTempCtx.drawImage(resultImg, 0, 0, 200, 200);
+                
+                // Draw to final preview canvas
+                const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+                ctx.clearRect(0, 0, 200, 200);
+                ctx.drawImage(previewTempCanvas, 0, 0, 200, 200);
+                
+                // Cache the 200x200 preview
+                const finalPreviewData = previewTempCanvas.toDataURL('image/png');
+                cachePreview(previewCanvas, collection, paletteIndex, finalPreviewData);
+                markPreviewReady(previewCanvas);
+                resolve();
+            };
+            resultImg.onerror = (e) => {
+                console.error("Error loading processed preview:", e);
+                drawFallbackPreview(previewCanvas, collection, paletteIndex);
+                resolve();
+            };
+            resultImg.src = processedImageData;
+        });
+        
+    } catch (error) {
+        console.error("Error generating preview:", error);
+        drawFallbackPreview(previewCanvas, collection, paletteIndex);
     }
-
+}
     // Modified cache function with safer implementation
     function cachePreview(canvas, collection, index, highResUrl) {
       // Initialize cache objects if they don't exist
