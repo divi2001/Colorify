@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <hr />
             <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
               {% if layers|length == 1 %}
-              {% for i in "0123456789012345678901234" %}
+              {% for i in "0123456789012345678901234567890123456789" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="trending_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                           <button type="button" 
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <hr />
       <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
           {% if layers|length == 1 %}
-              {% for i in "0123456789012345678901234" %}
+              {% for i in "0123456789012345678901234567890123456789" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="ss_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                     
@@ -682,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       {% if layers|length == 1 %}
-          {% for i in "0123456789012345678901234" %}
+          {% for i in "0123456789012345678901234567890123456789" %}
               <div class="layer-toggle-item d-flex flex-column gap-2">
                   <div id="aw_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                   <div class="d-flex align-items-center justify-content-between w-100">
@@ -8898,8 +8898,8 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         window[`${collection}PaletteHueShifted`] = window[`${collection}PaletteHueShifted`] || {};
         
         // STORE ALL PALETTES FIRST before creating UI
-        for (let i = 0; i < 25; i++) {
-            let paletteColors = allPalettes[i] || allPalettes[0];
+        for (let i = 0; i < 35; i++) {
+            let paletteColors = allPalettes[i % allPalettes.length];
             
             // Verify that all colors are valid
             paletteColors = paletteColors.filter(color => 
@@ -8957,7 +8957,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         // Create all palette containers
         const paletteContainers = [];
         
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 35; i++) {
             const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
             if (!paletteContainer) continue;
             
@@ -9503,7 +9503,7 @@ function generateDiversePalettes(baseColors, collection = 'trending') {
     const settings = collectionSettings[collection] || collectionSettings.trending;
     
     // Generate 20 unique palettes with REDUCED GREEN
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
         const newPalette = [];
         const familyMapping = {};
         const usedTargetFamilies = new Set();
@@ -10498,7 +10498,7 @@ function cachePreview(canvas, collection, index, highResUrl) {
         
         // Remaining 5 palettes: Use family replacement as before
         const diversePalettes = generateDiversePalettes(validatedColors,collection);
-        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 20)];
+        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 50)];
         
         // Initialize preview cache if needed
         if (!window.palettePreviewCache) {
@@ -10531,7 +10531,7 @@ function cachePreview(canvas, collection, index, highResUrl) {
         // Create all palette containers first
         const paletteContainers = [];
         
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 35; i++) {
             const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
             if (!paletteContainer) continue;
             
