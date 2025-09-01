@@ -17248,119 +17248,404 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       }, 3000);
     }
 
-    // Generate unique harmony palettes using generateUniquePalettes logic
+    // Helper function to shuffle array
+    function shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    // NEW: Generate monochromatic palette from specific hue
+    function generateMonochromaticFromHue(baseHue, imageColors, variation) {
+      try {
+        const palette = [];
+        
+        console.log(`Generating monochromatic ${variation} using base hue: ${baseHue}°`);
+        
+        imageColors.forEach((color, index) => {
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
+          
+          let targetS = originalS;
+          let targetL = originalL;
+          
+          // Apply variation strategy
+          switch(variation) {
+            case 'high_saturation':
+              targetS = Math.min(100, originalS * 1.3 + 20);
+              break;
+            case 'low_saturation':
+              targetS = Math.max(5, originalS * 0.5);
+              break;
+            case 'mixed_saturation':
+              targetS = index % 2 === 0 ? 
+                Math.min(100, originalS * 1.2 + 15) : 
+                Math.max(10, originalS * 0.6);
+              break;
+          }
+          
+          const monochromaticColor = hslToRgb(baseHue, targetS, targetL);
+          palette.push(monochromaticColor);
+        });
+        
+        return palette;
+      } catch (error) {
+        console.error("Error generating monochromatic from hue:", error);
+        return [];
+      }
+    }
+
+    // NEW: Generate analogous palette from specific hue
+    function generateAnalogousFromHue(baseHue, imageColors, range) {
+      try {
+        const palette = [];
+        
+        // Create analogous hues with specified range
+        const analogousHues = [
+          (baseHue - range + 360) % 360,
+          (baseHue - range/2 + 360) % 360,
+          baseHue,
+          (baseHue + range/2) % 360,
+          (baseHue + range) % 360
+        ];
+        
+        console.log(`Generating analogous ${range}° range from ${baseHue}°: ${analogousHues.map(h => Math.round(h) + '°').join(', ')}`);
+        
+        imageColors.forEach((color, index) => {
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
+          const targetHue = analogousHues[index % analogousHues.length];
+          const analogousColor = hslToRgb(targetHue, originalS, originalL);
+          palette.push(analogousColor);
+        });
+        
+        return palette;
+      } catch (error) {
+        console.error("Error generating analogous from hue:", error);
+        return [];
+      }
+    }
+
+    // NEW: Generate complementary palette from specific hue
+    function generateComplementaryFromHue(baseHue, imageColors, baseRatio) {
+      try {
+        const complementH = (baseHue + 180) % 360;
+        const palette = [];
+        
+        console.log(`Generating complementary from ${baseHue}° + ${complementH}° with ${Math.round(baseRatio*100)}%/${Math.round((1-baseRatio)*100)}% ratio`);
+        
+        imageColors.forEach((color, index) => {
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
+          
+          // Use ratio to determine base vs complement distribution
+          const useBase = (index / imageColors.length) < baseRatio;
+          const targetHue = useBase ? baseHue : complementH;
+          
+          const complementaryColor = hslToRgb(targetHue, originalS, originalL);
+          palette.push(complementaryColor);
+        });
+        
+        return palette;
+      } catch (error) {
+        console.error("Error generating complementary from hue:", error);
+        return [];
+      }
+    }
+
+    // NEW: Generate split complementary palette from specific hue
+    function generateSplitComplementaryFromHue(baseHue, imageColors, splitAngles) {
+      try {
+        // FIXED: Split complementary should use complement ± offset, not base + offset
+        const complementHue = (baseHue + 180) % 360;
+        const split1H = (complementHue + splitAngles[0] - 180) % 360; // First split from complement
+        const split2H = (complementHue + splitAngles[1] - 180) % 360; // Second split from complement
+        
+        // Ensure positive values
+        const normalizedSplit1 = split1H < 0 ? split1H + 360 : split1H;
+        const normalizedSplit2 = split2H < 0 ? split2H + 360 : split2H;
+        
+        const palette = [];
+        const targetHues = [baseHue, normalizedSplit1, normalizedSplit2];
+        
+        console.log(`Generating split complementary from ${baseHue}°: complement ${complementHue}°, splits: ${Math.round(normalizedSplit1)}°, ${Math.round(normalizedSplit2)}°`);
+        
+        imageColors.forEach((color, index) => {
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
+          const targetHue = targetHues[index % targetHues.length];
+          const splitComplementaryColor = hslToRgb(targetHue, originalS, originalL);
+          palette.push(splitComplementaryColor);
+        });
+        
+        return palette;
+      } catch (error) {
+        console.error("Error generating split complementary from hue:", error);
+        return [];
+      }
+    }
+
+    // NEW: Generate triadic palette from specific hue
+    function generateTriadicFromHue(baseHue, imageColors, spacing) {
+      try {
+        const triad1H = (baseHue + spacing) % 360;
+        const triad2H = (baseHue + spacing * 2) % 360;
+        const palette = [];
+        
+        const targetHues = [baseHue, triad1H, triad2H];
+        
+        console.log(`Generating triadic from ${baseHue}° with ${spacing}° spacing: ${targetHues.map(h => Math.round(h) + '°').join(', ')}`);
+        
+        imageColors.forEach((color, index) => {
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
+          const targetHue = targetHues[index % targetHues.length];
+          const triadicColor = hslToRgb(targetHue, originalS, originalL);
+          palette.push(triadicColor);
+        });
+        
+        return palette;
+      } catch (error) {
+        console.error("Error generating triadic from hue:", error);
+        return [];
+      }
+    }
+
+    // NEW: Generate tetradic palette from specific hue
+    function generateTetradicFromHue(baseHue, imageColors, spacing) {
+      try {
+        // FIXED: For tetradic/square, calculate rectangle coordinates properly
+        // Tetradic creates a rectangle on the color wheel
+        const tetrad1H = (baseHue + spacing) % 360;           // Adjacent color
+        const tetrad2H = (baseHue + 180) % 360;               // Complement of base
+        const tetrad3H = (tetrad1H + 180) % 360;              // Complement of adjacent
+        
+        const palette = [];
+        const targetHues = [baseHue, tetrad1H, tetrad2H, tetrad3H];
+        
+        console.log(`Generating tetradic from ${baseHue}° with ${spacing}° spacing: ${targetHues.map(h => Math.round(h) + '°').join(', ')}`);
+        
+        imageColors.forEach((color, index) => {
+          const [originalH, originalS, originalL] = rgbToHsl(...color);
+          const targetHue = targetHues[index % targetHues.length];
+          const tetradicColor = hslToRgb(targetHue, originalS, originalL);
+          palette.push(tetradicColor);
+        });
+        
+        return palette;
+      } catch (error) {
+        console.error("Error generating tetradic from hue:", error);
+        return [];
+      }
+    }
+    // NEW: Create comprehensive strategies that cover the full color spectrum
+    function createComprehensiveDiversityStrategies(harmonyType, imageColors) {
+      const strategies = [];
+      
+      // Define base hues across the full spectrum (every 30 degrees)
+      const baseHues = [
+        { name: "Red", hue: 0 },
+        { name: "Orange", hue: 30 },
+        { name: "Yellow", hue: 60 },
+        { name: "Lime", hue: 90 },
+        { name: "Green", hue: 120 },
+        { name: "Teal", hue: 150 },
+        { name: "Cyan", hue: 180 },
+        { name: "Sky", hue: 210 },
+        { name: "Blue", hue: 240 },
+        { name: "Purple", hue: 270 },
+        { name: "Magenta", hue: 300 },
+        { name: "Pink", hue: 330 }
+      ];
+      
+      switch(harmonyType) {
+        case 'Monochromatic':
+          // Create monochromatic strategies for each base hue with different saturation approaches
+          baseHues.forEach(base => {
+            strategies.push({
+              name: `${base.name}_HighSat`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateMonochromaticFromHue(base.hue, imageColors, 'high_saturation')
+            });
+            
+            strategies.push({
+              name: `${base.name}_LowSat`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateMonochromaticFromHue(base.hue, imageColors, 'low_saturation')
+            });
+            
+            strategies.push({
+              name: `${base.name}_Mixed`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateMonochromaticFromHue(base.hue, imageColors, 'mixed_saturation')
+            });
+          });
+          break;
+          
+        case 'Analogous':
+          // Create analogous strategies for each base hue
+          baseHues.forEach(base => {
+            strategies.push({
+              name: `${base.name}_Narrow`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateAnalogousFromHue(base.hue, imageColors, 15)
+            });
+            
+            strategies.push({
+              name: `${base.name}_Wide`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateAnalogousFromHue(base.hue, imageColors, 45)
+            });
+          });
+          break;
+          
+        case 'Complementary':
+          // Create complementary strategies for each base hue
+          baseHues.forEach(base => {
+            strategies.push({
+              name: `${base.name}_Balanced`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateComplementaryFromHue(base.hue, imageColors, 0.5)
+            });
+            
+            strategies.push({
+              name: `${base.name}_BaseDominant`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateComplementaryFromHue(base.hue, imageColors, 0.7)
+            });
+            
+            strategies.push({
+              name: `${base.name}_CompDominant`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateComplementaryFromHue(base.hue, imageColors, 0.3)
+            });
+          });
+          break;
+          
+        case 'Split Complementary':
+          baseHues.forEach(base => {
+            strategies.push({
+              name: `${base.name}_Classic`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateSplitComplementaryFromHue(base.hue, imageColors, [150, 210]) // ±30° from complement
+            });
+            
+            strategies.push({
+              name: `${base.name}_Wide`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateSplitComplementaryFromHue(base.hue, imageColors, [135, 225]) // ±45° from complement  
+            });
+            
+            strategies.push({
+              name: `${base.name}_Narrow`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateSplitComplementaryFromHue(base.hue, imageColors, [165, 195]) // ±15° from complement
+            });
+          });
+          break;
+        case 'Triadic':
+          baseHues.forEach(base => {
+            strategies.push({
+              name: `${base.name}_Perfect`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateTriadicFromHue(base.hue, imageColors, 120)
+            });
+            
+            strategies.push({
+              name: `${base.name}_Shifted`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateTriadicFromHue(base.hue, imageColors, 115)
+            });
+          });
+          break;
+          
+        case 'Tetradic':
+        case 'Square':
+          baseHues.forEach(base => {
+            strategies.push({
+              name: `${base.name}_Perfect`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateTetradicFromHue(base.hue, imageColors, 90)
+            });
+            
+            strategies.push({
+              name: `${base.name}_Shifted`,
+              generatePalette: (imageColors, paletteIndex) => 
+                generateTetradicFromHue(base.hue, imageColors, 85)
+            });
+          });
+          break;
+      }
+      
+      // Shuffle strategies to ensure variety
+      return shuffleArray(strategies);
+    }
+
+    // NEW: Enhanced palette signature for better uniqueness detection
+    function createEnhancedPaletteSignature(palette, harmonyType) {
+      const signature = palette.slice(0, 8).map((color, index) => {
+        const [h, s, l] = rgbToHsl(...color);
+        
+        // Create more granular signature for background color
+        if (index === 0) {
+          return `bg_${Math.round(h/5)}:${Math.round(s/10)}:${Math.round(l/10)}`;
+        }
+        
+        // Different granularity based on harmony type
+        let hueGrain, satGrain, lightGrain;
+        
+        switch(harmonyType) {
+          case 'Monochromatic':
+            hueGrain = 3; // Very fine hue detection since all should be similar
+            satGrain = 15; // Coarser saturation grouping
+            lightGrain = 15; // Coarser lightness grouping
+            break;
+          case 'Analogous':
+            hueGrain = 8;
+            satGrain = 20;
+            lightGrain = 20;
+            break;
+          default:
+            hueGrain = 15;
+            satGrain = 25;
+            lightGrain = 25;
+        }
+        
+        return `${Math.round(h/hueGrain)}:${Math.round(s/satGrain)}:${Math.round(l/lightGrain)}`;
+      }).join('|');
+      
+      return `${harmonyType}_${signature}`;
+    }
+
+    // FIXED: Enhanced unique palette generation that creates ALL color families
     function generateUniquePalettes(imageColors, harmonyType, palettesToGenerate) {
       console.log(`Generating ${palettesToGenerate} unique ${harmonyType} palettes from ${imageColors.length} colors`);
       
       const palettes = [];
       const usedColorCombinations = new Set();
-      const maxAttempts = palettesToGenerate * 5;
+      const maxAttempts = palettesToGenerate * 3;
       let attempts = 0;
       
-      // Color family definitions for better diversity
-      const colorFamilies = [
-        { name: "Red", range: [345, 15], colors: [] },
-        { name: "Orange", range: [15, 45], colors: [] },
-        { name: "Yellow", range: [45, 75], colors: [] },
-        { name: "Green", range: [75, 165], colors: [] },
-        { name: "Cyan", range: [165, 195], colors: [] },
-        { name: "Blue", range: [195, 255], colors: [] },
-        { name: "Purple", range: [255, 285], colors: [] },
-        { name: "Pink", range: [285, 345], colors: [] }
-      ];
-      
-      // Sort colors into families
-      imageColors.forEach(color => {
-        const [h, s, l] = rgbToHsl(...color);
-        
-        for (const family of colorFamilies) {
-          if (family.name === "Red") {
-            if (h >= family.range[0] || h < family.range[1]) {
-              family.colors.push({ color, h, s, l });
-              break;
-            }
-          } else if (h >= family.range[0] && h < family.range[1]) {
-            family.colors.push({ color, h, s, l });
-            break;
-          }
-        }
-      });
-      
-      // Sort families by color count (most diverse first)
-      const sortedFamilies = colorFamilies
-        .filter(family => family.colors.length > 0)
-        .sort((a, b) => b.colors.length - a.colors.length);
-      
-      console.log("Color families distribution:", sortedFamilies.map(f => `${f.name}: ${f.colors.length}`));
+      // FIXED: Create strategies that cover ALL color wheel regions, not just what's in the image
+      const diversityStrategies = createComprehensiveDiversityStrategies(harmonyType, imageColors);
       
       while (palettes.length < palettesToGenerate && attempts < maxAttempts) {
         attempts++;
         
-        let baseColor;
-        let baseColorFamily;
+        // Choose diversity strategy for this palette
+        const strategyIndex = palettes.length % diversityStrategies.length;
+        const strategy = diversityStrategies[strategyIndex];
         
-        // Choose base color to ensure diversity
-        if (palettes.length < sortedFamilies.length) {
-          // First round: one palette per family
-          baseColorFamily = sortedFamilies[palettes.length];
-          const randomColorIndex = Math.floor(Math.random() * baseColorFamily.colors.length);
-          baseColor = baseColorFamily.colors[randomColorIndex].color;
-        } else {
-          // Subsequent rounds: weighted random selection
-          const familyWeights = sortedFamilies.map(family => {
-            const existingPalettesFromFamily = palettes.filter(p => p._baseColorFamily === family.name).length;
-            return Math.max(1, family.colors.length - existingPalettesFromFamily);
-          });
-          
-          const totalWeight = familyWeights.reduce((sum, weight) => sum + weight, 0);
-          let randomWeight = Math.random() * totalWeight;
-          
-          for (let i = 0; i < sortedFamilies.length; i++) {
-            randomWeight -= familyWeights[i];
-            if (randomWeight <= 0) {
-              baseColorFamily = sortedFamilies[i];
-              break;
-            }
-          }
-          
-          if (!baseColorFamily) baseColorFamily = sortedFamilies[0];
-          
-          const randomColorIndex = Math.floor(Math.random() * baseColorFamily.colors.length);
-          baseColor = baseColorFamily.colors[randomColorIndex].color;
+        console.log(`Palette ${palettes.length}: Using strategy "${strategy.name}"`);
+        
+        // Generate palette using the strategy
+        const palette = strategy.generatePalette(imageColors, palettes.length);
+        
+        if (!palette || palette.length === 0) {
+          console.warn(`Strategy "${strategy.name}" failed to generate palette`);
+          continue;
         }
         
-        // Generate harmony palette using the base color
-        let palette = [];
-        const paletteIndex = palettes.length;
-        
-        switch(harmonyType) {
-          case 'Monochromatic':
-            palette = generateMonochromaticPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily);
-            break;
-          case 'Analogous':
-            palette = generateAnalogousPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily);
-            break;
-          case 'Complementary':
-            palette = generateComplementaryPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily);
-            break;
-          case 'Split Complementary':
-            palette = generateSplitComplementaryPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily);
-            break;
-          case 'Triadic':
-            palette = generateTriadicPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily);
-            break;
-          case 'Tetradic':
-            palette = generateTetradicPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily);
-            break;
-          case 'Square':
-            palette = generateSquarePaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily);
-            break;
-          default:
-            palette = [baseColor, ...imageColors.slice(0, Math.min(imageColors.length - 1, 24))];
-        }
-        
-        // Check if this palette is unique enough
-        const paletteSignature = createPaletteSignature(palette);
+        // Check uniqueness with enhanced signature
+        const paletteSignature = createEnhancedPaletteSignature(palette, harmonyType);
         
         if (!usedColorCombinations.has(paletteSignature)) {
           usedColorCombinations.add(paletteSignature);
@@ -17376,16 +17661,18 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
             palette[0] = createBackgroundVariations(palette[0], currentBgVariation);
           }
           
-          // Store metadata
+          // Store enhanced metadata
           palette._backgroundVariation = currentBgVariation;
           palette._harmonyType = harmonyType;
           palette._paletteIndex = palettes.length;
-          palette._baseColorFamily = baseColorFamily.name;
+          palette._strategy = strategy.name;
           palette._attempts = attempts;
           
           palettes.push(palette);
           
-          console.log(`Generated unique ${harmonyType} palette ${palettes.length} from ${baseColorFamily.name} family (${currentBgVariation} bg) - attempts: ${attempts}`);
+          console.log(`Generated unique ${harmonyType} palette ${palettes.length} using "${strategy.name}" strategy (${currentBgVariation} bg) - attempts: ${attempts}`);
+        } else {
+          console.log(`Palette signature already exists for strategy "${strategy.name}", trying next...`);
         }
       }
       
@@ -17399,221 +17686,6 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         const [h, s, l] = rgbToHsl(...color);
         return `${Math.round(h/10)}:${Math.round(s/20)}:${Math.round(l/20)}`;
       }).join('|');
-    }
-    
-    // FIXED Harmony generation functions - ONLY REPLACE HUE, KEEP SATURATION AND LIGHTNESS
-    function generateMonochromaticPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily) {
-      try {
-        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const palette = [];
-        
-        console.log(`Generating monochromatic palette using ${baseColorFamily.name} family hue: ${Math.round(baseH)}°`);
-        
-        // Convert ALL image colors to the same hue family, keeping original saturation and lightness
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          // Replace hue with base hue, keep original saturation and lightness
-          const monochromaticColor = hslToRgb(baseH, originalS, originalL);
-          palette.push(monochromaticColor);
-        });
-        
-        console.log(`Generated monochromatic palette with ${palette.length} colors, all using ${baseColorFamily.name} hue (${Math.round(baseH)}°)`);
-        return palette;
-      } catch (error) {
-        console.error("Error generating monochromatic palette:", error);
-        return imageColors.slice(0);
-      }
-    }
-    
-    function generateAnalogousPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily) {
-      try {
-        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const palette = [];
-        
-        // Analogous hues: ±30 degrees
-        const analogousHues = [
-          (baseH - 30 + 360) % 360,
-          (baseH - 15 + 360) % 360,
-          baseH,
-          (baseH + 15) % 360,
-          (baseH + 30) % 360
-        ];
-        
-        console.log(`Generating analogous palette using hues: ${analogousHues.map(h => Math.round(h) + '°').join(', ')}`);
-        
-        // Distribute colors among analogous hues
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          // Choose hue based on index to distribute evenly
-          const targetHue = analogousHues[index % analogousHues.length];
-          
-          // Replace hue only, keep original saturation and lightness
-          const analogousColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(analogousColor);
-        });
-        
-        console.log(`Generated analogous palette with ${palette.length} colors`);
-        return palette;
-      } catch (error) {
-        console.error("Error generating analogous palette:", error);
-        return imageColors.slice(0);
-      }
-    }
-    
-    function generateComplementaryPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily) {
-      try {
-        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const complementH = (baseH + 180) % 360;
-        const palette = [];
-        
-        console.log(`Generating complementary palette using base hue: ${Math.round(baseH)}° and complement: ${Math.round(complementH)}°`);
-        
-        // Alternate between base and complement colors
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          // Alternate between base and complement hue
-          const targetHue = index % 2 === 0 ? baseH : complementH;
-          
-          // Replace hue only, keep original saturation and lightness
-          const complementaryColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(complementaryColor);
-        });
-        
-        console.log(`Generated complementary palette with ${palette.length} colors`);
-        return palette;
-      } catch (error) {
-        console.error("Error generating complementary palette:", error);
-        return imageColors.slice(0);
-      }
-    }
-    
-    function generateSplitComplementaryPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily) {
-      try {
-        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const splitComp1H = (baseH + 150) % 360;
-        const splitComp2H = (baseH + 210) % 360;
-        const palette = [];
-        
-        const targetHues = [baseH, splitComp1H, splitComp2H];
-        
-        console.log(`Generating split complementary palette using hues: ${targetHues.map(h => Math.round(h) + '°').join(', ')}`);
-        
-        // Distribute colors among split complementary hues
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          // Choose hue based on index to distribute evenly
-          const targetHue = targetHues[index % targetHues.length];
-          
-          // Replace hue only, keep original saturation and lightness
-          const splitComplementaryColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(splitComplementaryColor);
-        });
-        
-        console.log(`Generated split complementary palette with ${palette.length} colors`);
-        return palette;
-      } catch (error) {
-        console.error("Error generating split complementary palette:", error);
-        return imageColors.slice(0);
-      }
-    }
-    
-    function generateTriadicPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily) {
-      try {
-        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const triad1H = (baseH + 120) % 360;
-        const triad2H = (baseH + 240) % 360;
-        const palette = [];
-        
-        const targetHues = [baseH, triad1H, triad2H];
-        
-        console.log(`Generating triadic palette using hues: ${targetHues.map(h => Math.round(h) + '°').join(', ')}`);
-        
-        // Distribute colors among triadic hues
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          // Choose hue based on index to distribute evenly
-          const targetHue = targetHues[index % targetHues.length];
-          
-          // Replace hue only, keep original saturation and lightness
-          const triadicColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(triadicColor);
-        });
-        
-        console.log(`Generated triadic palette with ${palette.length} colors`);
-        return palette;
-      } catch (error) {
-        console.error("Error generating triadic palette:", error);
-        return imageColors.slice(0);
-      }
-    }
-    
-    function generateTetradicPaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily) {
-      try {
-        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const tetrad1H = (baseH + 90) % 360;
-        const tetrad2H = (baseH + 180) % 360;
-        const tetrad3H = (baseH + 270) % 360;
-        const palette = [];
-        
-        const targetHues = [baseH, tetrad1H, tetrad2H, tetrad3H];
-        
-        console.log(`Generating tetradic palette using hues: ${targetHues.map(h => Math.round(h) + '°').join(', ')}`);
-        
-        // Distribute colors among tetradic hues
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          // Choose hue based on index to distribute evenly
-          const targetHue = targetHues[index % targetHues.length];
-          
-          // Replace hue only, keep original saturation and lightness
-          const tetradicColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(tetradicColor);
-        });
-        
-        console.log(`Generated tetradic palette with ${palette.length} colors`);
-        return palette;
-      } catch (error) {
-        console.error("Error generating tetradic palette:", error);
-        return imageColors.slice(0);
-      }
-    }
-    
-    function generateSquarePaletteUnique(baseColor, imageColors, paletteIndex, baseColorFamily) {
-      try {
-        const [baseH, baseS, baseL] = rgbToHsl(...baseColor);
-        const square1H = (baseH + 90) % 360;
-        const square2H = (baseH + 180) % 360;
-        const square3H = (baseH + 270) % 360;
-        const palette = [];
-        
-        const targetHues = [baseH, square1H, square2H, square3H];
-        
-        console.log(`Generating square palette using hues: ${targetHues.map(h => Math.round(h) + '°').join(', ')}`);
-        
-        // Distribute colors among square hues
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          // Choose hue based on index to distribute evenly
-          const targetHue = targetHues[index % targetHues.length];
-          
-          // Replace hue only, keep original saturation and lightness
-          const squareColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(squareColor);
-        });
-        
-        console.log(`Generated square palette with ${palette.length} colors`);
-        return palette;
-      } catch (error) {
-        console.error("Error generating square palette:", error);
-        return imageColors.slice(0);
-      }
     }
     
     // Function to create background variations
@@ -17634,38 +17706,40 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
           return hslToRgb(h, Math.max(s * 0.7, 12), Math.min(Math.max(l * 0.9, 15), 75));
       }
     }
+
     // Add this function to clear harmony cache when switching harmony types
-  function clearHarmonyPreviewCache(harmonyType = null) {
-    try {
-      if (!window.palettePreviewCache || !window.palettePreviewCache['harmony']) {
-        return;
-      }
-      
-      if (harmonyType) {
-        // Clear only specific harmony type
-        const keysToDelete = Object.keys(window.palettePreviewCache['harmony'])
-          .filter(key => key.startsWith(`${harmonyType}_`));
+    function clearHarmonyPreviewCache(harmonyType = null) {
+      try {
+        if (!window.palettePreviewCache || !window.palettePreviewCache['harmony']) {
+          return;
+        }
         
-        keysToDelete.forEach(key => {
-          delete window.palettePreviewCache['harmony'][key];
-        });
-        
-        console.log(`Cleared ${keysToDelete.length} cached previews for ${harmonyType}`);
-      } else {
-        // Clear all harmony previews
-        window.palettePreviewCache['harmony'] = {};
-        console.log('Cleared all harmony preview cache');
+        if (harmonyType) {
+          // Clear only specific harmony type
+          const keysToDelete = Object.keys(window.palettePreviewCache['harmony'])
+            .filter(key => key.startsWith(`${harmonyType}_`));
+          
+          keysToDelete.forEach(key => {
+            delete window.palettePreviewCache['harmony'][key];
+          });
+          
+          console.log(`Cleared ${keysToDelete.length} cached previews for ${harmonyType}`);
+        } else {
+          // Clear all harmony previews
+          window.palettePreviewCache['harmony'] = {};
+          console.log('Cleared all harmony preview cache');
+        }
+      } catch (error) {
+        console.warn('Error clearing harmony preview cache:', error);
       }
-    } catch (error) {
-      console.warn('Error clearing harmony preview cache:', error);
     }
-}
     
     // UPDATED generateHarmonyPalettes function using unique palette generation
+    // UPDATED generateHarmonyPalettes function using unique palette generation
     async function generateHarmonyPalettes(imageColors) {
-       clearHarmonyPreviewCache(harmonyType);
-  
-       const paletteCollectionName = `${harmonyCollection}PaletteColors`;
+      clearHarmonyPreviewCache(harmonyType);
+
+      const paletteCollectionName = `${harmonyCollection}PaletteColors`;
       
       if (!window[paletteCollectionName]) {
         window[paletteCollectionName] = {};
@@ -17674,15 +17748,24 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
       const totalColors = imageColors.length;
       console.log(`Total distinct colors available: ${totalColors}`);
       
-      // Generate palettes based on background variation setting
-      const palettesToGenerate = backgroundVariation === 'mixed' ? 30 : 10;
+      // FIXED: Generate more palettes based on background variation setting
+      let palettesToGenerate;
+      switch(backgroundVariation) {
+        case 'mixed':
+          palettesToGenerate = 36; // 12 base hues × 3 variations each
+          break;
+        default:
+          palettesToGenerate = 24; // 12 base hues × 2 variations each  
+      }
+      
+      console.log(`Generating ${palettesToGenerate} palettes for ${harmonyType} with ${backgroundVariation} background`);
       
       // Use the new unique palette generation
       const uniquePalettes = generateUniquePalettes(imageColors, harmonyType, palettesToGenerate);
       
       // Store the palettes
       uniquePalettes.forEach((palette, index) => {
-        logPalette(palette, `${harmonyType} Unique Palette ${index} (${palette.length} colors, ${palette._backgroundVariation} bg, ${palette._baseColorFamily} family)`);
+        logPalette(palette, `${harmonyType} Unique Palette ${index} (${palette.length} colors, ${palette._backgroundVariation} bg, ${palette._strategy} strategy)`);
         window[paletteCollectionName][index] = palette;
         console.log(`Stored unique palette in window.${paletteCollectionName}[${index}] with ${palette.length} colors`);
       });
@@ -17718,8 +17801,8 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
               
               const selectedPalette = uniquePalettes[randomIndex];
               const bgType = selectedPalette._backgroundVariation || 'regular';
-              const family = selectedPalette._baseColorFamily || 'Mixed';
-              showToast(`Applied ${harmonyType} palette ${randomIndex} (${selectedPalette.length} colors, ${bgType} background, ${family} family)`);
+              const strategy = selectedPalette._strategy || 'Standard';
+              showToast(`Applied ${harmonyType} palette ${randomIndex} (${selectedPalette.length} colors, ${bgType} bg, ${strategy})`);
             } else {
               console.error('processPallet function not available');
               showToast(`Error: processPallet function not found`);
@@ -17731,8 +17814,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         }, 100);
       }
     }
-    
-    // Main execution
+        // Main execution
     const imageColors = await getImageColors();
     
     if (!imageColors || imageColors.length === 0) {
@@ -17757,7 +17839,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
     }
   }
 }
-// Keep all your other existing functions (applyHarmonyPalette, displayHarmonyPalettesInSidebar, etc.) unchanged
+
 // Function to apply harmony palette (unchanged)
 async function applyHarmonyPalette(paletteIndex, paletteCollectionName) {
   try {
@@ -17817,8 +17899,9 @@ async function applyHarmonyPalette(paletteIndex, paletteCollectionName) {
       await processPallet(ctx, 1, canvas, 0, null, "true", paletteIndex, true);
       
       const bgType = palette._backgroundVariation || 'regular';
+      const strategy = palette._strategy || 'Standard';
       const toast = document.createElement('div');
-      toast.textContent = `Applied harmony palette ${paletteIndex} (${bgType} background)`;
+      toast.textContent = `Applied harmony palette ${paletteIndex} (${bgType} bg, ${strategy})`;
       toast.style.cssText = `
         position: fixed;
         bottom: 20px;
@@ -18444,6 +18527,7 @@ function colorDifference(color1, color2) {
     }
     
     const bgVariation = fullPalette._backgroundVariation || 'regular';
+    const strategy = fullPalette._strategy || 'Standard';
     
     // Create modal
     const modal = document.createElement('div');
@@ -18461,7 +18545,7 @@ function colorDifference(color1, color2) {
     
     const title = document.createElement('h3');
     title.className = 'palette-modal-title';
-    title.textContent = `${harmonyType} Harmony Palette ${paletteIndex} (${bgVariation} background) - All Colors`;
+    title.textContent = `${harmonyType} Harmony Palette ${paletteIndex} (${bgVariation} bg, ${strategy}) - All Colors`;
     
     const colorsContainer = document.createElement('div');
     colorsContainer.className = 'all-colors-container';
@@ -18505,15 +18589,22 @@ function colorDifference(color1, color2) {
     
     // Get background variation info
     const bgVariation = palette._backgroundVariation || 'regular';
+    const strategy = palette._strategy || 'Standard';
     
     // Create layer-toggle-item structure to match your trending palettes
     const layerToggleItem = document.createElement('div');
     layerToggleItem.className = 'layer-toggle-item d-flex flex-column gap-2';
     
-    // Add background variation indicator
+    // Add background variation and strategy indicator
     const bgIndicator = document.createElement('div');
     bgIndicator.className = 'bg-variation-indicator';
-    bgIndicator.textContent = bgVariation.charAt(0).toUpperCase() + bgVariation.slice(1);
+    
+    // Extract the color name from the strategy (Red_HighSat -> Red)
+    const strategyParts = strategy.split('_');
+    const colorName = strategyParts[0] || 'Mixed';
+    const variationType = strategyParts[1] || 'Standard';
+    
+    bgIndicator.textContent = `${colorName} - ${bgVariation.charAt(0).toUpperCase() + bgVariation.slice(1)}`;
     bgIndicator.style.cssText = `
       font-size: 10px;
       text-align: center;
@@ -18650,6 +18741,87 @@ function colorDifference(color1, color2) {
   }
 }
     
+
+// Function to regenerate a specific harmony palette
+async function regenerateHarmonyPalette(paletteIndex, harmonyType) {
+  try {
+    const canvas = document.getElementById('layer_canvas_1');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Regenerate all palettes for now (you could optimize this to regenerate just one)
+    showToast('Regenerating palettes...');
+    await processHarmony(ctx, 1, canvas, 0, harmonyType, true);
+    
+  } catch (error) {
+    console.error('Error regenerating harmony palette:', error);
+    showToast('Error regenerating palette');
+  }
+}
+
+// Helper function for toast messages (if not already defined globally)
+if (typeof showToast !== 'function') {
+  window.showToast = function(message) {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 6px;
+      z-index: 10001;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 3000);
+  };
+  setTimeout(() => loadFavorites(), 200);
+}
+
+// Keep your existing keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+  if (event.ctrlKey && event.altKey) {
+    const canvas = document.getElementById('layer_canvas_1');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    switch(event.key) {
+      case '1':
+        processHarmony(ctx, 1, canvas, 0, 'Monochromatic');
+        break;
+      case '2':
+        processHarmony(ctx, 1, canvas, 0, 'Analogous');
+        break;
+      case '3':
+        processHarmony(ctx, 1, canvas, 0, 'Complementary');
+        break;
+      case '4':
+        processHarmony(ctx, 1, canvas, 0, 'Split Complementary');
+        break;
+      case '5':
+        processHarmony(ctx, 1, canvas, 0, 'Triadic');
+        break;
+      case '6':
+        processHarmony(ctx, 1, canvas, 0, 'Tetradic');
+        break;
+      case '7':
+        processHarmony(ctx, 1, canvas, 0, 'Square');
+        break;
+    }
+  }
+});
 
 // Function to regenerate a specific harmony palette
 async function regenerateHarmonyPalette(paletteIndex, harmonyType) {
