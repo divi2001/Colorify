@@ -347,13 +347,15 @@ class PaymentTransaction(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
     payment_gateway_reference = models.CharField(max_length=255, blank=True, null=True)
-    payment_method = models.CharField(max_length=50, default='PayU')
+    payment_method = models.CharField(max_length=50, default='Razorpay')
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        ordering = ['-created_at']
+
+    # Razorpay specific fields
+    razorpay_order_id = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
 
     referral_code = models.ForeignKey(
         ReferralCode,
@@ -362,14 +364,9 @@ class PaymentTransaction(models.Model):
         blank=True,
         related_name='transactions'
     )
-
-    # Add these new fields for Razorpay
-    razorpay_order_id = models.CharField(max_length=255, blank=True, null=True)
-    razorpay_payment_id = models.CharField(max_length=255, blank=True, null=True)
-    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
     
-    # Update payment_method default
-    payment_method = models.CharField(max_length=50, default='Razorpay')
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.user.username} - {self.transaction_id} - {self.status}"
