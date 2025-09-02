@@ -13,6 +13,26 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Security settings for production
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_TZ = True
+
+# CSRF settings for production
+CSRF_TRUSTED_ORIGINS = [
+    'https://colorifystudio.ai',
+    'https://www.colorifystudio.ai',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://localhost',
+    'http://127.0.0.1',
+]
+
+# Additional CSRF settings
+CSRF_COOKIE_AGE = 31449600  # 1 year
+CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
+CSRF_COOKIE_DOMAIN = None  # Allow all subdomains
+CSRF_USE_SESSIONS = False  # Use cookies instead of sessions for CSRF
+
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1000 * 1024 * 1024  # 100MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5000 * 1024 * 1024   # 50MB
 
@@ -319,9 +339,14 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Default backend
 SESSION_CACHE_ALIAS = 'default'
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SECURE = False  # Set to True for production
+SESSION_COOKIE_SECURE = True  # Set to True for production (HTTPS)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
+
+# CSRF settings for security
+CSRF_COOKIE_SECURE = True  # Only send CSRF cookies over HTTPS
+CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookie
+CSRF_COOKIE_SAMESITE = 'Lax'
 ACCOUNT_SESSION_REMEMBER = True
 
 # Cache settings
