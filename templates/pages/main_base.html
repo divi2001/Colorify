@@ -770,24 +770,24 @@
           </div>
 
           <!-- Navigation Links -->
-<div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
-    <a href="{% url 'home' %}"
-       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Home</a>
-    <a href="{% url 'about' %}"
-       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">About us</a>
-    <a href="{% url 'plans' %}"
-       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Pricing</a>
-    <a href="{% url 'contact' %}"
-       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact us</a>
+          <div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
+              <a href="{% url 'home' %}"
+                class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Home</a>
+              <a href="{% url 'about' %}"
+                class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">About us</a>
+              <a href="{% url 'plans' %}"
+                class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Pricing</a>
+              <a href="{% url 'contact' %}"
+                class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact us</a>
 
-    {% if user.is_authenticated %}
-        <a href="{% url 'account_logout' %}"
-           class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
-    {% else %}
-        <a href="{% url 'account_login' %}"
-           class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Login</a>
-    {% endif %}
-</div>
+              {% if user.is_authenticated %}
+                  <a href="{% url 'account_logout' %}"
+                    class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+              {% else %}
+                  <a href="{% url 'account_login' %}"
+                    class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Login</a>
+              {% endif %}
+          </div>
 
           <!-- Mobile menu button -->
           <div class="md:hidden">
@@ -1769,7 +1769,7 @@
     </div>
   </div>
   <!-- Horizontal Divider and Credits -->
-  <!-- <div class="mt-8 pt-6">
+  <div class="mt-8 pt-6">
     <div class="flex items-center justify-between">
       <div class="flex-1 border-t border-white/30"></div>
       <div class="flex items-center gap-3 px-6">
@@ -1777,7 +1777,7 @@
         <img src="{% static 'images/3minds.png' %}" alt="3 Minds Digital" class="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
       </div>
     </div>
-  </div> -->
+  </div>
 </footer>
  
   {% block extra_js %}{% endblock %}
