@@ -685,7 +685,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {% for i in "0123456789" %}
               <div class="layer-toggle-item d-flex flex-column gap-2">
                   <div id="aw_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
-                  <div class="d-flex align-items-center justify-content-between w-100">
+                  
                       <button type="button" 
                               id="aw_fav_btn_{{ forloop.counter0 }}" 
                               class="btn favorite-btn"
@@ -695,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
                           <i class="bi bi-star"></i>
                           <span class="fav-count">0</span>
                       </button>
-                  </div>
+                  
               </div>
           {% endfor %}
       {% else %}
