@@ -125,16 +125,17 @@ function renderMockups(mockups) {
             imageSrc = mockup.image_data_url;
         }
         
-        mockupItem.innerHTML = `
-            <img src="${imageSrc}" alt="${mockup.name}" 
-                 style="max-width: 100%; height: auto;"
-                 onload="console.log('✓ Image loaded:', '${mockup.name}')"
-                 onerror="console.error('✗ Image failed:', '${mockup.name}'); this.src='/static/images/placeholder.png'">
-            <div class="mockup-info">
-                <span class="mockup-name">${mockup.name}</span>
-                <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
-            </div>
-        `;
+mockupItem.innerHTML = `
+    <img src="${imageSrc}" alt="${mockup.name}" 
+         style="max-width: 100%; height: auto;"
+         onload="console.log('✓ Image loaded:', '${mockup.name}')"
+         onerror="console.error('✗ Image failed:', '${mockup.name}'); this.src='/static/images/placeholder.png'">
+    <div class="mockup-info">
+        <span class="mockup-name">${mockup.name}</span><br>
+        <button class="btn btn-sm btn-primary apply-mockup-btn">Apply</button>
+    </div>
+`;
+
         
         mockupsGrid.appendChild(mockupItem);
     });
@@ -384,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <hr />
             <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
               {% if layers|length == 1 %}
-              {% for i in "0123456789012345678901234567890123456789" %}
+              {% for i in "01234567890123456789012345678901234" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="trending_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                           <button type="button" 
@@ -602,7 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <hr />
       <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
           {% if layers|length == 1 %}
-              {% for i in "0123456789012345678901234567890123456789" %}
+              {% for i in "01234567890123456789012345678901234" %}
                   <div class="layer-toggle-item d-flex flex-column gap-2">
                       <div id="ss_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                     
@@ -682,7 +683,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       {% if layers|length == 1 %}
-          {% for i in "0123456789012345678901234567890123456789" %}
+          {% for i in "01234567890123456789012345678901234" %}
               <div class="layer-toggle-item d-flex flex-column gap-2">
                   <div id="aw_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
                   
@@ -2862,7 +2863,7 @@ function loadInspirationContent() {
                                 <span class="pdf-name">${pdf.title}</span>
                                 <div class="pdf-actions">
                                     <button class="btn btn-sm btn-primary download-btn" onclick="downloadPDF(${pdf.id}, '${pdf.title}')">
-                                        <i class="bi bi-download"></i> Download
+                                        <i class="bi bi-download"></i>
                                     </button>
                                 </div>
                             </div>
@@ -8462,9 +8463,10 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     // ADD STAR BUTTON (this was missing!)
     const starButton = document.createElement('div');
     starButton.classList.add('palette-star-btn');
+    starButton.style.display = 'none';
     starButton.innerHTML = '★'; // Filled star since this IS a favorite
     starButton.title = 'Remove from favorites';
-    starButton.style.backgroundColor = 'rgba(255, 215, 0, 0.9)'; // Gold background
+    starButton.style.backgroundColor = 'rgba(252, 252, 252, 0.9)'; // Gold background
     starButton.style.color = '#fff';
     clickableContainer.appendChild(starButton);
     
@@ -8577,7 +8579,7 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     showAllButton.classList.add('show-all-colors-btn');
     showAllButton.innerHTML = '+';
     showAllButton.title = 'Show all colors in this favorite palette';
-    showAllButton.style.backgroundColor = 'rgba(255, 215, 0, 0.9)';
+    showAllButton.style.backgroundColor = 'rgba(252, 252, 252, 0.9)';
     clickableContainer.appendChild(showAllButton);
     
     showAllButton.addEventListener('click', function(e) {
@@ -8618,7 +8620,7 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
             }
             
             .palette-star-btn.favorited {
-                background-color: rgba(255, 215, 0, 0.9);
+                background-color: rgba(252, 252, 252, 0.9);
                 color: #fff;
             }
             
@@ -9424,7 +9426,7 @@ function generateMatchingColor(sourceColor, targetHueRange) {
     if (!range) {
         return hslToRgb(Math.random() * 360, sourceS, sourceL);
     }
-    
+    loadFavorites()
     // Generate hue within the target family range
     let newHue;
     if (targetHueRange === 'red' && range[0] > range[1]) {
@@ -9496,7 +9498,7 @@ function generateDiversePalettes(baseColors, collection = 'trending') {
             maxSaturation: 90,
             minLightness: 30,
             maxLightness: 85,
-            preferredFamilies: ['red', 'orange', 'yellow', 'cyan', 'blue', 'purple', 'pink'] // GREEN LIMITED
+            preferredFamilies: ['red', 'orange', 'green', 'yellow', 'cyan', 'blue', 'purple', 'pink'] // GREEN LIMITED
         }
     };
     

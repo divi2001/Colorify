@@ -1008,14 +1008,13 @@
             object-fit: cover;
             display: block;
         }
-        
-        .mockup-info {
-            padding: 10px;
-            background: #f8f9fa;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+ .mockup-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;  /* optional: center align text + button */
+    gap: 0.5rem;          /* space between name and button */
+    margin-top: 0.5rem;   /* little spacing above info section */
+}
         
         .mockup-name {
             font-size: 14px;

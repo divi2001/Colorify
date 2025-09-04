@@ -1227,7 +1227,7 @@ def is_color_fill_layer(layer):
         return False
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
-def extract_layers(file_path, output_dir, output_format='PNG', quality=100, display_max_dimension=2000, optimize=True):
+def extract_layers(file_path, output_dir, output_format='PNG', quality=100, display_max_dimension=3000, optimize=True):
     """
     Extract layers from image files - simplified and robust version
     """
@@ -1259,11 +1259,11 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
     
     # Adjust display size for large files
     if file_size_mb > 50:
-        display_max_dimension = 800
+        display_max_dimension = display_max_dimension
     elif file_size_mb > 100:
-        display_max_dimension = 600
+        display_max_dimension = display_max_dimension
     elif file_size_mb > 200:
-        display_max_dimension = 400
+        display_max_dimension = display_max_dimension
     
     print(f"🔍 EXTRACT_LAYERS: Max display dimension: {display_max_dimension}")
     
