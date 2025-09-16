@@ -8893,14 +8893,14 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         
         // FIXED: Generate diverse palettes ONCE and reuse them
         const diversePalettes = generateDiversePalettes(validatedColors,collection);
-        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 20)];
+        allPalettes = [...allPalettes, ...diversePalettes.slice(0, 25)];
         
         // Initialize the storage if needed BEFORE creating containers
         window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
         window[`${collection}PaletteHueShifted`] = window[`${collection}PaletteHueShifted`] || {};
         
         // STORE ALL PALETTES FIRST before creating UI
-        for (let i = 0; i < 35; i++) {
+        for (let i = 0; i < 30; i++) {
             let paletteColors = allPalettes[i % allPalettes.length];
             
             // Verify that all colors are valid
@@ -9311,45 +9311,103 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
     }
     
     // NEW: Function to generate hue-shifted palettes for first 5 palettes
-    function generateHueShiftedPalettes(originalColors, collection) {
-        const hueShiftedPalettes = [];
-        
-        // Define hue shifts for first 5 palettes
-        const hueShifts = [
-            60,   // Palette 0: +60 degrees (more yellow/green)
-            120,  // Palette 1: +120 degrees (complementary)
-            180,  // Palette 2: +180 degrees (opposite)
-            240,  // Palette 3: +240 degrees (triadic)
-            300   // Palette 4: +300 degrees (triadic)
-        ];
-        
-        for (let i = 0; i < 5; i++) {
-            const hueShift = hueShifts[i];
-            const shiftedPalette = originalColors.map(color => {
-                const [h, s, l] = rgbToHsl(...color);
-                let newHue = (h + hueShift) % 360;
-                let newSat = s;
-                let newLight = l;
-                
-                // Apply collection-specific adjustments
-                if (collection === 'ss') {
-                    // SS: Brighter, more vibrant
-                    newSat = Math.min(100, s * 1.2);
-                    newLight = Math.min(90, Math.max(40, l * 1.1));
-                } else if (collection === 'aw') {
-                    // AW: More muted, darker
-                    newSat = Math.max(20, s * 0.8);
-                    newLight = Math.min(80, Math.max(25, l * 0.9));
-                }
-                
-                return hslToRgb(newHue, newSat, newLight);
-            });
-            
-            hueShiftedPalettes.push(shiftedPalette);
-        }
-        
-        return hueShiftedPalettes;
-    }
+    // NEW: Function to generate hue-shifted palettes - now 10 palettes with different sequences per collection
+    // NEW: Function to generate hue-shifted palettes - now 10 palettes with different sequences per collection
+  function generateHueShiftedPalettes(originalColors, collection) {
+      const hueShiftedPalettes = [];
+      
+      // Define different hue shift sequences for each collection
+      let hueShifts;
+      
+      if (collection === 'trending') {
+          // Trending: Classic color theory shifts
+          hueShifts = [
+              30,   // Palette 0: +30 degrees (analogous warm)
+              90,   // Palette 1: +90 degrees (triadic)
+              150,  // Palette 2: +150 degrees (split-complementary)
+              210,  // Palette 3: +210 degrees (triadic cool)
+              270,  // Palette 4: +270 degrees (split-complementary)
+              45,   // Palette 5: +45 degrees (analogous)
+              135,  // Palette 6: +135 degrees (triadic warm)
+              180,  // Palette 7: +180 degrees (complementary)
+              225,  // Palette 8: +225 degrees (triadic)
+              315   // Palette 9: +315 degrees (analogous cool)
+          ];
+      } else if (collection === 'ss') {
+          // SS (Spring/Summer): Vibrant, energetic shifts
+          hueShifts = [
+              60,   // Palette 0: +60 degrees (yellow-green shift)
+              120,  // Palette 1: +120 degrees (green shift)
+              25,   // Palette 2: +25 degrees (coral shift)
+              160,  // Palette 3: +160 degrees (cyan shift)
+              290,  // Palette 4: +290 degrees (magenta shift)
+              80,   // Palette 5: +80 degrees (lime shift)
+              200,  // Palette 6: +200 degrees (sky blue shift)
+              340,  // Palette 7: +340 degrees (pink shift)
+              100,  // Palette 8: +100 degrees (spring green)
+              260   // Palette 9: +260 degrees (violet shift)
+          ];
+      } else if (collection === 'aw') {
+          // AW (Autumn/Winter): Sophisticated, muted shifts
+          hueShifts = [
+              180,  // Palette 0: +180 degrees (complementary)
+              240,  // Palette 1: +240 degrees (cool triadic)
+              300,  // Palette 2: +300 degrees (purple shift)
+              15,   // Palette 3: +15 degrees (warm red shift)
+              195,  // Palette 4: +195 degrees (blue shift)
+              330,  // Palette 5: +330 degrees (burgundy shift)
+              165,  // Palette 6: +165 degrees (teal shift)
+              285,  // Palette 7: +285 degrees (plum shift)
+              210,  // Palette 8: +210 degrees (navy shift)
+              345   // Palette 9: +345 degrees (wine shift)
+          ];
+      }
+      
+      for (let i = 0; i < 10; i++) { // Changed from 5 to 10
+          const hueShift = hueShifts[i];
+          const shiftedPalette = originalColors.map(color => {
+              const [h, s, l] = rgbToHsl(...color);
+              let newHue = (h + hueShift) % 360;
+              let newSat = s;
+              let newLight = l;
+              
+              // Apply collection-specific adjustments with more variation
+              if (collection === 'ss') {
+                  // SS: Brighter, more vibrant with extra saturation boost
+                  newSat = Math.min(100, s * (1.3 + Math.random() * 0.3)); // More variation
+                  newLight = Math.min(85, Math.max(45, l * (1.15 + Math.random() * 0.15)));
+                  
+                  // Add some extra hue variation for SS to make it more energetic
+                  newHue = (newHue + (Math.random() - 0.5) * 15) % 360;
+                  if (newHue < 0) newHue += 360;
+                  
+              } else if (collection === 'aw') {
+                  // AW: More muted, sophisticated with depth variation
+                  newSat = Math.max(15, s * (0.7 + Math.random() * 0.2)); // More variation
+                  newLight = Math.min(75, Math.max(20, l * (0.85 + Math.random() * 0.2)));
+                  
+                  // Add subtle hue variation for AW sophistication
+                  newHue = (newHue + (Math.random() - 0.5) * 10) % 360;
+                  if (newHue < 0) newHue += 360;
+                  
+              } else {
+                  // Trending: Balanced with moderate variation
+                  newSat = Math.max(25, Math.min(95, s * (0.95 + Math.random() * 0.2)));
+                  newLight = Math.max(30, Math.min(80, l * (0.98 + Math.random() * 0.15)));
+                  
+                  // Small hue variation for trending
+                  newHue = (newHue + (Math.random() - 0.5) * 8) % 360;
+                  if (newHue < 0) newHue += 360;
+              }
+              
+              return hslToRgb(newHue, newSat, newLight);
+          });
+          
+          hueShiftedPalettes.push(shiftedPalette);
+      }
+      
+      return hueShiftedPalettes;
+  }
     
     // Function to determine if a color is a background color (light/neutral)
     function isBackgroundColor(color) {
@@ -9459,210 +9517,210 @@ function generateMatchingColor(sourceColor, targetHueRange) {
 }
     // Generate diverse palettes by replacing color families
     // Generate diverse palettes by replacing color families
-function generateDiversePalettes(baseColors, collection = 'trending') {
-    const palettes = [];
-    
-    // Group base colors by families
-    const baseFamilies = groupColorsByFamily(baseColors);
-    const availableFamilyNames = Object.keys(baseFamilies);
-    
-    // All possible target families - REDUCED GREEN PRESENCE
-    const warmFamilies = ['red', 'orange', 'yellow', 'pink'];
-    const coolFamilies = ['cyan', 'blue', 'purple','green','yellow']; // REMOVED GREEN from cool families
-    const allFamilies = [...warmFamilies, ...coolFamilies];
-    
-    // Collection-specific adjustments - REDUCE GREEN GENERATION
-    const collectionSettings = {
-        'ss': {
-            saturationMultiplier: 1.3,
-            lightnessMultiplier: 1.2,
-            minSaturation: 70,
-            maxSaturation: 100,
-            minLightness: 50,
-            maxLightness: 95,
-            preferredFamilies: ['cyan', 'yellow', 'pink', 'orange', 'red', 'blue', 'purple'] // NO GREEN
-        },
-        'aw': {
-            saturationMultiplier: 0.7,
-            lightnessMultiplier: 0.85,
-            minSaturation: 15,
-            maxSaturation: 70,
-            minLightness: 20,
-            maxLightness: 70,
-            preferredFamilies: ['purple', 'blue', 'red', 'orange', 'pink', 'cyan'] // NO GREEN
-        },
-        'trending': {
-            saturationMultiplier: 1.0,
-            lightnessMultiplier: 1.0,
-            minSaturation: 30,
-            maxSaturation: 90,
-            minLightness: 30,
-            maxLightness: 85,
-            preferredFamilies: ['red', 'orange', 'green', 'yellow', 'cyan', 'blue', 'purple', 'pink'] // GREEN LIMITED
-        }
-    };
-    
-    const settings = collectionSettings[collection] || collectionSettings.trending;
-    
-    // Generate 20 unique palettes with REDUCED GREEN
-    for (let i = 0; i < 40; i++) {
-        const newPalette = [];
-        const familyMapping = {};
-        const usedTargetFamilies = new Set();
-        
-        // For each original family, assign a new target family
-        availableFamilyNames.forEach((originalFamily, index) => {
-            let targetFamily;
-            
-            // SPECIAL HANDLING FOR GREEN - REPLACE IT MORE AGGRESSIVELY
-            if (originalFamily === 'green') {
-                // Only allow green in 20% of cases for trending, 10% for others
-                const greenChance = collection === 'trending' ? 0.2 : 0.1;
-                if (Math.random() < greenChance) {
-                    targetFamily = 'green';
-                } else {
-                    // Replace green with other colors
-                    const greenReplacements = collection === 'ss' 
-                        ? ['cyan', 'blue', 'yellow'] 
-                        : collection === 'aw' 
-                            ? ['purple', 'blue', 'red'] 
-                            : ['cyan', 'blue', 'purple'];
-                    targetFamily = greenReplacements[Math.floor(Math.random() * greenReplacements.length)];
-                }
-            } else {
-                // Normal replacement for other colors
-                targetFamily = getCollectionSpecificFamily(collection, i, index, settings.preferredFamilies, usedTargetFamilies, originalFamily);
-            }
-            
-            familyMapping[originalFamily] = targetFamily;
-            usedTargetFamilies.add(targetFamily);
-        });
-        
-        // Generate new colors with collection-specific adjustments
-        baseColors.forEach((originalColor, colorIndex) => {
-            const originalFamily = getColorFamily(originalColor);
-            const targetFamily = familyMapping[originalFamily] || settings.preferredFamilies[0];
-            
-            let newColor = generateMatchingColor(originalColor, targetFamily);
-            let [h, s, l] = rgbToHsl(...newColor);
-            
-            // PREVENT OLIVE GREEN (low saturation yellow-green)
-            if (targetFamily === 'green') {
-                // Force green to be more vibrant, less olive-like
-                s = Math.max(60, s); // Minimum saturation for green
-                // Shift hue away from olive range (75-85 is olive territory)
-                if (h >= 75 && h < 85) {
-                    h = h < 80 ? 70 : 90; // Push to brighter green or yellow-green
-                }
-            }
-            
-            const variations = getCollectionVariations(collection, i, colorIndex);
-            
-            // Apply adjustments and variations
-            s = Math.max(settings.minSaturation, Math.min(settings.maxSaturation, 
-                s * settings.saturationMultiplier + variations.sat));
-            l = Math.max(settings.minLightness, Math.min(settings.maxLightness, 
-                l * settings.lightnessMultiplier + variations.light));
-            
-            const newHue = (h + variations.hue + 360) % 360;
-            
-            // Background color handling
-            if (isBackgroundColor(originalColor)) {
-                if (collection === 'ss') {
-                    newColor = hslToRgb(newHue, Math.min(20, s), Math.max(92, l));
-                } else if (collection === 'aw') {
-                    newColor = hslToRgb(newHue, Math.min(15, s), Math.min(70, Math.max(60, l)));
-                } else {
-                    newColor = hslToRgb(newHue, Math.min(20, s), Math.max(85, l));
-                }
-            } else {
-                newColor = hslToRgb(newHue, s, l);
-            }
-            
-            newPalette.push(newColor);
-        });
-        
-        palettes.push(newPalette);
-    }
-    
-    return palettes;
-}
+  function generateDiversePalettes(baseColors, collection = 'trending') {
+      const palettes = [];
+      
+      // Group base colors by families
+      const baseFamilies = groupColorsByFamily(baseColors);
+      const availableFamilyNames = Object.keys(baseFamilies);
+      
+      // All possible target families - REDUCED GREEN PRESENCE
+      const warmFamilies = ['red', 'orange', 'yellow', 'pink'];
+      const coolFamilies = ['cyan', 'blue', 'purple','green','yellow']; // REMOVED GREEN from cool families
+      const allFamilies = [...warmFamilies, ...coolFamilies];
+      
+      // Collection-specific adjustments - REDUCE GREEN GENERATION
+      const collectionSettings = {
+          'ss': {
+              saturationMultiplier: 1.3,
+              lightnessMultiplier: 1.2,
+              minSaturation: 70,
+              maxSaturation: 100,
+              minLightness: 50,
+              maxLightness: 95,
+              preferredFamilies: ['cyan', 'yellow', 'pink', 'orange', 'red', 'blue', 'purple'] // NO GREEN
+          },
+          'aw': {
+              saturationMultiplier: 0.7,
+              lightnessMultiplier: 0.85,
+              minSaturation: 15,
+              maxSaturation: 70,
+              minLightness: 20,
+              maxLightness: 70,
+              preferredFamilies: ['purple', 'blue', 'red', 'orange', 'pink', 'cyan'] // NO GREEN
+          },
+          'trending': {
+              saturationMultiplier: 1.0,
+              lightnessMultiplier: 1.0,
+              minSaturation: 30,
+              maxSaturation: 90,
+              minLightness: 30,
+              maxLightness: 85,
+              preferredFamilies: ['red', 'orange', 'green', 'yellow', 'cyan', 'blue', 'purple', 'pink'] // GREEN LIMITED
+          }
+      };
+      
+      const settings = collectionSettings[collection] || collectionSettings.trending;
+      
+      // Generate 20 unique palettes with REDUCED GREEN
+      for (let i = 0; i < 40; i++) {
+          const newPalette = [];
+          const familyMapping = {};
+          const usedTargetFamilies = new Set();
+          
+          // For each original family, assign a new target family
+          availableFamilyNames.forEach((originalFamily, index) => {
+              let targetFamily;
+              
+              // SPECIAL HANDLING FOR GREEN - REPLACE IT MORE AGGRESSIVELY
+              if (originalFamily === 'green') {
+                  // Only allow green in 20% of cases for trending, 10% for others
+                  const greenChance = collection === 'trending' ? 0.2 : 0.1;
+                  if (Math.random() < greenChance) {
+                      targetFamily = 'green';
+                  } else {
+                      // Replace green with other colors
+                      const greenReplacements = collection === 'ss' 
+                          ? ['cyan', 'blue', 'yellow'] 
+                          : collection === 'aw' 
+                              ? ['purple', 'blue', 'red'] 
+                              : ['cyan', 'blue', 'purple'];
+                      targetFamily = greenReplacements[Math.floor(Math.random() * greenReplacements.length)];
+                  }
+              } else {
+                  // Normal replacement for other colors
+                  targetFamily = getCollectionSpecificFamily(collection, i, index, settings.preferredFamilies, usedTargetFamilies, originalFamily);
+              }
+              
+              familyMapping[originalFamily] = targetFamily;
+              usedTargetFamilies.add(targetFamily);
+          });
+          
+          // Generate new colors with collection-specific adjustments
+          baseColors.forEach((originalColor, colorIndex) => {
+              const originalFamily = getColorFamily(originalColor);
+              const targetFamily = familyMapping[originalFamily] || settings.preferredFamilies[0];
+              
+              let newColor = generateMatchingColor(originalColor, targetFamily);
+              let [h, s, l] = rgbToHsl(...newColor);
+              
+              // PREVENT OLIVE GREEN (low saturation yellow-green)
+              if (targetFamily === 'green') {
+                  // Force green to be more vibrant, less olive-like
+                  s = Math.max(60, s); // Minimum saturation for green
+                  // Shift hue away from olive range (75-85 is olive territory)
+                  if (h >= 75 && h < 85) {
+                      h = h < 80 ? 70 : 90; // Push to brighter green or yellow-green
+                  }
+              }
+              
+              const variations = getCollectionVariations(collection, i, colorIndex);
+              
+              // Apply adjustments and variations
+              s = Math.max(settings.minSaturation, Math.min(settings.maxSaturation, 
+                  s * settings.saturationMultiplier + variations.sat));
+              l = Math.max(settings.minLightness, Math.min(settings.maxLightness, 
+                  l * settings.lightnessMultiplier + variations.light));
+              
+              const newHue = (h + variations.hue + 360) % 360;
+              
+              // Background color handling
+              if (isBackgroundColor(originalColor)) {
+                  if (collection === 'ss') {
+                      newColor = hslToRgb(newHue, Math.min(20, s), Math.max(92, l));
+                  } else if (collection === 'aw') {
+                      newColor = hslToRgb(newHue, Math.min(15, s), Math.min(70, Math.max(60, l)));
+                  } else {
+                      newColor = hslToRgb(newHue, Math.min(20, s), Math.max(85, l));
+                  }
+              } else {
+                  newColor = hslToRgb(newHue, s, l);
+              }
+              
+              newPalette.push(newColor);
+          });
+          
+          palettes.push(newPalette);
+      }
+      
+      return palettes;
+  }
 
 
-function getCollectionSpecificFamily(collection, paletteIndex, colorIndex, familyPool, usedFamilies, originalFamily) {
-    let targetFamily;
-    
-    // Create a pool without green for most cases
-    const poolWithoutGreen = familyPool.filter(f => f !== 'green');
-    const effectivePool = Math.random() < 0.8 ? poolWithoutGreen : familyPool; // 80% chance to exclude green
-    
-    const poolIndex = effectivePool.indexOf(originalFamily);
-    const totalFamilies = effectivePool.length;
-    
-    if (collection === 'ss') {
-        // SS: Bright families, avoid green
-        const strategies = [
-            () => effectivePool[(poolIndex + 2) % totalFamilies],
-            () => effectivePool[(poolIndex + 3) % totalFamilies],
-            () => effectivePool[(poolIndex + 4) % totalFamilies],
-            () => ['cyan', 'yellow', 'pink'][colorIndex % 3]
-        ];
-        targetFamily = strategies[paletteIndex % strategies.length]();
-    } 
-    else if (collection === 'aw') {
-        // AW: Rich families, avoid green
-        const strategies = [
-            () => originalFamily,
-            () => effectivePool[(poolIndex + 1) % totalFamilies],
-            () => effectivePool[(poolIndex - 1 + totalFamilies) % totalFamilies],
-            () => ['purple', 'blue', 'red'][colorIndex % 3]
-        ];
-        targetFamily = strategies[paletteIndex % strategies.length]();
-    } 
-    else {
-        // Trending: Mixed approach with limited green
-        if (paletteIndex < 10) {
-            targetFamily = effectivePool[(poolIndex + paletteIndex) % totalFamilies];
-        } else {
-            targetFamily = effectivePool[(poolIndex * 2 + paletteIndex) % totalFamilies];
-        }
-    }
-    
-    // Ensure unique families in palette
-    let attempts = 0;
-    while (usedFamilies.has(targetFamily) && attempts < totalFamilies * 2) {
-        targetFamily = effectivePool[(effectivePool.indexOf(targetFamily) + 1) % totalFamilies];
-        attempts++;
-    }
-    
-    return targetFamily;
-}
+  function getCollectionSpecificFamily(collection, paletteIndex, colorIndex, familyPool, usedFamilies, originalFamily) {
+      let targetFamily;
+      
+      // Create a pool without green for most cases
+      const poolWithoutGreen = familyPool.filter(f => f !== 'green');
+      const effectivePool = Math.random() < 0.8 ? poolWithoutGreen : familyPool; // 80% chance to exclude green
+      
+      const poolIndex = effectivePool.indexOf(originalFamily);
+      const totalFamilies = effectivePool.length;
+      
+      if (collection === 'ss') {
+          // SS: Bright families, avoid green
+          const strategies = [
+              () => effectivePool[(poolIndex + 2) % totalFamilies],
+              () => effectivePool[(poolIndex + 3) % totalFamilies],
+              () => effectivePool[(poolIndex + 4) % totalFamilies],
+              () => ['cyan', 'yellow', 'pink'][colorIndex % 3]
+          ];
+          targetFamily = strategies[paletteIndex % strategies.length]();
+      } 
+      else if (collection === 'aw') {
+          // AW: Rich families, avoid green
+          const strategies = [
+              () => originalFamily,
+              () => effectivePool[(poolIndex + 1) % totalFamilies],
+              () => effectivePool[(poolIndex - 1 + totalFamilies) % totalFamilies],
+              () => ['purple', 'blue', 'red'][colorIndex % 3]
+          ];
+          targetFamily = strategies[paletteIndex % strategies.length]();
+      } 
+      else {
+          // Trending: Mixed approach with limited green
+          if (paletteIndex < 10) {
+              targetFamily = effectivePool[(poolIndex + paletteIndex) % totalFamilies];
+          } else {
+              targetFamily = effectivePool[(poolIndex * 2 + paletteIndex) % totalFamilies];
+          }
+      }
+      
+      // Ensure unique families in palette
+      let attempts = 0;
+      while (usedFamilies.has(targetFamily) && attempts < totalFamilies * 2) {
+          targetFamily = effectivePool[(effectivePool.indexOf(targetFamily) + 1) % totalFamilies];
+          attempts++;
+      }
+      
+      return targetFamily;
+  }
 
-// Collection-specific variation patterns - BRIGHTER FOR SS
-function getCollectionVariations(collection, paletteIndex, colorIndex) {
-    if (collection === 'ss') {
-        // SS: More positive variations for brightness
-        return {
-            hue: ((paletteIndex * 17 + colorIndex * 5) % 30 - 15),
-            sat: Math.max(0, ((paletteIndex * 7 + colorIndex * 3) % 15 - 5)), // Less saturation reduction
-            light: Math.max(0, ((paletteIndex * 9 + colorIndex * 2) % 15 - 5)) // Less lightness reduction
-        };
-    } 
-    else if (collection === 'aw') {
-        return {
-            hue: ((paletteIndex * 7 + colorIndex * 3) % 16 - 8),
-            sat: ((paletteIndex * 5 + colorIndex * 2) % 12 - 6),
-            light: ((paletteIndex * 4 + colorIndex * 2) % 10 - 5)
-        };
-    } 
-    else {
-        return {
-            hue: ((paletteIndex * 15 + colorIndex * 5) % 30 - 15),
-            sat: ((paletteIndex * 8 + colorIndex * 3) % 20 - 10),
-            light: ((paletteIndex * 6 + colorIndex * 2) % 16 - 8)
-        };
-    }
-}
+  // Collection-specific variation patterns - BRIGHTER FOR SS
+  function getCollectionVariations(collection, paletteIndex, colorIndex) {
+      if (collection === 'ss') {
+          // SS: More positive variations for brightness
+          return {
+              hue: ((paletteIndex * 17 + colorIndex * 5) % 30 - 15),
+              sat: Math.max(0, ((paletteIndex * 7 + colorIndex * 3) % 15 - 5)), // Less saturation reduction
+              light: Math.max(0, ((paletteIndex * 9 + colorIndex * 2) % 15 - 5)) // Less lightness reduction
+          };
+      } 
+      else if (collection === 'aw') {
+          return {
+              hue: ((paletteIndex * 7 + colorIndex * 3) % 16 - 8),
+              sat: ((paletteIndex * 5 + colorIndex * 2) % 12 - 6),
+              light: ((paletteIndex * 4 + colorIndex * 2) % 10 - 5)
+          };
+      } 
+      else {
+          return {
+              hue: ((paletteIndex * 15 + colorIndex * 5) % 30 - 15),
+              sat: ((paletteIndex * 8 + colorIndex * 3) % 20 - 10),
+              light: ((paletteIndex * 6 + colorIndex * 2) % 16 - 8)
+          };
+      }
+  }
     // Calculate color difference using CIEDE2000 simplified version
     function colorDifference(rgb1, rgb2) {
       // Convert to HSL for a perceptually better difference calculation
