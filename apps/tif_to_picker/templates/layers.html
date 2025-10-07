@@ -306,12 +306,65 @@ document.addEventListener('DOMContentLoaded', function() {
               <span class="textSpan">Favourite</span>
             </a>
           </li>  
-          <li>
-            <a href="#" id="harmonyButton">
-              <i class="bi bi-palette2 mx-1"></i>
-              <span class="textSpan">Harmony</span>
-            </a>
-          </li>
+<li id="harmonyButtonContainer">
+    <a href="#" id="harmonyButton">
+        <i class="bi bi-palette2 mx-1"></i>
+        <span class="textSpan">Harmony</span>
+    </a>
+</li>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateHarmonyButton() {
+        try {
+            const mlLabels = JSON.parse(localStorage.getItem('mlLabels') || '{}');
+            const shouldDisable = mlLabels.layer_1 === "0";
+            
+            const harmonyButton = document.getElementById('harmonyButton');
+            const harmonyContainer = document.getElementById('harmonyButtonContainer');
+            
+            if (shouldDisable) {
+                // Disable the button
+                harmonyButton.style.pointerEvents = 'none';
+                harmonyButton.style.opacity = '0.5';
+                harmonyButton.style.cursor = 'not-allowed';
+                harmonyContainer.classList.add('disabled');
+                
+                // Remove href to prevent navigation
+                harmonyButton.removeAttribute('href');
+            } else {
+                // Enable the button
+                harmonyButton.style.pointerEvents = '';
+                harmonyButton.style.opacity = '';
+                harmonyButton.style.cursor = '';
+                harmonyContainer.classList.remove('disabled');
+                
+                // Restore href
+                harmonyButton.setAttribute('href', '#');
+            }
+        } catch (e) {
+            console.error('Error reading localStorage:', e);
+        }
+    }
+    
+    // Initial check
+    updateHarmonyButton();
+    
+    // Listen for localStorage changes
+    window.addEventListener('storage', updateHarmonyButton);
+});
+</script>
+
+<style>
+.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+.disabled a {
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+</style>
           {% comment %} <li>
             <a href="#" id="paletteGeneratorButton">
               <i class="bi bi-eyedropper mx-1"></i>
@@ -383,45 +436,96 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="sidebar-content" id="trendingContent" style="display: none;">
             <h2 class="ms-auto me-auto fw-bold text-center fs-4">Trending Palette</h2>
             <hr />
-            <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
-              {% if layers|length == 1 %}
-              {% for i in "01234567890123456789012345678901234" %}
-                  <div class="layer-toggle-item d-flex flex-column gap-2">
-                      <div id="trending_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
-                          <button type="button" 
-                                  id="trending_fav_btn_{{ forloop.counter0 }}" 
-                                  class="btn favorite-btn {% if is_favorite %}active{% endif %}"
-                                  data-palette-type="TR"
-                                  data-colors-id="{{ forloop.counter0 }}"
-                                  onclick="toggleFavorite(this, 'trending')">
-                              <i class="bi {% if is_favorite %}bi-star-fill{% else %}bi-star{% endif %}"></i>
-                              <span class="fav-count">{{ favorites_count|default:0 }}</span>
-                          </button>
-                  </div>
-              {% endfor %}
-          {% else %}
-          
-                    {% for layer in layers %}
-                        <div class="layer-toggle-item d-flex flex-column gap-2">
-                            <div id="trending_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
-                            <div class="d-flex align-items-center justify-content-between w-100">
-                              
-                                <button type="button" 
-                                        id="trending_fav_btn_{{ forloop.counter }}" 
-                                        class="btn favorite-btn"
-                                        data-palette-type="TR"
-                                        data-colors-id="{{ forloop.counter }}"
-                                        onclick="toggleFavorite(this, 'trending')">
-                                    <i class="bi bi-star"></i>
-                                    <span class="fav-count">0</span>
-                                </button>
-                               
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+<div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
+    {% if layers|length == 1 %}
+        {% for i in "01234" %}
+            <div class="layer-toggle-item d-flex flex-column gap-2" id="trending_palette_container_{{ forloop.counter0 }}">
+                <div id="trending_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
+                <button type="button" 
+                        id="trending_fav_btn_{{ forloop.counter0 }}" 
+                        class="btn favorite-btn {% if is_favorite %}active{% endif %}"
+                        data-palette-type="TR"
+                        data-colors-id="{{ forloop.counter0 }}"
+                        onclick="toggleFavorite(this, 'trending')">
+                    <i class="bi {% if is_favorite %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                    <span class="fav-count">{{ favorites_count|default:0 }}</span>
+                </button>
             </div>
+        {% endfor %}
+        
+        <div id="trending-additional-palettes" style="display: contents;">
+            {% for i in "567890123456789012345678901234" %}
+                <div class="layer-toggle-item d-flex flex-column gap-2" id="trending_palette_container_{{ forloop.counter0|add:5 }}">
+                    <div id="trending_colorPalette_{{ forloop.counter0|add:5 }}" class="color-palette d-flex flex-column"></div>
+                    <button type="button" 
+                            id="trending_fav_btn_{{ forloop.counter0|add:5 }}" 
+                            class="btn favorite-btn {% if is_favorite %}active{% endif %}"
+                            data-palette-type="TR"
+                            data-colors-id="{{ forloop.counter0|add:5 }}"
+                            onclick="toggleFavorite(this, 'trending')">
+                        <i class="bi {% if is_favorite %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                        <span class="fav-count">{{ favorites_count|default:0 }}</span>
+                    </button>
+                </div>
+            {% endfor %}
         </div>
+    {% else %}
+        {% for layer in layers %}
+            <div class="layer-toggle-item d-flex flex-column gap-2">
+                <div id="trending_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <button type="button" 
+                            id="trending_fav_btn_{{ forloop.counter }}" 
+                            class="btn favorite-btn"
+                            data-palette-type="TR"
+                            data-colors-id="{{ forloop.counter }}"
+                            onclick="toggleFavorite(this, 'trending')">
+                        <i class="bi bi-star"></i>
+                        <span class="fav-count">0</span>
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+</div>
+<script>
+// Show/hide additional palettes based on localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    function updatePaletteVisibility() {
+        try {
+            const mlLabels = JSON.parse(localStorage.getItem('mlLabels') || '{}');
+            const shouldShowLimited = mlLabels.layer_1 === "0";
+            
+            // Handle Trending palettes
+            const trendingAdditionalPalettes = document.getElementById('trending-additional-palettes');
+            if (trendingAdditionalPalettes) {
+                trendingAdditionalPalettes.style.display = shouldShowLimited ? 'none' : 'contents';
+            }
+            
+            // Handle SS palettes
+            const ssAdditionalPalettes = document.getElementById('ss-additional-palettes');
+            if (ssAdditionalPalettes) {
+                ssAdditionalPalettes.style.display = shouldShowLimited ? 'none' : 'contents';
+            }
+            
+            // Handle AW palettes
+            const awAdditionalPalettes = document.getElementById('additional-palettes');
+            if (awAdditionalPalettes) {
+                awAdditionalPalettes.style.display = shouldShowLimited ? 'none' : 'contents';
+            }
+        } catch (e) {
+            console.error('Error reading localStorage:', e);
+        }
+    }
+    
+    // Initial check
+    updatePaletteVisibility();
+    
+    // Listen for localStorage changes
+    window.addEventListener('storage', updatePaletteVisibility);
+});
+</script>
     
         <div class="sidebar-content m-4" id="inspirationContent">
           <h2 class="ms-auto me-auto fw-bold text-center fs-4">Inspirations</h2>
@@ -601,44 +705,94 @@ document.addEventListener('DOMContentLoaded', function() {
      <div class="sidebar-content" id="ssCollectionContent" style="display: none;">
       <h2 class="ms-auto me-auto fw-bold text-center fs-4">SS Collection</h2>
       <hr />
-      <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
-          {% if layers|length == 1 %}
-              {% for i in "01234567890123456789012345678901234" %}
-                  <div class="layer-toggle-item d-flex flex-column gap-2">
-                      <div id="ss_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
-                    
-                         
-                          <button type="button" 
-                                  id="ss_fav_btn_{{ forloop.counter0 }}" 
-                                  class="btn favorite-btn"
-                                  data-palette-type="SS"
-                                  data-colors-id="{{ forloop.counter0 }}"
-                                  onclick="toggleFavorite(this, 'ss')">
-                              <i class="bi bi-star"></i>
-                              <span class="fav-count">0</span>
-                          </button>
-                
-                  </div>
-              {% endfor %}
-          {% else %}
-              {% for layer in layers %}
-                  <div class="layer-toggle-item d-flex flex-column gap-2">
-                      <div id="ss_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
-                   
-                          <button type="button" 
-                                  id="ss_fav_btn_{{ forloop.counter }}" 
-                                  class="btn favorite-btn"
-                                  data-palette-type="SS"
-                                  data-colors-id="{{ forloop.counter }}"
-                                  onclick="toggleFavorite(this, 'ss')">
-                              <i class="bi bi-star"></i>
-                              <span class="fav-count">0</span>
-                          </button>
-                      </div>
+<div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
+    {% if layers|length == 1 %}
+        {% for i in "01234" %}
+            <div class="layer-toggle-item d-flex flex-column gap-2" id="ss_palette_container_{{ forloop.counter0 }}">
+                <div id="ss_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
+              
+                <button type="button" 
+                        id="ss_fav_btn_{{ forloop.counter0 }}" 
+                        class="btn favorite-btn"
+                        data-palette-type="SS"
+                        data-colors-id="{{ forloop.counter0 }}"
+                        onclick="toggleFavorite(this, 'ss')">
+                    <i class="bi bi-star"></i>
+                    <span class="fav-count">0</span>
+                </button>
+          
+            </div>
+        {% endfor %}
+        
+        <div id="ss-additional-palettes" style="display: contents;">
+            {% for i in "567890123456789012345678901234" %}
+                <div class="layer-toggle-item d-flex flex-column gap-2" id="ss_palette_container_{{ forloop.counter0|add:5 }}">
+                    <div id="ss_colorPalette_{{ forloop.counter0|add:5 }}" class="color-palette d-flex flex-column"></div>
+                  
+                    <button type="button" 
+                            id="ss_fav_btn_{{ forloop.counter0|add:5 }}" 
+                            class="btn favorite-btn"
+                            data-palette-type="SS"
+                            data-colors-id="{{ forloop.counter0|add:5 }}"
+                            onclick="toggleFavorite(this, 'ss')">
+                        <i class="bi bi-star"></i>
+                        <span class="fav-count">0</span>
+                    </button>
+            
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        {% for layer in layers %}
+            <div class="layer-toggle-item d-flex flex-column gap-2">
+                <div id="ss_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
              
-              {% endfor %}
-          {% endif %}
-      </div>
+                <button type="button" 
+                        id="ss_fav_btn_{{ forloop.counter }}" 
+                        class="btn favorite-btn"
+                        data-palette-type="SS"
+                        data-colors-id="{{ forloop.counter }}"
+                        onclick="toggleFavorite(this, 'ss')">
+                    <i class="bi bi-star"></i>
+                    <span class="fav-count">0</span>
+                </button>
+            </div>
+       
+        {% endfor %}
+    {% endif %}
+</div>
+
+<script>
+// Show/hide additional palettes based on localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    function updatePaletteVisibility() {
+        try {
+            const mlLabels = JSON.parse(localStorage.getItem('mlLabels') || '{}');
+            const shouldShowLimited = mlLabels.layer_1 === "0";
+            
+            // Handle SS palettes
+            const ssAdditionalPalettes = document.getElementById('ss-additional-palettes');
+            if (ssAdditionalPalettes) {
+                ssAdditionalPalettes.style.display = shouldShowLimited ? 'none' : 'contents';
+            }
+            
+            // Handle AW palettes (if you have them)
+            const awAdditionalPalettes = document.getElementById('additional-palettes');
+            if (awAdditionalPalettes) {
+                awAdditionalPalettes.style.display = shouldShowLimited ? 'none' : 'contents';
+            }
+        } catch (e) {
+            console.error('Error reading localStorage:', e);
+        }
+    }
+    
+    // Initial check
+    updatePaletteVisibility();
+    
+    // Listen for localStorage changes
+    window.addEventListener('storage', updatePaletteVisibility);
+});
+</script>
   </div>
   
 
@@ -681,45 +835,115 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="sidebar-content" id="awCollectionContent" style="display: none;">
   <h2 class="ms-auto me-auto fw-bold text-center fs-4">AW Collection</h2>
   <hr />
-  <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
-      {% if layers|length == 1 %}
-          {% for i in "01234567890123456789012345678901234" %}
-              <div class="layer-toggle-item d-flex flex-column gap-2">
-                  <div id="aw_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
-                  
-                      <button type="button" 
-                              id="aw_fav_btn_{{ forloop.counter0 }}" 
-                              class="btn favorite-btn"
-                              data-palette-type="AW"
-                              data-colors-id="{{ forloop.counter0 }}"
-                              onclick="toggleFavorite(this, 'aw')">
-                          <i class="bi bi-star"></i>
-                          <span class="fav-count">0</span>
-                      </button>
-                  
-              </div>
-          {% endfor %}
-      {% else %}
-          {% for layer in layers %}
-              <div class="layer-toggle-item d-flex flex-column gap-2">
-                  <div id="aw_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
-                  <div class="d-flex align-items-center justify-content-between w-100">
-                      <button type="button" 
-                              id="aw_fav_btn_{{ forloop.counter }}" 
-                              class="btn favorite-btn"
-                              data-palette-type="AW"
-                              data-colors-id="{{ forloop.counter }}"
-                              onclick="toggleFavorite(this, 'aw')">
-                          <i class="bi bi-star"></i>
-                          <span class="fav-count">0</span>
-                      </button>
-                  </div>
-              </div>
-          {% endfor %}
-      {% endif %}
-  </div>
+<div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
+    {% if layers|length == 1 %}
+        {% for i in "01234" %}
+            <div class="layer-toggle-item d-flex flex-column gap-2" id="aw_palette_container_{{ forloop.counter0 }}">
+                <div id="aw_colorPalette_{{ forloop.counter0 }}" class="color-palette d-flex flex-column"></div>
+                
+                <button type="button" 
+                        id="aw_fav_btn_{{ forloop.counter0 }}" 
+                        class="btn favorite-btn"
+                        data-palette-type="AW"
+                        data-colors-id="{{ forloop.counter0 }}"
+                        onclick="toggleFavorite(this, 'aw')">
+                    <i class="bi bi-star"></i>
+                    <span class="fav-count">0</span>
+                </button>
+                
+            </div>
+        {% endfor %}
+        
+        <div id="additional-palettes" style="display: contents;">
+            {% for i in "567890123456789012345678901234" %}
+                <div class="layer-toggle-item d-flex flex-column gap-2" id="aw_palette_container_{{ forloop.counter0|add:5 }}">
+                    <div id="aw_colorPalette_{{ forloop.counter0|add:5 }}" class="color-palette d-flex flex-column"></div>
+                    
+                    <button type="button" 
+                            id="aw_fav_btn_{{ forloop.counter0|add:5 }}" 
+                            class="btn favorite-btn"
+                            data-palette-type="AW"
+                            data-colors-id="{{ forloop.counter0|add:5 }}"
+                            onclick="toggleFavorite(this, 'aw')">
+                        <i class="bi bi-star"></i>
+                        <span class="fav-count">0</span>
+                    </button>
+                    
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        {% for layer in layers %}
+            <div class="layer-toggle-item d-flex flex-column gap-2">
+                <div id="aw_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <button type="button" 
+                            id="aw_fav_btn_{{ forloop.counter }}" 
+                            class="btn favorite-btn"
+                            data-palette-type="AW"
+                            data-colors-id="{{ forloop.counter }}"
+                            onclick="toggleFavorite(this, 'aw')">
+                        <i class="bi bi-star"></i>
+                        <span class="fav-count">0</span>
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
 </div>
 
+<script>
+// Show/hide additional palettes based on localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    function updatePaletteVisibility() {
+        try {
+            const mlLabels = JSON.parse(localStorage.getItem('mlLabels') || '{}');
+            const shouldShowLimited = mlLabels.layer_1 === "0";
+            
+            const additionalPalettes = document.getElementById('additional-palettes');
+            if (additionalPalettes) {
+                additionalPalettes.style.display = shouldShowLimited ? 'none' : 'contents';
+            }
+        } catch (e) {
+            console.error('Error reading localStorage:', e);
+        }
+    }
+    
+    // Initial check
+    updatePaletteVisibility();
+    
+    // Listen for localStorage changes
+    window.addEventListener('storage', updatePaletteVisibility);
+});
+</script>
+</div>
+<script>
+// Show/hide palettes based on localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    function updatePaletteVisibility() {
+        try {
+            const mlLabels = JSON.parse(localStorage.getItem('mlLabels') || '{}');
+            const shouldShowLimited = mlLabels.layer_1 === "0";
+            
+            // Show/hide AW palette containers based on localStorage
+            for (let i = 5; i < 35; i++) {
+                const container = document.getElementById(`aw_palette_container_${i}`);
+                if (container) {
+                    container.style.display = shouldShowLimited ? 'none' : '';
+                }
+            }
+        } catch (e) {
+            console.error('Error reading localStorage:', e);
+        }
+    }
+    
+    // Initial check
+    updatePaletteVisibility();
+    
+    // Listen for localStorage changes
+    window.addEventListener('storage', updatePaletteVisibility);
+});
+</script>
 <div class="sidebar-content" id="mockupsContent" style="display: none;">
     <h2 class="ms-auto me-auto fw-bold text-center fs-4">Mockups</h2>
     <div class="mockups-grid">
@@ -785,6 +1009,42 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
+  function storeMlLabelsInLocalStorage() {
+  const layers = document.querySelectorAll('.layer[data-ml-label]');
+  const mlLabels = {};
+  
+  layers.forEach((layer, index) => {
+    const layerId = layer.id;
+    const mlLabel = layer.getAttribute('data-ml-label');
+    
+    if (mlLabel) {
+      mlLabels[layerId] = mlLabel;
+    }
+  });
+  
+  // Store in localStorage
+  localStorage.setItem('mlLabels', JSON.stringify(mlLabels));
+  
+  console.log('ML Labels stored in localStorage:', mlLabels);
+  return mlLabels;
+}
+
+// Function to retrieve ML labels from localStorage
+function getMlLabelsFromLocalStorage() {
+  const storedLabels = localStorage.getItem('mlLabels');
+  return storedLabels ? JSON.parse(storedLabels) : {};
+}
+
+// Function to update a specific ML label
+function updateMlLabel(layerId, newLabel) {
+  const mlLabels = getMlLabelsFromLocalStorage();
+  mlLabels[layerId] = newLabel;
+  localStorage.setItem('mlLabels', JSON.stringify(mlLabels));
+}
+
+// Call this function when the page loads or when you want to store the labels
+storeMlLabelsInLocalStorage();
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('=== TIFF EDITOR: Starting canvas initialization ===');
     
@@ -8884,195 +9144,229 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
           let originalCanvas;
           
     if (totalLayers === 1) {
-        // NEW: Generate special palettes for first 5 (hue-shifted) and regular for the rest
-        let allPalettes = [];
-        
-        // First 5 palettes: Use hue shifting
-        const hueShiftedPalettes = generateHueShiftedPalettes(validatedColors, collection);
-        allPalettes = [...hueShiftedPalettes];
-        
+    // Check localStorage for limited palette mode
+    const shouldShowLimited = (() => {
+        try {
+            const mlLabels = JSON.parse(localStorage.getItem('mlLabels') || '{}');
+            return mlLabels.layer_1 === "0";
+        } catch (e) {
+            return false;
+        }
+    })();
+    
+    // NEW: Generate special palettes for first 5 (hue-shifted) and regular for the rest
+    let allPalettes = [];
+    
+    // First 5 palettes: Use hue shifting
+    const hueShiftedPalettes = generateHueShiftedPalettes(validatedColors, collection);
+    allPalettes = [...hueShiftedPalettes];
+    
+    // Only generate diverse palettes if not in limited mode
+    if (!shouldShowLimited) {
         // FIXED: Generate diverse palettes ONCE and reuse them
         const diversePalettes = generateDiversePalettes(validatedColors,collection);
         allPalettes = [...allPalettes, ...diversePalettes.slice(0, 25)];
+    }
+    
+    // Initialize the storage if needed BEFORE creating containers
+    window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
+    window[`${collection}PaletteHueShifted`] = window[`${collection}PaletteHueShifted`] || {};
+    
+    // Determine how many palettes to create based on mode
+    const maxPalettes = shouldShowLimited ? 5 : 30;
+    
+    // STORE PALETTES FIRST before creating UI
+    for (let i = 0; i < maxPalettes; i++) {
+        let paletteColors = allPalettes[i % allPalettes.length];
         
-        // Initialize the storage if needed BEFORE creating containers
-        window[`${collection}PaletteColors`] = window[`${collection}PaletteColors`] || {};
-        window[`${collection}PaletteHueShifted`] = window[`${collection}PaletteHueShifted`] || {};
+        // Verify that all colors are valid
+        paletteColors = paletteColors.filter(color => 
+            Array.isArray(color) && 
+            color.length === 3 && 
+            color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
+        );
         
-        // STORE ALL PALETTES FIRST before creating UI
-        for (let i = 0; i < 30; i++) {
-            let paletteColors = allPalettes[i % allPalettes.length];
-            
-            // Verify that all colors are valid
-            paletteColors = paletteColors.filter(color => 
-                Array.isArray(color) && 
-                color.length === 3 && 
-                color.every(v => typeof v === 'number' && !isNaN(v) && v >= 0 && v <= 255)
-            );
-            
-            // If somehow we lost all colors, generate new ones
-            if (paletteColors.length === 0) {
-                paletteColors = [];
-                for (let j = 0; j < 9; j++) {
-                    const hue = j * (360 / 9);
-                    paletteColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
-                }
-            }
-            
-            // Store ALL colors in the palette data structure
-            window[`${collection}PaletteColors`][i] = [...paletteColors];
-            
-            // Mark hue-shifted palettes with special flag
-            if (i < 5) {
-                window[`${collection}PaletteHueShifted`][i] = true;
+        // If somehow we lost all colors, generate new ones
+        if (paletteColors.length === 0) {
+            paletteColors = [];
+            for (let j = 0; j < 9; j++) {
+                const hue = j * (360 / 9);
+                paletteColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
             }
         }
         
-        // Initialize preview cache if needed
-        if (!window.palettePreviewCache) {
-            window.palettePreviewCache = {};
-        }
-        if (!window.palettePreviewCache[collection]) {
-            window.palettePreviewCache[collection] = {};
-        }
+        // Store ALL colors in the palette data structure
+        window[`${collection}PaletteColors`][i] = [...paletteColors];
         
-        // Create preview canvases if they don't exist
-        if (!window.previewCanvases) {
-            window.previewCanvases = {};
-            
-            // Generate a smaller version of the original image for preview
-            const originalCanvas = document.getElementById('layer_canvas_1');
-            if (originalCanvas) {
-                const previewCanvas = document.createElement('canvas');
-                previewCanvas.width = 200;
-                previewCanvas.height = 200;
-                const previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
-                
-                // Draw the original image scaled down
-                previewCtx.drawImage(originalCanvas, 0, 0, 200, 200);
-                
-                // Store the preview canvas data URL for future use
-                window.previewCanvases['original'] = previewCanvas.toDataURL();
-            }
+        // Mark hue-shifted palettes with special flag
+        if (i < 5) {
+            window[`${collection}PaletteHueShifted`][i] = true;
         }
+    }
+    
+    // Initialize preview cache if needed
+    if (!window.palettePreviewCache) {
+        window.palettePreviewCache = {};
+    }
+    if (!window.palettePreviewCache[collection]) {
+        window.palettePreviewCache[collection] = {};
+    }
+    
+    // Create preview canvases if they don't exist
+    if (!window.previewCanvases) {
+        window.previewCanvases = {};
         
-        // Create all palette containers
-        const paletteContainers = [];
-        
-        for (let i = 0; i < 35; i++) {
-            const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
-            if (!paletteContainer) continue;
-            
-            paletteContainer.innerHTML = '';
-            
-            // FIXED: Get palette colors from STORED data, not generating new ones
-            const paletteColors = window[`${collection}PaletteColors`][i];
-            
-            if (!paletteColors || paletteColors.length === 0) {
-                console.error(`No stored palette found for ${collection}[${i}]`);
-                continue;
-            }
-            
-            // Create container for the palette that includes preview
-            const clickableContainer = document.createElement('div');
-            clickableContainer.classList.add('palette-clickable-container');
-            paletteContainer.appendChild(clickableContainer);
-            
-            // Add data attribute to store the palette index
-            clickableContainer.dataset.paletteIndex = i;
-            clickableContainer.dataset.collection = collection;
-            
-            // Add preview image container
-            const previewContainer = document.createElement('div');
-            previewContainer.classList.add('palette-preview-container');
-            clickableContainer.appendChild(previewContainer);
-            
-            // Create small preview canvas
+        // Generate a smaller version of the original image for preview
+        const originalCanvas = document.getElementById('layer_canvas_1');
+        if (originalCanvas) {
             const previewCanvas = document.createElement('canvas');
             previewCanvas.width = 200;
             previewCanvas.height = 200;
-            previewCanvas.classList.add('palette-preview-canvas');
-            previewContainer.appendChild(previewCanvas);
+            const previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
             
-            // Display the representative colors underneath the preview
-            const swatchContainer = document.createElement('div');
-            swatchContainer.classList.add('swatch-container');
-            clickableContainer.appendChild(swatchContainer);
+            // Draw the original image scaled down
+            previewCtx.drawImage(originalCanvas, 0, 0, 200, 200);
             
-            // Prepare display colors - ONE FROM EACH COLOR FAMILY
-            const displayColors = prepareDisplayColors(paletteColors);
-            
-            // Display color swatches under the preview
-            displayColors.forEach((color, idx) => {
-                const swatch = document.createElement('div');
-                swatch.classList.add('color-swatch');
-                swatch.style.backgroundColor = `rgb(${color.join(',')})`;
-                
-                // Updated tooltip with HEX value instead of RGB
-                const hexValue = rgbToHex(color[0], color[1], color[2]);
-                swatch.title = ` ${hexValue}`;
-                
-                if (collection === 'ss') {
-                    swatch.classList.add('ss-swatch');
-                } else if (collection === 'aw') {
-                    swatch.classList.add('aw-swatch');
-                }
-                
-                swatchContainer.appendChild(swatch);
-            });
-            
-            // Click handler to use the FULL palette
-            clickableContainer.addEventListener('click', function() {
-                const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
-                const collectionName = this.dataset.collection;
-                
-                // Get the FULL palette from storage
-                const fullPalette = window[`${collectionName}PaletteColors`] && 
-                                  window[`${collectionName}PaletteColors`][paletteIndex];
-                
-                // Call processPallet with the FULL palette from storage
-                if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
-                    window.processPallet(null, totalLayers, null, 0, null, fullPalette, paletteIndex, collectionName);
-                }
-            });
-            
-            // Add "Show All" button
-            const showAllButton = document.createElement('div');
-            showAllButton.classList.add('show-all-colors-btn');
-            showAllButton.innerHTML = '+';
-            showAllButton.title = 'Show all colors in palette';
-            clickableContainer.appendChild(showAllButton);
-            
-            // Add event listener to show all colors in a modal
-            showAllButton.addEventListener('click', function(e) {
-                e.stopPropagation(); // Prevent triggering the parent container's click
-                
-                const fullPalette = window[`${collection}PaletteColors`][i];
-                if (!fullPalette || fullPalette.length === 0) {
-                    return;
-                }
-                
-                showFullPaletteModal(fullPalette, collection, i);
-            });
-            
-            // Store the palette info for preview generation using STORED palette
-            paletteContainers.push({
-                index: i,
-                canvas: previewCanvas,
-                colors: paletteColors // Use the stored palette colors
-            });
+            // Store the preview canvas data URL for future use
+            window.previewCanvases['original'] = previewCanvas.toDataURL();
+        }
+    }
+    
+    // Create palette containers - limit based on mode
+    const paletteContainers = [];
+    const maxContainers = shouldShowLimited ? 5 : 35;
+    
+    for (let i = 0; i < maxContainers; i++) {
+        const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
+        if (!paletteContainer) continue;
+        
+        paletteContainer.innerHTML = '';
+        paletteContainer.style.display = ''; // Show container
+        
+        // FIXED: Get palette colors from STORED data, not generating new ones
+        const paletteColors = window[`${collection}PaletteColors`][i];
+        
+        if (!paletteColors || paletteColors.length === 0) {
+            console.error(`No stored palette found for ${collection}[${i}]`);
+            continue;
         }
         
-        // Generate previews one by one with small delays between each to avoid overloading the browser
-        for (let i = 0; i < paletteContainers.length; i++) {
-            const item = paletteContainers[i];
+        // Create container for the palette that includes preview
+        const clickableContainer = document.createElement('div');
+        clickableContainer.classList.add('palette-clickable-container');
+        paletteContainer.appendChild(clickableContainer);
+        
+        // Add data attribute to store the palette index
+        clickableContainer.dataset.paletteIndex = i;
+        clickableContainer.dataset.collection = collection;
+        
+        // Add preview image container
+        const previewContainer = document.createElement('div');
+        previewContainer.classList.add('palette-preview-container');
+        clickableContainer.appendChild(previewContainer);
+        
+        // Create small preview canvas
+        const previewCanvas = document.createElement('canvas');
+        previewCanvas.width = 200;
+        previewCanvas.height = 200;
+        previewCanvas.classList.add('palette-preview-canvas');
+        previewContainer.appendChild(previewCanvas);
+        
+        // Display the representative colors underneath the preview
+        const swatchContainer = document.createElement('div');
+        swatchContainer.classList.add('swatch-container');
+        clickableContainer.appendChild(swatchContainer);
+        
+        // Prepare display colors - ONE FROM EACH COLOR FAMILY
+        const displayColors = prepareDisplayColors(paletteColors);
+        
+        // Display color swatches under the preview
+        displayColors.forEach((color, idx) => {
+            const swatch = document.createElement('div');
+            swatch.classList.add('color-swatch');
+            swatch.style.backgroundColor = `rgb(${color.join(',')})`;
             
-            // Use setTimeout to stagger the preview generation
-            setTimeout(() => {
-                generateAndShowPreview(item.canvas, item.colors, item.index, collection);
-            }, i * 50); // Small delay between each preview start (50ms per palette)
+            // Updated tooltip with HEX value instead of RGB
+            const hexValue = rgbToHex(color[0], color[1], color[2]);
+            swatch.title = ` ${hexValue}`;
+            
+            if (collection === 'ss') {
+                swatch.classList.add('ss-swatch');
+            } else if (collection === 'aw') {
+                swatch.classList.add('aw-swatch');
+            }
+            
+            swatchContainer.appendChild(swatch);
+        });
+        
+        // Click handler to use the FULL palette
+        clickableContainer.addEventListener('click', function() {
+            const paletteIndex = parseInt(this.dataset.paletteIndex, 10);
+            const collectionName = this.dataset.collection;
+            
+            // Get the FULL palette from storage
+            const fullPalette = window[`${collectionName}PaletteColors`] && 
+                              window[`${collectionName}PaletteColors`][paletteIndex];
+            
+            // Call processPallet with the FULL palette from storage
+            if (typeof window.processPallet === 'function' && fullPalette && fullPalette.length > 0) {
+                window.processPallet(null, totalLayers, null, 0, null, fullPalette, paletteIndex, collectionName);
+            }
+        });
+        
+        // Add "Show All" button
+        const showAllButton = document.createElement('div');
+        showAllButton.classList.add('show-all-colors-btn');
+        showAllButton.innerHTML = '+';
+        showAllButton.title = 'Show all colors in palette';
+        clickableContainer.appendChild(showAllButton);
+        
+        // Add event listener to show all colors in a modal
+        showAllButton.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent triggering the parent container's click
+            
+            const fullPalette = window[`${collection}PaletteColors`][i];
+            if (!fullPalette || fullPalette.length === 0) {
+                return;
+            }
+            
+            showFullPaletteModal(fullPalette, collection, i);
+        });
+        
+        // Store the palette info for preview generation using STORED palette
+        paletteContainers.push({
+            index: i,
+            canvas: previewCanvas,
+            colors: paletteColors // Use the stored palette colors
+        });
+    }
+    
+    // Hide remaining containers if in limited mode
+
+if (shouldShowLimited) {
+    for (let i = 5; i < 35; i++) {
+        const paletteContainer = document.getElementById(`${prefix}colorPalette_${i}`);
+        if (paletteContainer) {
+            paletteContainer.style.display = 'none';
         }
-    } else {
+        // Also hide the parent container
+        const parentContainer = document.getElementById(`${prefix.replace('_', '')}_palette_container_${i}`);
+        if (parentContainer) {
+            parentContainer.style.display = 'none';
+        }
+    }
+}
+    
+    // Generate previews one by one with small delays between each to avoid overloading the browser
+    for (let i = 0; i < paletteContainers.length; i++) {
+        const item = paletteContainers[i];
+        
+        // Use setTimeout to stagger the preview generation
+        setTimeout(() => {
+            generateAndShowPreview(item.canvas, item.colors, item.index, collection);
+        }, i * 50); // Small delay between each preview start (50ms per palette)
+    }
+}else {
         // Multi-layer logic - ALSO NEEDS THE SAME FIX
         const paletteContainer = document.getElementById(`${prefix}colorPalette_${layerIndex}`);
         if (!paletteContainer) return;
@@ -9105,7 +9399,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             window[`${collection}PaletteColors`][layerIndex] = [...paletteColors];
         }
         
-        // ... rest of multi-layer logic remains the same ...
+       
     }
           
           if (!originalCanvas) {

@@ -153,18 +153,14 @@ def remove_favorite_palette(request, palette_id):
 def get_favorites(request):
     favorites = PaletteFavorite.objects.filter(user=request.user).select_related('palette')
     
-    print(f"🟡 FOUND {favorites.count()} favorites for user {request.user.username}")
+   
     
     data = []
     for favorite in favorites:
         palette = favorite.palette
         colors = palette.colors.all().values('red', 'green', 'blue')
         colors_list = list(colors)
-        
-        print(f"🟡 RETRIEVING - Palette '{palette.name}' (ID: {palette.id})")
-        print(f"🟡 RETRIEVING - Source Colors: {palette.source_image_colors}")
-        print(f"🟡 RETRIEVING - Palette Colors: {colors_list[:3]}... (showing first 3)")
-        print(f"🟡 RETRIEVING - Total colors: {len(colors_list)}")
+   
         
         data.append({
             'id': palette.id,
@@ -175,9 +171,8 @@ def get_favorites(request):
             'colors': colors_list
         })
     
-    print(f"🟡 SENDING TO FRONTEND: {len(data)} palettes")
-    if data:
-        print(f"🟡 FIRST PALETTE PREVIEW: {data[0]['name']} with {len(data[0]['colors'])} colors")
+   
+  
     
     return Response(data)
 

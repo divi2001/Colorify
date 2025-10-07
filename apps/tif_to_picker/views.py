@@ -1227,6 +1227,267 @@ def is_color_fill_layer(layer):
         return False
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
+import os
+import torch
+import torch.nn as nn
+from PIL import Image
+import torchvision.transforms as transforms
+from torchvision import models
+
+# Original Lightweight CNN Model (for backward compatibility)
+class LightweightCNN(nn.Module):
+    def __init__(self, num_classes=2):
+        super(LightweightCNN, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.BatchNorm2d(32),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.BatchNorm2d(64),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.BatchNorm2d(128),
+            nn.Conv2d(128, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.BatchNorm2d(64),
+            nn.AdaptiveAvgPool2d((1, 1))
+        )
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(64, 128),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(128, 64),
+            nn.ReLU(inplace=True),
+            nn.Linear(64, num_classes)
+        )
+    
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
+
+# New ResNet-based Model
+class ResNetClassifier(nn.Module):
+    def __init__(self, num_classes=2, pretrained=True, resnet_type='resnet50'):
+        super(ResNetClassifier, self).__init__()
+        
+        # Choose ResNet architecture
+        if resnet_type == 'resnet18':
+            self.backbone = models.resnet18(pretrained=pretrained)
+            num_features = 512
+        elif resnet_type == 'resnet34':
+            self.backbone = models.resnet34(pretrained=pretrained)
+            num_features = 512
+        elif resnet_type == 'resnet50':
+            self.backbone = models.resnet50(pretrained=pretrained)
+            num_features = 2048
+        elif resnet_type == 'resnet101':
+            self.backbone = models.resnet101(pretrained=pretrained)
+            num_features = 2048
+        elif resnet_type == 'resnet152':
+            self.backbone = models.resnet152(pretrained=pretrained)
+            num_features = 2048
+        else:
+            raise ValueError(f"Unsupported ResNet type: {resnet_type}")
+        
+        # Replace the final fully connected layer
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(num_features, 512),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(512, 256),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.2),
+            nn.Linear(256, num_classes)
+        )
+    
+    def forward(self, x):
+        return self.backbone(x)
+
+# Global ML predictor
+ml_model = None
+ml_transform = None
+device = None
+model_type = None
+
+def load_ml_model():
+    global ml_model, ml_transform, device, model_type
+    if ml_model is not None:
+        return True
+    
+    try:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # Try to find model files - prioritize ResNet models
+        resnet_model_paths = [
+            ("best_resnet_model.pth", "resnet50"),
+            ("resnet50_classifier_full_data.pth", "resnet50"),
+            ("resnet18_classifier_full_data.pth", "resnet18"),
+            ("resnet34_classifier_full_data.pth", "resnet34"),
+            ("resnet101_classifier_full_data.pth", "resnet101"),
+            ("resnet152_classifier_full_data.pth", "resnet152"),
+        ]
+        
+        # Legacy model paths
+        legacy_model_paths = ["best_model_resnet.pth", "best.pth", "lightweight_classifier.pth"]
+        
+        model_loaded = False
+        
+        # First try to load ResNet models
+        for path, resnet_type in resnet_model_paths:
+            if os.path.exists(path):
+                try:
+                    ml_model = ResNetClassifier(num_classes=2, pretrained=False, resnet_type=resnet_type).to(device)
+                    ml_model.load_state_dict(torch.load(path, map_location=device))
+                    ml_model.eval()
+                    model_type = "resnet"
+                    print(f"✅ ResNet model loaded from {path} (architecture: {resnet_type})")
+                    model_loaded = True
+                    break
+                except Exception as e:
+                    print(f"⚠️ Failed to load ResNet model from {path}: {e}")
+                    continue
+        
+        # If no ResNet model found, try legacy models
+        if not model_loaded:
+            for path in legacy_model_paths:
+                if os.path.exists(path):
+                    try:
+                        ml_model = LightweightCNN().to(device)
+                        ml_model.load_state_dict(torch.load(path, map_location=device))
+                        ml_model.eval()
+                        model_type = "lightweight"
+                        print(f"✅ Lightweight CNN model loaded from {path}")
+                        model_loaded = True
+                        break
+                    except Exception as e:
+                        print(f"⚠️ Failed to load legacy model from {path}: {e}")
+                        continue
+        
+        if not model_loaded:
+            print("⚠️ No ML model found, using default labels")
+            ml_model = None
+            return False
+        
+        # We don't use ml_transform anymore since we do manual preprocessing
+        # This avoids the numpy compatibility issue
+        ml_transform = None
+        
+        print("✅ Model classes: 0=gradient, 1=normal")
+        print(f"✅ Using manual preprocessing to avoid numpy compatibility issues")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error loading ML model: {e}")
+        ml_model = None
+        return False
+
+import numpy as np
+
+import numpy as np
+
+def predict_ml_label(image_path):
+    global ml_model, ml_transform, device, model_type
+    
+    if ml_model is None:
+        if not load_ml_model():
+            return 0, 0.5  # Default: normal, low confidence
+    
+    try:
+        image = Image.open(image_path).convert('RGB')
+        
+        if model_type == "resnet":
+            # For ResNet models, resize to 224x224
+            image = image.resize((224, 224), Image.Resampling.LANCZOS)
+        else:
+            # For legacy models, resize to 256x256
+            image = image.resize((256, 256), Image.Resampling.LANCZOS)
+        
+        # Try multiple approaches to create tensor
+        image_tensor = None
+        
+        # Method 1: Try using torch.tensor with .tolist()
+        try:
+            np_array = np.asarray(image, dtype=np.float32) / 255.0
+            image_tensor = torch.tensor(np_array.tolist(), dtype=torch.float32)
+            image_tensor = image_tensor.permute(2, 0, 1)  # HWC to CHW
+            print("✅ Used method 1: numpy.tolist()")
+        except Exception as e1:
+            print(f"⚠️ Method 1 failed: {e1}")
+            
+            # Method 2: Manual pixel extraction
+            try:
+                width, height = image.size
+                pixels = list(image.getdata())
+                
+                # Create tensor from raw pixel data
+                pixel_tensor = torch.tensor(pixels, dtype=torch.float32) / 255.0
+                image_tensor = pixel_tensor.view(height, width, 3).permute(2, 0, 1)
+                print("✅ Used method 2: manual pixel extraction")
+            except Exception as e2:
+                print(f"⚠️ Method 2 failed: {e2}")
+                
+                # Method 3: Channel-by-channel extraction
+                try:
+                    width, height = image.size
+                    channels = []
+                    
+                    for c in range(3):  # RGB channels
+                        channel_data = []
+                        for y in range(height):
+                            row = []
+                            for x in range(width):
+                                pixel = image.getpixel((x, y))
+                                row.append(pixel[c] / 255.0)
+                            channel_data.append(row)
+                        channels.append(channel_data)
+                    
+                    image_tensor = torch.tensor(channels, dtype=torch.float32)
+                    print("✅ Used method 3: channel-by-channel")
+                except Exception as e3:
+                    print(f"❌ All methods failed: {e1}, {e2}, {e3}")
+                    return 0, 0.5
+        
+        if image_tensor is None:
+            print("❌ Failed to create tensor")
+            return 0, 0.5
+        
+        # Apply normalization
+        mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+        image_tensor = (image_tensor - mean) / std
+        
+        # Add batch dimension and move to device
+        image_tensor = image_tensor.unsqueeze(0).to(device)
+        
+        with torch.no_grad():
+            outputs = ml_model(image_tensor)
+            probabilities = torch.nn.functional.softmax(outputs, dim=1)
+            predicted_class = torch.argmax(probabilities, dim=1).item()
+            confidence = probabilities[0][predicted_class].item()
+        
+        # Class mapping: predicted_class 0 = gradient, predicted_class 1 = normal
+        # Return: 1 for gradient, 0 for normal
+        ml_label = 0 if predicted_class == 0 else 1
+        
+        class_name = "gradient" if predicted_class == 0 else "normal"
+        print(f"✅ ML Prediction ({model_type}): {class_name} (model_class={predicted_class}) -> ml_label={ml_label}, Confidence={confidence:.3f}")
+        
+        return int(ml_label), float(confidence)
+        
+    except Exception as e:
+        print(f"❌ ML prediction error: {e}")
+        import traceback
+        traceback.print_exc()
+        return 0, 0.5
 def extract_layers(file_path, output_dir, output_format='PNG', quality=100, display_max_dimension=3000, optimize=True):
     """
     Extract layers from image files - simplified and robust version
@@ -1244,6 +1505,9 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
     if not os.path.exists(file_path):
         print(f"❌ EXTRACT_LAYERS: File does not exist!")
         return []
+    
+    # Load ML model
+    load_ml_model()
     
     # Increase PIL's maximum image size limit
     Image.MAX_IMAGE_PIXELS = 500000000
@@ -1288,7 +1552,10 @@ def extract_layers(file_path, output_dir, output_format='PNG', quality=100, disp
         
         print(f"🔍 EXTRACT_LAYERS: Successfully processed {len(layers_info)} layers")
         for i, layer in enumerate(layers_info):
-            print(f"🔍 EXTRACT_LAYERS: Layer {i+1}: {layer['name']} - {layer['width']}x{layer['height']}")
+            ml_label = layer.get('ml_label', 0)
+            confidence = layer.get('ml_confidence', 0.0)
+            label_text = "gradient" if ml_label == 1 else "normal"
+            print(f"🔍 EXTRACT_LAYERS: Layer {i+1}: {layer['name']} - {layer['width']}x{layer['height']} - ML: {label_text} ({confidence:.3f})")
         
         return layers_info
         
@@ -1377,6 +1644,11 @@ def process_single_image_file(file_path, output_dir, base_filename, display_max_
             display_img.save(display_output_path, output_format, quality=quality, dpi=dpi)
             print(f"🔍 PROCESS_SINGLE: Saved display version")
             
+            # 🤖 ML PREDICTION
+            ml_label, confidence = predict_ml_label(display_output_path)
+            label_text = "gradient" if ml_label == 1 else "normal"
+            print(f"🤖 PROCESS_SINGLE: ML Prediction: {label_text} (confidence: {confidence:.3f})")
+            
             # Save metadata - ensure all values are JSON serializable
             metadata = {
                 'original_width': int(original_width),
@@ -1387,9 +1659,11 @@ def process_single_image_file(file_path, output_dir, base_filename, display_max_
                 'dpi_y': int(dpi[1]),
                 'physical_width_inches': float(physical_width_inches),
                 'physical_height_inches': float(physical_height_inches),
-                'ml_label': 1,
+                'ml_label': int(ml_label),
+                'ml_confidence': float(confidence),
                 'original_path': str(original_output_path),
-                'display_path': str(display_output_path)
+                'display_path': str(display_output_path),
+                'model_type': str(model_type) if model_type else "unknown"
             }
             
             print(f"🔍 PROCESS_SINGLE: Metadata prepared: {metadata}")
@@ -1415,7 +1689,8 @@ def process_single_image_file(file_path, output_dir, base_filename, display_max_
                 'dpi_y': int(dpi[1]),
                 'physical_width_inches': float(physical_width_inches),
                 'physical_height_inches': float(physical_height_inches),
-                'ml_label': 1
+                'ml_label': int(ml_label),
+                'ml_confidence': float(confidence)
             }
             
             print(f"🔍 PROCESS_SINGLE: Created layer info: {layer_info}")
@@ -1565,6 +1840,11 @@ def process_tiff_file(file_path, output_dir, base_filename, display_max_dimensio
                     display_img.save(display_output_path, output_format, quality=quality, dpi=tuple(dpi))
                     print(f"🔍 PROCESS_TIFF: Page {i+1} saved display")
                     
+                    # 🤖 ML PREDICTION
+                    ml_label, confidence = predict_ml_label(display_output_path)
+                    label_text = "gradient" if ml_label == 1 else "normal"
+                    print(f"🤖 PROCESS_TIFF: Page {i+1} ML Prediction: {label_text} (confidence: {confidence:.3f})")
+                    
                     # Calculate physical size
                     physical_width_inches = float(original_width) / float(dpi[0])
                     physical_height_inches = float(original_height) / float(dpi[1])
@@ -1579,9 +1859,11 @@ def process_tiff_file(file_path, output_dir, base_filename, display_max_dimensio
                         'dpi_y': int(dpi[1]),
                         'physical_width_inches': float(physical_width_inches),
                         'physical_height_inches': float(physical_height_inches),
-                        'ml_label': 1,
+                        'ml_label': int(ml_label),
+                        'ml_confidence': float(confidence),
                         'original_path': str(original_output_path),
-                        'display_path': str(display_output_path)
+                        'display_path': str(display_output_path),
+                        'model_type': str(model_type) if model_type else "unknown"
                     }
                     
                     metadata_path = os.path.join(output_dir, f"{layer_name}.metadata.json")
@@ -1605,7 +1887,8 @@ def process_tiff_file(file_path, output_dir, base_filename, display_max_dimensio
                         'dpi_y': int(dpi[1]),
                         'physical_width_inches': float(physical_width_inches),
                         'physical_height_inches': float(physical_height_inches),
-                        'ml_label': 1
+                        'ml_label': int(ml_label),
+                        'ml_confidence': float(confidence)
                     }
                     
                     layers_info.append(layer_info)
@@ -1625,8 +1908,6 @@ def process_tiff_file(file_path, output_dir, base_filename, display_max_dimensio
         import traceback
         traceback.print_exc()
         return []
-
-
 def extractColors():
     print("testing")
 
