@@ -1047,26 +1047,23 @@
       </div>
 
       <!-- Enhanced Features Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Generation Card -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- One-Click Color Matching Card -->
         <div class="feature-card rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/one- click color matching.png" alt="Generation"
-               />
-            <div
-              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
-            </div>
+            <img src="{% static 'images/one- click color matching.png' %}" alt="One-Click Color Matching"  />
+            <div class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
           </div>
           <h3 class="figma-text-2xl text-slate-800 mb-4">One-Click Color Matching</h3>
           <p class="figma-text-base text-slate-600">
             Generate accurate color matches instantly--no manual adjustments, no guesswork.
           </p>
         </div>
-         <!-- Customization Card -->
-         <div class="feature-card-primary text-white rounded-3xl p-8 group">
+
+        <!-- Built for Professionals Card -->
+        <div class="feature-card-primary text-white rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/built for professionals.png" alt="Customization"
-               />
+            <img src="{% static 'images/built for professionals.png' %}" alt="Built for Professionals"  />
             <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
           </div>
           <h3 class="figma-text-2xl mb-4">Built for Professionals</h3>
@@ -1075,65 +1072,51 @@
           </p>
         </div>
 
-
-        
-
-        <!-- Export Options Card -->
+        <!-- Real-Time Preview Card -->
         <div class="feature-card rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/ai powered accuracy.png" alt="Export"
-               />
-            <div
-              class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
-            </div>
+            <img src="./static/images/real time preview.jpg" alt="Real-Time Preview"  />
+            <div class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
           </div>
-          <h3 class="figma-text-2xl text-slate-800 mb-4"> Real-Time Preview</h3>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Real-Time Preview</h3>
           <p class="figma-text-base text-slate-600">
             See how your matched colors look before printing, reducing errors and rework.
           </p>
         </div>
-      </div>
-      <!-- Customization Card -->
-      <div class="feature-card-primary text-white rounded-3xl p-8 group">
-        <div class="mb-6 relative overflow-hidden rounded-2xl">
-          <img src="./static/images/real time preview.jpg" alt="Customization"
-             />
-          <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+
+        <!-- AI-Powered Accuracy Card -->
+        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/ai powered accuracy.png" alt="AI-Powered Accuracy"  />
+            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl mb-4">AI-Powered Accuracy</h3>
+          <p class="figma-text-base text-white/90">
+            Our advanced AI ensures consistent, print-ready colors every time.
+          </p>
         </div>
-        <h3 class="figma-text-2xl mb-4">AI-Powered Accuracy</h3>
-        <p class="figma-text-base text-white/90">
-          Our advanced AI ensures consistent, print-ready colors every time.
-        </p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8" style="padding-top: 30px;">
-        <!-- Generation Card -->
+
+        <!-- Cloud-Based Access Card -->
         <div class="feature-card rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/cloud based access.png" alt="Generation"
-               />
-            <div
-              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
-            </div>
+            <img src="./static/images/cloud based access.png" alt="Cloud-Based Access"  />
+            <div class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
           </div>
-          <h3 class="figma-text-2xl text-slate-800 mb-4"> Cloud-Based Access</h3>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Cloud-Based Access</h3>
           <p class="figma-text-base text-slate-600">
             Work from anywhere with secure cloud storage and quick accessibility for your team.
           </p>
         </div>
 
-        <!-- Export Options Card -->
+        <!-- Unlimited Color Combinations Card -->
         <div class="feature-card rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/unlimited color combination.png" alt="Export"
-               />
-            <div
-              class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
-            </div>
+            <img src="./static/images/unlimited color combination.png" alt="Unlimited Color Combinations"  />
+            <div class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
           </div>
           <h3 class="figma-text-2xl text-slate-800 mb-4">Unlimited Color Combinations</h3>
           <p class="figma-text-base text-slate-600">
-            Explore endless color possibilities with automatic generation of matching combinations tailored to your
-            design needs.
+            Explore endless color possibilities with automatic generation of matching combinations tailored to your design needs.
           </p>
         </div>
       </div>
@@ -1792,7 +1775,7 @@
     </div>
   </div>
   <!-- Horizontal Divider and Credits -->
-  <div class="mt-8 pt-6">
+  <!-- <div class="mt-8 pt-6">
     <div class="flex items-center justify-between">
       <div class="flex-1 border-t border-white/30"></div>
       <div class="flex items-center gap-3 px-6">
@@ -1800,7 +1783,7 @@
         <img src="{% static 'images/3minds.png' %}" alt="3 Minds Digital" class="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
       </div>
     </div>
-  </div>
+  </div> -->
 </footer>
 
   {% block extra_js %}{% endblock %}
