@@ -15,6 +15,9 @@ ALLOWED_HOSTS = ['*']
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1000 * 1024 * 1024  # 100MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5000 * 1024 * 1024   # 50MB
+# Allow large multi-file uploads from dataset manager
+DATA_UPLOAD_MAX_NUMBER_FILES = 20000
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 20000
 
 # Application definition
 
@@ -84,6 +87,7 @@ JAZZMIN_SETTINGS = {
         {"name": "Analytics", "url": "admin:analytics_dashboard"},
         {"model": "auth.User"},
         {"app": "subscription_module"},
+        {"name": "Data", "url": "/admin/dataset-manager/", "icon": "fas fa-folder-open"},
     ],
 
     "usermenu_links": [

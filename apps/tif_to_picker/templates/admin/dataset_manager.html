@@ -1,0 +1,142 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div class="module">
+  <h1>Dataset Manager</h1>
+  <p>Manage images in <code>media/dataset/gradient</code> and <code>media/dataset/normal</code>.</p>
+
+  <h2>Upload Images</h2>
+  <form method="post" enctype="multipart/form-data" action="">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="upload" />
+    <label>Class:</label>
+    <select name="class">
+      <option value="gradient">gradient</option>
+      <option value="normal">normal</option>
+    </select>
+    <input type="file" name="images" accept=".png,.jpg,.jpeg,.webp" multiple required />
+    <button type="submit" class="default">Upload selected</button>
+  </form>
+
+  <h2 style="margin-top:20px">Training</h2>
+  <p>
+    {% if training_running %}
+      <strong>Status:</strong> Training is running...
+    {% else %}
+      <strong>Status:</strong> Idle
+    {% endif %}
+    {% if model_info %}
+      &nbsp;|&nbsp; <strong>Best model:</strong> best_resnet_model.pth ({{ model_info.size_mb }} MB) updated {{ model_info.mtime }}
+    {% endif %}
+  </p>
+  <div id="progress-line" style="margin:6px 0;">
+    {% if progress and progress.epoch and progress.num_epochs %}
+      Epoch {{ progress.epoch }}/{{ progress.num_epochs }} | Loss: {{ progress.train_loss }} | Acc: {{ progress.train_acc }}% | Best: {{ progress.best_acc }}%
+    {% elif training_running %}
+      No progress yet...
+    {% endif %}
+  </div>
+  <form method="post" action="">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="train" />
+    <button type="submit" class="default" {% if training_running %}disabled{% endif %}>Start Training</button>
+  </form>
+  {% if training_running %}
+  <form method="post" action="" style="margin-top:8px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="stop" />
+    <button type="submit" class="deletelink">Stop Training</button>
+  </form>
+  {% endif %}
+
+  <script>
+    (function() {
+      function poll() {
+        fetch('/admin/dataset-manager/progress/', {credentials: 'same-origin'})
+          .then(r => r.json())
+          .then(data => {
+            const el = document.getElementById('progress-line');
+            if (!el) return;
+            if (data && (data.status === 'running' || data.status === 'stopping')) {
+              el.textContent = `Epoch ${data.epoch}/${data.num_epochs} | Loss: ${data.train_loss} | Acc: ${data.train_acc}% | Best: ${data.best_acc}%`;
+              setTimeout(poll, 2000);
+            } else if (data && data.status === 'idle') {
+              el.textContent = 'Training idle';
+            } else {
+              el.textContent = '...';
+              setTimeout(poll, 4000);
+            }
+          })
+          .catch(() => setTimeout(poll, 4000));
+      }
+      poll();
+    })();
+  </script>
+
+  {% if messages %}
+    <ul class="messagelist">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div class="columns">
+    <div class="column">
+      <h2>gradient ({{ gradient_files|length }})</h2>
+      <table class="listing">
+        <thead>
+          <tr><th>Preview</th><th>File</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for f in gradient_files %}
+          <tr>
+            <td><img src="{{ f.url }}" style="max-height:60px;max-width:60px;border:1px solid #ddd" /></td>
+            <td><code>{{ f.rel_path }}</code></td>
+            <td>
+              <form method="post" action="" style="display:inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="rel_path" value="{{ f.rel_path }}" />
+                <button type="submit" class="deletelink">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3">No files.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="column">
+      <h2>normal ({{ normal_files|length }})</h2>
+      <table class="listing">
+        <thead>
+          <tr><th>Preview</th><th>File</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for f in normal_files %}
+          <tr>
+            <td><img src="{{ f.url }}" style="max-height:60px;max-width:60px;border:1px solid #ddd" /></td>
+            <td><code>{{ f.rel_path }}</code></td>
+            <td>
+              <form method="post" action="" style="display:inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="rel_path" value="{{ f.rel_path }}" />
+                <button type="submit" class="deletelink">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3">No files.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
