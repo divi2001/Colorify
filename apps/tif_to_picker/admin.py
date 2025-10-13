@@ -186,6 +186,38 @@ def dataset_manager_view(request):
             except Exception as exc:
                 messages.error(request, f'Could not signal stop: {exc}')
             return redirect(request.path)
+        elif action == 'force_stop':
+            # Force stop training by removing lock and flags immediately
+            lock_path = os.path.join(settings.BASE_DIR, 'training.lock')
+            stop_flag_path = os.path.join(settings.BASE_DIR, 'training.stop')
+            progress_path = os.path.join(settings.BASE_DIR, 'training_progress.json')
+            
+            if not os.path.exists(lock_path):
+                messages.info(request, 'No training is running')
+                return redirect(request.path)
+            
+            try:
+                # Remove lock and stop flag immediately
+                if os.path.exists(lock_path):
+                    os.remove(lock_path)
+                if os.path.exists(stop_flag_path):
+                    os.remove(stop_flag_path)
+                
+                # Update progress to idle
+                try:
+                    import json
+                    with open(progress_path, 'w') as pf:
+                        json.dump({
+                            'status': 'idle',
+                            'updated_at': time.time()
+                        }, pf)
+                except Exception:
+                    pass
+                
+                messages.success(request, 'Training force stopped. You can start a new training session.')
+            except Exception as exc:
+                messages.error(request, f'Could not force stop: {exc}')
+            return redirect(request.path)
 
     # GET: list files
     def list_files(dir_path, class_name):

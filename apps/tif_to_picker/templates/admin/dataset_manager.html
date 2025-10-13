@@ -42,11 +42,18 @@
     <button type="submit" class="default" {% if training_running %}disabled{% endif %}>Start Training</button>
   </form>
   {% if training_running %}
-  <form method="post" action="" style="margin-top:8px;">
-    {% csrf_token %}
-    <input type="hidden" name="action" value="stop" />
-    <button type="submit" class="deletelink">Stop Training</button>
-  </form>
+  <div style="margin-top:8px;">
+    <form method="post" action="" style="display:inline-block; margin-right:10px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="stop" />
+      <button type="submit" class="deletelink">Stop Training</button>
+    </form>
+    <form method="post" action="" style="display:inline-block;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="force_stop" />
+      <button type="submit" class="deletelink" style="background-color: #dc3545; color: white;">Force Stop</button>
+    </form>
+  </div>
   {% endif %}
 
   <script>
