@@ -9508,7 +9508,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             'red': [345, 15],
             'orange': [15, 45],
             'yellow': [45, 75],
-            'green': [85, 150], // NARROWED range to avoid yellow-green and blue-green
+            'green': [85, 180], // NARROWED range to avoid yellow-green and blue-green
             'cyan': [165, 195],
             'blue': [195, 255],
             'purple': [255, 285],
@@ -9560,7 +9560,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const availableFamilyNames = Object.keys(baseFamilies);
         
         // All possible target families - REDUCED GREEN PRESENCE
-        const warmFamilies = ['red', 'orange', 'yellow', 'pink'];
+        const warmFamilies = ['red', 'orange', 'yellow', 'pink','green'];
         const coolFamilies = ['cyan', 'blue', 'purple','green','yellow']; // REMOVED GREEN from cool families
         const allFamilies = [...warmFamilies, ...coolFamilies];
         
@@ -9573,7 +9573,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 maxSaturation: 100,
                 minLightness: 55,          // Increased from 50
                 maxLightness: 95,
-                preferredFamilies: ['cyan', 'yellow', 'pink', 'orange', 'red', 'blue', 'purple'] // NO GREEN
+                preferredFamilies: ['cyan', 'yellow', 'pink', 'orange', 'red', 'blue', 'purple', 'green']
             },
             'aw': {
                 saturationMultiplier: 0.6, // Decreased from 0.7
@@ -9582,7 +9582,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 maxSaturation: 65,         // Decreased from 70
                 minLightness: 15,          // Decreased from 20
                 maxLightness: 65,          // Decreased from 70
-                preferredFamilies: ['purple', 'blue', 'red', 'orange', 'pink', 'cyan'] // NO GREEN
+                preferredFamilies: ['purple', 'blue', 'red', 'orange', 'pink', 'cyan', 'green']
             },
             'trending': {
                 saturationMultiplier: 1.0,
@@ -9607,25 +9607,8 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             availableFamilyNames.forEach((originalFamily, index) => {
                 let targetFamily;
                 
-                // SPECIAL HANDLING FOR GREEN - REPLACE IT MORE AGGRESSIVELY
-                if (originalFamily === 'green') {
-                    // Only allow green in 20% of cases for trending, 10% for others
-                    const greenChance = collection === 'trending' ? 0.2 : 0.1;
-                    if (Math.random() < greenChance) {
-                        targetFamily = 'green';
-                    } else {
-                        // Replace green with other colors
-                        const greenReplacements = collection === 'ss' 
-                            ? ['cyan', 'blue', 'yellow'] 
-                            : collection === 'aw' 
-                                ? ['purple', 'blue', 'red'] 
-                                : ['cyan', 'blue', 'purple'];
-                        targetFamily = greenReplacements[Math.floor(Math.random() * greenReplacements.length)];
-                    }
-                } else {
-                    // Normal replacement for other colors
-                    targetFamily = getCollectionSpecificFamily(collection, i, index, settings.preferredFamilies, usedTargetFamilies, originalFamily);
-                }
+                // No special handling for green - treat it like any other color
+                targetFamily = getCollectionSpecificFamily(collection, i, index, settings.preferredFamilies, usedTargetFamilies, originalFamily);
                 
                 familyMapping[originalFamily] = targetFamily;
                 usedTargetFamilies.add(targetFamily);
@@ -9639,15 +9622,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 let newColor = generateMatchingColor(originalColor, targetFamily);
                 let [h, s, l] = rgbToHsl(...newColor);
                 
-                // PREVENT OLIVE GREEN (low saturation yellow-green)
-                if (targetFamily === 'green') {
-                    // Force green to be more vibrant, less olive-like
-                    s = Math.max(60, s); // Minimum saturation for green
-                    // Shift hue away from olive range (75-85 is olive territory)
-                    if (h >= 75 && h < 85) {
-                        h = h < 80 ? 70 : 90; // Push to brighter green or yellow-green
-                    }
-                }
+                // REMOVED: All green-specific restrictions and hue adjustments
                 
                 const variations = getCollectionVariations(collection, i, colorIndex);
                 
@@ -17464,35 +17439,37 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
     }
 
     // NEW: Generate split complementary palette from specific hue
-    function generateSplitComplementaryFromHue(baseHue, imageColors, splitAngles) {
-      try {
-        // FIXED: Split complementary should use complement ± offset, not base + offset
-        const complementHue = (baseHue + 180) % 360;
-        const split1H = (complementHue + splitAngles[0] - 180) % 360; // First split from complement
-        const split2H = (complementHue + splitAngles[1] - 180) % 360; // Second split from complement
-        
-        // Ensure positive values
-        const normalizedSplit1 = split1H < 0 ? split1H + 360 : split1H;
-        const normalizedSplit2 = split2H < 0 ? split2H + 360 : split2H;
-        
-        const palette = [];
-        const targetHues = [baseHue, normalizedSplit1, normalizedSplit2];
-        
-        console.log(`Generating split complementary from ${baseHue}°: complement ${complementHue}°, splits: ${Math.round(normalizedSplit1)}°, ${Math.round(normalizedSplit2)}°`);
-        
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          const targetHue = targetHues[index % targetHues.length];
-          const splitComplementaryColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(splitComplementaryColor);
-        });
-        
-        return palette;
-      } catch (error) {
-        console.error("Error generating split complementary from hue:", error);
-        return [];
-      }
-    }
+function generateSplitComplementaryFromHue(baseHue, imageColors, splitAngles) {
+  try {
+    const complementHue = (baseHue + 180) % 360;
+    
+    // Split angles should be relative offsets from complement (e.g., [-30, 30])
+    const split1H = (complementHue + splitAngles[0]) % 360;
+    const split2H = (complementHue + splitAngles[1]) % 360;
+    
+    // Ensure positive values
+    const normalizedSplit1 = split1H < 0 ? split1H + 360 : split1H;
+    const normalizedSplit2 = split2H < 0 ? split2H + 360 : split2H;
+    
+    const palette = [];
+    const targetHues = [baseHue, normalizedSplit1, normalizedSplit2];
+    
+    console.log(`Generating split complementary from ${baseHue}°: base ${baseHue}°, splits: ${Math.round(normalizedSplit1)}°, ${Math.round(normalizedSplit2)}°`);
+    
+    imageColors.forEach((color, index) => {
+      const [originalH, originalS, originalL] = rgbToHsl(...color);
+      const targetHue = targetHues[index % targetHues.length];
+      const splitComplementaryColor = hslToRgb(targetHue, originalS, originalL);
+      palette.push(splitComplementaryColor);
+    });
+    
+    return palette;
+  } catch (error) {
+    console.error("Error generating split complementary from hue:", error);
+    return [];
+  }
+}
+
 
     // NEW: Generate triadic palette from specific hue
     function generateTriadicFromHue(baseHue, imageColors, spacing) {
@@ -17635,19 +17612,19 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
             strategies.push({
               name: `${base.name}_Classic`,
               generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [150, 210]) // ±30° from complement
+                generateSplitComplementaryFromHue(base.hue, imageColors, [-30, 30]) // ±30° from complement
             });
             
             strategies.push({
               name: `${base.name}_Wide`,
               generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [135, 225]) // ±45° from complement  
+                generateSplitComplementaryFromHue(base.hue, imageColors, [-45, 45]) // ±45° from complement  
             });
             
             strategies.push({
               name: `${base.name}_Narrow`,
               generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [165, 195]) // ±15° from complement
+                generateSplitComplementaryFromHue(base.hue, imageColors, [-15, 15]) // ±15° from complement
             });
           });
           break;
