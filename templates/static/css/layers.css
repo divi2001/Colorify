@@ -575,7 +575,7 @@ header {
 }
 
 .bg-linear-blue {
-    background: linear-gradient(to right, #7a85eb, #3C4CD1);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 .bg-linear-red {
   background: linear-gradient(to right, #ff4d4d, #b30000);
