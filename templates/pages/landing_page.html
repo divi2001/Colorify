@@ -796,7 +796,7 @@
             <a href="/contact/"
               class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact
               us</a>
-            <a href="/accounts/login/" class="btn-primary text-white px-6 py-2.5 rounded-xl font-light shadow-lg">
+            <a href="/accounts/login/" class="bg-white text-slate-700 border-2 border-slate-200 px-6 py-2.5 rounded-xl font-light shadow-lg hover:bg-slate-50 transition-all duration-300">
               Get Started
             </a>
           </div>
@@ -823,7 +823,7 @@
           <a href="/contact/"
             class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">Contact us</a>
           <a href="/accounts/login/"
-            class="block w-full mt-2 btn-primary text-white px-4 py-2.5 rounded-xl font-light text-center shadow-lg">
+            class="block w-full mt-2 bg-white text-slate-700 border-2 border-slate-200 px-4 py-2.5 rounded-xl font-light text-center shadow-lg hover:bg-slate-50 transition-all duration-300">
             Get Started
           </a>
         </div>
@@ -1088,9 +1088,9 @@
       </div>
 
       <!-- Enhanced Features Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
         <!-- Generation Card -->
-        <div class="feature-card rounded-3xl p-8 group">
+        <div class="feature-card rounded-3xl p-8 group flex flex-col h-full">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
             <img src="./static/images/d226f3da73926f53fa4e123d7268b40b.jpg" alt="Generation"
               class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -1105,21 +1105,23 @@
         </div>
 
 
-        <!-- Customization Card -->
-        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+        <!-- AI-Powered Accuracy Card -->
+        <div class="feature-card rounded-3xl p-8 group flex flex-col h-full">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/girlwithbook_c.jpg" alt="Customization"
+            <img src="./static/images/girlwithbook_c.jpg" alt="AI Accuracy"
               class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
-            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+            <div
+              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
           </div>
-          <h3 class="figma-text-2xl mb-4">AI-Powered Accuracy</h3>
-          <p class="figma-text-base text-white/90">
+          <h3 class="figma-text-2xl text-slate-800 mb-4">AI-Powered Accuracy</h3>
+          <p class="figma-text-base text-slate-600">
             Our advanced AI ensures consistent, print-ready colors every time.
           </p>
         </div>
 
         <!-- Export Options Card -->
-        <div class="feature-card rounded-3xl p-8 group">
+        <div class="feature-card rounded-3xl p-8 group flex flex-col h-full">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
             <img src="./static/images/d226f3da73926f53fa4e123d7268b40b.jpg" alt="Export"
               class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -1133,7 +1135,7 @@
           </p>
         </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8" style="padding-top: 30px;">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch" style="padding-top: 30px;">
         <!-- Generation Card -->
         <div class="feature-card rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
@@ -1150,15 +1152,17 @@
         </div>
 
 
-        <!-- Customization Card -->
-        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+        <!-- Built for Professionals Card -->
+        <div class="feature-card rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/girlwithbook_c.jpg" alt="Customization"
+            <img src="./static/images/girlwithbook_c.jpg" alt="Professionals"
               class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
-            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+            <div
+              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
           </div>
-          <h3 class="figma-text-2xl mb-4">Built for Professionals</h3>
-          <p class="figma-text-base text-white/90">
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Built for Professionals</h3>
+          <p class="figma-text-base text-slate-600">
             Tailored for digital print units, mills, and design studios—optimized for high-volume production.
           </p>
         </div>
@@ -1278,7 +1282,15 @@
                   </div>
                   <span class="text-sm md:text-base">Works Seamlessly with Complex Print Files</span>
                 </div>
-               
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Professional Quality Results</span>
+                </div>
               </div>
             </div>
           </div>

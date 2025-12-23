@@ -21,6 +21,8 @@
               class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Pricing</a>
             <a href="{% url 'contact' %}"
               class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact us</a>
+            <a href="{% url 'home' %}#key-features"
+              class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Blog</a>
 
             {% if user.is_authenticated %}
                 <a href="{% url 'account_logout' %}"
@@ -48,6 +50,7 @@
   <a href="{% url 'about' %}" class="block py-2 text-gray-600 hover:text-gray-900">About us</a>
   <a href="{% url 'plans' %}" class="block py-2 text-gray-600 hover:text-gray-900">Pricing</a>
   <a href="{% url 'contact' %}" class="block py-2 text-gray-600 hover:text-gray-900">Contact us</a>
+  <a href="{% url 'home' %}#key-features" class="block py-2 text-gray-600 hover:text-gray-900">Blog</a>
   {% if user.is_authenticated %}
       <a href="{% url 'account_logout' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
   {% else %}

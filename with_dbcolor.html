@@ -1,1680 +1,2027 @@
+<!-- templates\pages\home.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
 
-async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIndex, harmonyType, showInSidebar = false, backgroundVariation = 'regular') {
-  const loadingScreen = document.getElementById('loading-screen');
-  const sidebarLoading = document.getElementById('harmonyLoadingIndicator');
-  
-  if (showInSidebar) {
-    if (sidebarLoading) sidebarLoading.style.display = 'block';
-  } else {
-    if (loadingScreen) loadingScreen.style.display = 'flex';
-  }
-  
-  const analyzer = new ImageColorAnalyzer();
-  const colorProcessor = new ColorProcessor();
-
-  try {
-    const harmonyCollection = harmonyType.toLowerCase().replace(/\s+/g, '_');
-    
-    console.log(`Processing ${harmonyType} harmony with ${backgroundVariation} background for layer ${currentLayerIndex}`);
-    
-    if (!window.harmonySeeds) {
-      window.harmonySeeds = {
-        'Monochromatic': Date.now(),
-        'Analogous': Date.now() + 100,
-        'Complementary': Date.now() + 200,
-        'Split Complementary': Date.now() + 300,
-        'Triadic': Date.now() + 400,
-        'Tetradic': Date.now() + 500,
-        'Square': Date.now() + 600
-      };
-    }
-    
-    // Function to robustly extract colors
-    async function getImageColors(maxAttempts = 10) {
-      let validColors = [];
-      let attempts = 0;
-      
-      while (validColors.length === 0 && attempts < maxAttempts) {
-        attempts++;
-        
-        if (localStorage.getItem('distinctColorsArrayColorPallet')) {
-          try {
-            const storedColorsString = localStorage.getItem('distinctColorsArrayColorPallet');
-            const storedColors = JSON.parse(storedColorsString);
-
-            if (Array.isArray(storedColors) && storedColors.length > 0) {
-              validColors = storedColors.filter(color =>
-                Array.isArray(color) &&
-                color.length === 3 &&
-                color.every(val => typeof val === 'number' && !isNaN(val))
-              );
-              
-              if (validColors.length > 0) {
-                console.log(`Found ${validColors.length} valid colors in localStorage`);
-                break;
-              }
-            }
-          } catch (parseError) {
-            console.error("Error parsing colors from localStorage:", parseError);
-          }
-        }
-        
-        try {
-          if (typeof window.distinctColorsArrayColorPallet === 'function') {
-            const newColors = await window.distinctColorsArrayColorPallet();
-            if (Array.isArray(newColors)) {
-              validColors = newColors.filter(color => 
-                Array.isArray(color) && 
-                color.length === 3 && 
-                color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
-              );
-            }
-          } else if (window.distinctColorsArrayColorPallet) {
-            const newColors = window.distinctColorsArrayColorPallet;
-            if (Array.isArray(newColors)) {
-              validColors = newColors.filter(color => 
-                Array.isArray(color) && 
-                color.length === 3 && 
-                color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
-              );
-            }
-          }
-        } catch (e) {
-          console.warn("Error accessing distinctColorsArrayColorPallet:", e);
-        }
-        
-        if (validColors.length === 0 && layerCtx && layerCanvas) {
-          try {
-            const imageData = layerCtx.getImageData(0, 0, layerCanvas.width, layerCanvas.height);
-            const extractedColors = await analyzer.getDistinctColors(imageData, 30, 20);
-            
-            if (Array.isArray(extractedColors) && extractedColors.length > 0) {
-              validColors = extractedColors.filter(color =>
-                Array.isArray(color) &&
-                color.length === 3 &&
-                color.every(val => typeof val === 'number' && !isNaN(val))
-              );
-              
-              if (validColors.length > 0) {
-                console.log(`Extracted ${validColors.length} valid colors from image`);
-                break;
-              }
-            }
-          } catch (extractError) {
-            console.error("Error extracting colors from image:", extractError);
-          }
-        }
-        
-        if (validColors.length === 0) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-      
-      if (validColors.length === 0) {
-        console.warn("Using fallback colors after exhausting all options");
-        validColors = [
-          [0, 32, 46], [0, 63, 92], [44, 72, 117], [138, 80, 143], 
-          [188, 80, 144], [255, 99, 97], [255, 133, 49], [255, 166, 0], 
-          [255, 211, 128], [120, 180, 255], [85, 205, 252], [247, 167, 184],
-          [233, 196, 106], [42, 157, 143], [38, 70, 83], [231, 111, 81],
-          [244, 162, 97], [233, 196, 106], [42, 157, 143], [38, 70, 83]
-        ];
-      }
-      
-      return validColors;
-    }
-    
-    // Color conversion utilities
-    function rgbToHsl(r, g, b) {
-      try {
-        r /= 255; g /= 255; b /= 255;
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        let h, s, l = (max + min) / 2;
-        
-        if (max === min) {
-          h = s = 0;
-        } else {
-          const d = max - min;
-          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-          switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-          }
-          h /= 6;
-        }
-        return [h * 360, s * 100, l * 100];
-      } catch (e) {
-        console.error("Error in rgbToHsl:", e);
-        return [0, 0, 50];
-      }
-    }
-    
-    function hslToRgb(h, s, l) {
-      try {
-        h = (typeof h === 'number' && !isNaN(h)) ? (h % 360) / 360 : 0;
-        s = (typeof s === 'number' && !isNaN(s)) ? Math.min(100, Math.max(0, s)) / 100 : 0;
-        l = (typeof l === 'number' && !isNaN(l)) ? Math.min(100, Math.max(0, l)) / 100 : 0.5;
-        
-        let r, g, b;
-        
-        if (s === 0) {
-          r = g = b = l;
-        } else {
-          const hue2rgb = (p, q, t) => {
-            if (t < 0) t += 1;
-            if (t > 1) t -= 1;
-            if (t < 1/6) return p + (q - p) * 6 * t;
-            if (t < 1/2) return q;
-            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-            return p;
-          };
-          
-          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-          const p = 2 * l - q;
-          
-          r = hue2rgb(p, q, h + 1/3);
-          g = hue2rgb(p, q, h);
-          b = hue2rgb(p, q, h - 1/3);
-        }
-        
-        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-      } catch (e) {
-        console.error("Error in hslToRgb:", e);
-        return [128, 128, 128];
-      }
-    }
-    
-    // Helper functions
-    function rgbToHex(r, g, b) {
-      return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-    }
-    
-    function isLightColor(r, g, b) {
-      return (r * 0.299 + g * 0.587 + b * 0.114) > 128;
-    }
-    
-    function logPalette(palette, paletteName) {
-      if (!palette || palette.length === 0) {
-        console.log(`${paletteName}: No colors`);
-        return;
-      }
-      
-      console.log(`${paletteName} (${palette.length} colors):`);
-      
-      const colorBoxes = palette.map(([r, g, b]) => {
-        const hex = rgbToHex(r, g, b);
-        return `%c ${hex} `;
-      }).join('');
-      
-      const styles = palette.map(([r, g, b]) => {
-        const hex = rgbToHex(r, g, b);
-        return `background: ${hex}; color: ${isLightColor(r, g, b) ? '#000' : '#fff'}; padding: 3px; border-radius: 3px;`;
-      });
-      
-      console.log(colorBoxes, ...styles);
-      console.log("Palette colors:", palette.map(color => [...color]));
-    }
-    
-    function showToast(message) {
-      const toast = document.createElement('div');
-      toast.textContent = message;
-      toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 6px;
-        z-index: 10001;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      `;
-      document.body.appendChild(toast);
-      
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
-        }
-      }, 3000);
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Colorify - Home</title>
+  <script src="{% static "js/talwind3.14.js" %}"></script>
+  <!-- Google Fonts - Inter (similar to Figma's typography) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  {% block extra_css %}{% endblock %}
+  <style>
+    * {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    // Helper function to shuffle array
-    function shuffleArray(array) {
-      const shuffled = [...array];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
+    body {
+      align-items: flex-start;
+      overflow-x: hidden;
     }
 
-    // NEW: Generate monochromatic palette from specific hue
-    function generateMonochromaticFromHue(baseHue, imageColors, variation) {
-      try {
-        const palette = [];
-        
-        console.log(`Generating monochromatic ${variation} using base hue: ${baseHue}°`);
-        
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          let targetS = originalS;
-          let targetL = originalL;
-          
-          // Apply variation strategy
-          switch(variation) {
-            case 'high_saturation':
-              targetS = Math.min(100, originalS * 1.3 + 20);
-              break;
-            case 'low_saturation':
-              targetS = Math.max(5, originalS * 0.5);
-              break;
-            case 'mixed_saturation':
-              targetS = index % 2 === 0 ? 
-                Math.min(100, originalS * 1.2 + 15) : 
-                Math.max(10, originalS * 0.6);
-              break;
-          }
-          
-          const monochromaticColor = hslToRgb(baseHue, targetS, targetL);
-          palette.push(monochromaticColor);
-        });
-        
-        return palette;
-      } catch (error) {
-        console.error("Error generating monochromatic from hue:", error);
-        return [];
+    .mobile-menu {
+      display: none;
+      transition: all 0.3s ease;
+    }
+
+    .mobile-menu.active {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
     }
 
-    // NEW: Generate analogous palette from specific hue
-    function generateAnalogousFromHue(baseHue, imageColors, range) {
-      try {
-        const palette = [];
-        
-        // Create analogous hues with specified range
-        const analogousHues = [
-          (baseHue - range + 360) % 360,
-          (baseHue - range/2 + 360) % 360,
-          baseHue,
-          (baseHue + range/2) % 360,
-          (baseHue + range) % 360
-        ];
-        
-        console.log(`Generating analogous ${range}° range from ${baseHue}°: ${analogousHues.map(h => Math.round(h) + '°').join(', ')}`);
-        
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          const targetHue = analogousHues[index % analogousHues.length];
-          const analogousColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(analogousColor);
-        });
-        
-        return palette;
-      } catch (error) {
-        console.error("Error generating analogous from hue:", error);
-        return [];
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
     }
 
-    // NEW: Generate complementary palette from specific hue
-    function generateComplementaryFromHue(baseHue, imageColors, baseRatio) {
-      try {
-        const complementH = (baseHue + 180) % 360;
-        const palette = [];
-        
-        console.log(`Generating complementary from ${baseHue}° + ${complementH}° with ${Math.round(baseRatio*100)}%/${Math.round((1-baseRatio)*100)}% ratio`);
-        
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          
-          // Use ratio to determine base vs complement distribution
-          const useBase = (index / imageColors.length) < baseRatio;
-          const targetHue = useBase ? baseHue : complementH;
-          
-          const complementaryColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(complementaryColor);
-        });
-        
-        return palette;
-      } catch (error) {
-        console.error("Error generating complementary from hue:", error);
-        return [];
+    @keyframes fadeInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
       }
     }
 
-    // NEW: Generate split complementary palette from specific hue
-function generateSplitComplementaryFromHue(baseHue, imageColors, splitAngles) {
-  try {
-    const complementHue = (baseHue + 180) % 360;
-    
-    // Split angles should be relative offsets from complement (e.g., [-30, 30])
-    const split1H = (complementHue + splitAngles[0]) % 360;
-    const split2H = (complementHue + splitAngles[1]) % 360;
-    
-    // Ensure positive values
-    const normalizedSplit1 = split1H < 0 ? split1H + 360 : split1H;
-    const normalizedSplit2 = split2H < 0 ? split2H + 360 : split2H;
-    
-    const palette = [];
-    const targetHues = [baseHue, normalizedSplit1, normalizedSplit2];
-    
-    console.log(`Generating split complementary from ${baseHue}°: base ${baseHue}°, splits: ${Math.round(normalizedSplit1)}°, ${Math.round(normalizedSplit2)}°`);
-    
-    imageColors.forEach((color, index) => {
-      const [originalH, originalS, originalL] = rgbToHsl(...color);
-      const targetHue = targetHues[index % targetHues.length];
-      const splitComplementaryColor = hslToRgb(targetHue, originalS, originalL);
-      palette.push(splitComplementaryColor);
-    });
-    
-    return palette;
-  } catch (error) {
-    console.error("Error generating split complementary from hue:", error);
-    return [];
-  }
-}
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
 
-
-    // NEW: Generate triadic palette from specific hue
-    function generateTriadicFromHue(baseHue, imageColors, spacing) {
-      try {
-        const triad1H = (baseHue + spacing) % 360;
-        const triad2H = (baseHue + spacing * 2) % 360;
-        const palette = [];
-        
-        const targetHues = [baseHue, triad1H, triad2H];
-        
-        console.log(`Generating triadic from ${baseHue}° with ${spacing}° spacing: ${targetHues.map(h => Math.round(h) + '°').join(', ')}`);
-        
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          const targetHue = targetHues[index % targetHues.length];
-          const triadicColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(triadicColor);
-        });
-        
-        return palette;
-      } catch (error) {
-        console.error("Error generating triadic from hue:", error);
-        return [];
+      to {
+        opacity: 1;
+        transform: translateX(0);
       }
     }
 
-    // NEW: Generate tetradic palette from specific hue
-    function generateTetradicFromHue(baseHue, imageColors, spacing) {
-      try {
-        // FIXED: For tetradic/square, calculate rectangle coordinates properly
-        // Tetradic creates a rectangle on the color wheel
-        const tetrad1H = (baseHue + spacing) % 360;           // Adjacent color
-        const tetrad2H = (baseHue + 180) % 360;               // Complement of base
-        const tetrad3H = (tetrad1H + 180) % 360;              // Complement of adjacent
-        
-        const palette = [];
-        const targetHues = [baseHue, tetrad1H, tetrad2H, tetrad3H];
-        
-        console.log(`Generating tetradic from ${baseHue}° with ${spacing}° spacing: ${targetHues.map(h => Math.round(h) + '°').join(', ')}`);
-        
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          const targetHue = targetHues[index % targetHues.length];
-          const tetradicColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(tetradicColor);
-        });
-        
-        return palette;
-      } catch (error) {
-        console.error("Error generating tetradic from hue:", error);
-        return [];
-      }
-    }
-    // NEW: Create comprehensive strategies that cover the full color spectrum
-    function createComprehensiveDiversityStrategies(harmonyType, imageColors) {
-      const strategies = [];
-      
-      // Define base hues across the full spectrum (every 30 degrees)
-      const baseHues = [
-        { name: "Red", hue: 0 },
-        { name: "Orange", hue: 30 },
-        { name: "Yellow", hue: 60 },
-        { name: "Lime", hue: 90 },
-        { name: "Green", hue: 120 },
-        { name: "Teal", hue: 150 },
-        { name: "Cyan", hue: 180 },
-        { name: "Sky", hue: 210 },
-        { name: "Blue", hue: 240 },
-        { name: "Purple", hue: 270 },
-        { name: "Magenta", hue: 300 },
-        { name: "Pink", hue: 330 }
-      ];
-      
-      switch(harmonyType) {
-        case 'Monochromatic':
-          // Create monochromatic strategies for each base hue with different saturation approaches
-          baseHues.forEach(base => {
-            strategies.push({
-              name: `${base.name}_HighSat`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateMonochromaticFromHue(base.hue, imageColors, 'high_saturation')
-            });
-            
-            strategies.push({
-              name: `${base.name}_LowSat`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateMonochromaticFromHue(base.hue, imageColors, 'low_saturation')
-            });
-            
-            strategies.push({
-              name: `${base.name}_Mixed`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateMonochromaticFromHue(base.hue, imageColors, 'mixed_saturation')
-            });
-          });
-          break;
-          
-        case 'Analogous':
-          // Create analogous strategies for each base hue
-          baseHues.forEach(base => {
-            strategies.push({
-              name: `${base.name}_Narrow`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateAnalogousFromHue(base.hue, imageColors, 15)
-            });
-            
-            strategies.push({
-              name: `${base.name}_Wide`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateAnalogousFromHue(base.hue, imageColors, 45)
-            });
-          });
-          break;
-          
-        case 'Complementary':
-          // Create complementary strategies for each base hue
-          baseHues.forEach(base => {
-            strategies.push({
-              name: `${base.name}_Balanced`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateComplementaryFromHue(base.hue, imageColors, 0.5)
-            });
-            
-            strategies.push({
-              name: `${base.name}_BaseDominant`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateComplementaryFromHue(base.hue, imageColors, 0.7)
-            });
-            
-            strategies.push({
-              name: `${base.name}_CompDominant`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateComplementaryFromHue(base.hue, imageColors, 0.3)
-            });
-          });
-          break;
-          
-        case 'Split Complementary':
-          baseHues.forEach(base => {
-            strategies.push({
-              name: `${base.name}_Classic`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [-30, 30]) // ±30° from complement
-            });
-            
-            strategies.push({
-              name: `${base.name}_Wide`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [-45, 45]) // ±45° from complement  
-            });
-            
-            strategies.push({
-              name: `${base.name}_Narrow`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [-15, 15]) // ±15° from complement
-            });
-          });
-          break;
-        case 'Triadic':
-          baseHues.forEach(base => {
-            strategies.push({
-              name: `${base.name}_Perfect`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateTriadicFromHue(base.hue, imageColors, 120)
-            });
-            
-            strategies.push({
-              name: `${base.name}_Shifted`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateTriadicFromHue(base.hue, imageColors, 115)
-            });
-          });
-          break;
-          
-        case 'Tetradic':
-        case 'Square':
-          baseHues.forEach(base => {
-            strategies.push({
-              name: `${base.name}_Perfect`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateTetradicFromHue(base.hue, imageColors, 90)
-            });
-            
-            strategies.push({
-              name: `${base.name}_Shifted`,
-              generatePalette: (imageColors, paletteIndex) => 
-                generateTetradicFromHue(base.hue, imageColors, 85)
-            });
-          });
-          break;
-      }
-      
-      // Shuffle strategies to ensure variety
-      return shuffleArray(strategies);
-    }
+    @keyframes float {
 
-    // NEW: Enhanced palette signature for better uniqueness detection
-    function createEnhancedPaletteSignature(palette, harmonyType) {
-      const signature = palette.slice(0, 8).map((color, index) => {
-        const [h, s, l] = rgbToHsl(...color);
-        
-        // Create more granular signature for background color
-        if (index === 0) {
-          return `bg_${Math.round(h/5)}:${Math.round(s/10)}:${Math.round(l/10)}`;
-        }
-        
-        // Different granularity based on harmony type
-        let hueGrain, satGrain, lightGrain;
-        
-        switch(harmonyType) {
-          case 'Monochromatic':
-            hueGrain = 3; // Very fine hue detection since all should be similar
-            satGrain = 15; // Coarser saturation grouping
-            lightGrain = 15; // Coarser lightness grouping
-            break;
-          case 'Analogous':
-            hueGrain = 8;
-            satGrain = 20;
-            lightGrain = 20;
-            break;
-          default:
-            hueGrain = 15;
-            satGrain = 25;
-            lightGrain = 25;
-        }
-        
-        return `${Math.round(h/hueGrain)}:${Math.round(s/satGrain)}:${Math.round(l/lightGrain)}`;
-      }).join('|');
-      
-      return `${harmonyType}_${signature}`;
-    }
-
-    // FIXED: Enhanced unique palette generation that creates ALL color families
-    function generateUniquePalettes(imageColors, harmonyType, palettesToGenerate) {
-      console.log(`Generating ${palettesToGenerate} unique ${harmonyType} palettes from ${imageColors.length} colors`);
-      
-      const palettes = [];
-      const usedColorCombinations = new Set();
-      const maxAttempts = palettesToGenerate * 3;
-      let attempts = 0;
-      
-      // FIXED: Create strategies that cover ALL color wheel regions, not just what's in the image
-      const diversityStrategies = createComprehensiveDiversityStrategies(harmonyType, imageColors);
-      
-      while (palettes.length < palettesToGenerate && attempts < maxAttempts) {
-        attempts++;
-        
-        // Choose diversity strategy for this palette
-        const strategyIndex = palettes.length % diversityStrategies.length;
-        const strategy = diversityStrategies[strategyIndex];
-        
-        console.log(`Palette ${palettes.length}: Using strategy "${strategy.name}"`);
-        
-        // Generate palette using the strategy
-        const palette = strategy.generatePalette(imageColors, palettes.length);
-        
-        if (!palette || palette.length === 0) {
-          console.warn(`Strategy "${strategy.name}" failed to generate palette`);
-          continue;
-        }
-        
-        // Check uniqueness with enhanced signature
-        const paletteSignature = createEnhancedPaletteSignature(palette, harmonyType);
-        
-        if (!usedColorCombinations.has(paletteSignature)) {
-          usedColorCombinations.add(paletteSignature);
-          
-          // Apply background variation
-          let currentBgVariation = backgroundVariation;
-          if (backgroundVariation === 'mixed') {
-            const variations = ['regular', 'dark', 'faint'];
-            currentBgVariation = variations[palettes.length % variations.length];
-          }
-          
-          if (palette.length > 0) {
-            palette[0] = createBackgroundVariations(palette[0], currentBgVariation);
-          }
-          
-          // Store enhanced metadata
-          palette._backgroundVariation = currentBgVariation;
-          palette._harmonyType = harmonyType;
-          palette._paletteIndex = palettes.length;
-          palette._strategy = strategy.name;
-          palette._attempts = attempts;
-          
-          palettes.push(palette);
-          
-          console.log(`Generated unique ${harmonyType} palette ${palettes.length} using "${strategy.name}" strategy (${currentBgVariation} bg) - attempts: ${attempts}`);
-        } else {
-          console.log(`Palette signature already exists for strategy "${strategy.name}", trying next...`);
-        }
+      0%,
+      100% {
+        transform: translateY(0px);
       }
-      
-      console.log(`Successfully generated ${palettes.length} unique ${harmonyType} palettes in ${attempts} attempts`);
-      return palettes;
-    }
-    
-    // Helper function to create palette signature for uniqueness checking
-    function createPaletteSignature(palette) {
-      return palette.slice(0, 5).map(color => {
-        const [h, s, l] = rgbToHsl(...color);
-        return `${Math.round(h/10)}:${Math.round(s/20)}:${Math.round(l/20)}`;
-      }).join('|');
-    }
-    
-    // Function to create background variations
-    function createBackgroundVariations(baseColor, variationType) {
-      const [h, s, l] = rgbToHsl(...baseColor);
-      
-      switch (variationType) {
-        case 'dark':
-          return hslToRgb(h, Math.max(s * 0.6, 8), Math.max(l * 0.25, 3));
-          
-        case 'faint':
-          const newSat = Math.min(25, s + 10);
-          const newLight = Math.max(85, Math.min(95, l + 5));
-          return hslToRgb(h, newSat, newLight);
-          
-        case 'regular':
-        default:
-          return hslToRgb(h, Math.max(s * 0.7, 12), Math.min(Math.max(l * 0.9, 15), 75));
+
+      50% {
+        transform: translateY(-10px);
       }
     }
 
-    // Add this function to clear harmony cache when switching harmony types
-    function clearHarmonyPreviewCache(harmonyType = null) {
-      try {
-        if (!window.palettePreviewCache || !window.palettePreviewCache['harmony']) {
-          return;
-        }
-        
-        if (harmonyType) {
-          // Clear only specific harmony type
-          const keysToDelete = Object.keys(window.palettePreviewCache['harmony'])
-            .filter(key => key.startsWith(`${harmonyType}_`));
-          
-          keysToDelete.forEach(key => {
-            delete window.palettePreviewCache['harmony'][key];
-          });
-          
-          console.log(`Cleared ${keysToDelete.length} cached previews for ${harmonyType}`);
-        } else {
-          // Clear all harmony previews
-          window.palettePreviewCache['harmony'] = {};
-          console.log('Cleared all harmony preview cache');
-        }
-      } catch (error) {
-        console.warn('Error clearing harmony preview cache:', error);
-      }
-    }
-    
-    // UPDATED generateHarmonyPalettes function using unique palette generation
-    // UPDATED generateHarmonyPalettes function using unique palette generation
-    async function generateHarmonyPalettes(imageColors) {
-      clearHarmonyPreviewCache(harmonyType);
+    @keyframes pulse {
 
-      const paletteCollectionName = `${harmonyCollection}PaletteColors`;
-      
-      if (!window[paletteCollectionName]) {
-        window[paletteCollectionName] = {};
+      0%,
+      100% {
+        opacity: 1;
       }
-      
-      const totalColors = imageColors.length;
-      console.log(`Total distinct colors available: ${totalColors}`);
-      
-      // FIXED: Generate more palettes based on background variation setting
-      let palettesToGenerate;
-      switch(backgroundVariation) {
-        case 'mixed':
-          palettesToGenerate = 36; // 12 base hues × 3 variations each
-          break;
-        default:
-          palettesToGenerate = 24; // 12 base hues × 2 variations each  
-      }
-      
-      console.log(`Generating ${palettesToGenerate} palettes for ${harmonyType} with ${backgroundVariation} background`);
-      
-      // Use the new unique palette generation
-      const uniquePalettes = generateUniquePalettes(imageColors, harmonyType, palettesToGenerate);
-      
-      // Store the palettes
-      uniquePalettes.forEach((palette, index) => {
-        logPalette(palette, `${harmonyType} Unique Palette ${index} (${palette.length} colors, ${palette._backgroundVariation} bg, ${palette._strategy} strategy)`);
-        window[paletteCollectionName][index] = palette;
-        console.log(`Stored unique palette in window.${paletteCollectionName}[${index}] with ${palette.length} colors`);
-      });
-      
-      // Create backup in truePaletteColors for processPallet compatibility
-      if (!window.truePaletteColors) {
-        window.truePaletteColors = {};
-      }
-      
-      // If showing in sidebar, display the palettes
-      if (showInSidebar) {
-        displayHarmonyPalettesInSidebar(harmonyType, paletteCollectionName, backgroundVariation);
-      } else {
-        // Auto-apply random palette (existing behavior)
-        const randomIndex = Math.floor(Math.random() * uniquePalettes.length);
-        console.log(`Auto-applying random ${harmonyType} palette ${randomIndex} with ${uniquePalettes[randomIndex].length} colors`);
-        
-        window.truePaletteColors[randomIndex] = window[paletteCollectionName][randomIndex];
-        
-        setTimeout(async () => {
-          try {
-            if (typeof processPallet === 'function') {
-              await processPallet(
-                layerCtx, 
-                totalLayers, 
-                layerCanvas, 
-                currentLayerIndex, 
-                null, 
-                "true",
-                randomIndex,
-                true
-              );
-              
-              const selectedPalette = uniquePalettes[randomIndex];
-              const bgType = selectedPalette._backgroundVariation || 'regular';
-              const strategy = selectedPalette._strategy || 'Standard';
-              showToast(`Applied ${harmonyType} palette ${randomIndex} (${selectedPalette.length} colors, ${bgType} bg, ${strategy})`);
-            } else {
-              console.error('processPallet function not available');
-              showToast(`Error: processPallet function not found`);
-            }
-          } catch (applyError) {
-            console.error('Error applying palette:', applyError);
-            showToast(`Error applying palette: ${applyError.message}`);
-          }
-        }, 100);
-      }
-    }
-        // Main execution
-    const imageColors = await getImageColors();
-    
-    if (!imageColors || imageColors.length === 0) {
-      throw new Error("Could not extract colors from the image");
-    }
-    
-    console.log(`Successfully extracted ${imageColors.length} colors from the image`);
-    await generateHarmonyPalettes(imageColors);
-    
-  } catch (error) {
-    console.error("Error while processing harmony:", error);
-    if (showInSidebar) {
-      showToast(`Error processing ${harmonyType} harmony: ${error.message}`);
-    } else {
-      showToast(`Error processing ${harmonyType} harmony: ${error.message}`);
-    }
-  } finally {
-    if (showInSidebar) {
-      if (sidebarLoading) sidebarLoading.style.display = 'none';
-    } else {
-      if (loadingScreen) loadingScreen.style.display = 'none';
-    }
-  }
-}
 
-// Function to apply harmony palette (unchanged)
-async function applyHarmonyPalette(paletteIndex, paletteCollectionName) {
-  try {
-    const canvas = document.getElementById('layer_canvas_1');
-    if (!canvas) {
-      const toast = document.createElement('div');
-      toast.textContent = 'Canvas not found';
-      toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255,0,0,0.8);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 6px;
-        z-index: 10001;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
-      return;
+      50% {
+        opacity: 0.5;
+      }
     }
-    
-    const ctx = canvas.getContext('2d');
-    const palette = window[paletteCollectionName][paletteIndex];
-    
-    if (!palette) {
-      const toast = document.createElement('div');
-      toast.textContent = 'Palette not found';
-      toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255,0,0,0.8);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 6px;
-        z-index: 10001;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
-      return;
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.8s ease forwards;
     }
-    
-    // Create backup in truePaletteColors
-    if (!window.truePaletteColors) {
-      window.truePaletteColors = {};
+
+    .animate-fade-in-left {
+      animation: fadeInLeft 0.8s ease forwards;
     }
-    window.truePaletteColors[paletteIndex] = palette;
-    
-    if (typeof processPallet === 'function') {
-      await processPallet(ctx, 1, canvas, 0, null, "true", paletteIndex, true);
-      
-      const bgType = palette._backgroundVariation || 'regular';
-      const strategy = palette._strategy || 'Standard';
-      const toast = document.createElement('div');
-      toast.textContent = `Applied harmony palette ${paletteIndex} (${bgType} bg, ${strategy})`;
-      toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,128,0,0.8);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 6px;
-        z-index: 10001;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
-    } else {
-      const toast = document.createElement('div');
-      toast.textContent = 'Error: processPallet function not available';
-      toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255,0,0,0.8);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 6px;
-        z-index: 10001;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
+
+    .animate-fade-in-right {
+      animation: fadeInRight 0.8s ease forwards;
     }
-  } catch (error) {
-    console.error('Error applying harmony palette:', error);
-    const toast = document.createElement('div');
-    toast.textContent = `Error applying palette: ${error.message}`;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,0,0,0.8);
+
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .animate-pulse-slow {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    /* Hover Animations */
+    .hover-scale {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-scale:hover {
+      transform: scale(1.05);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .hover-lift:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Button Animations */
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .btn-secondary:hover {
+      background: #667eea;
       color: white;
-      padding: 12px 24px;
-      border-radius: 6px;
-      z-index: 10001;
-      font-family: Arial, sans-serif;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+    }
+
+    /* Card Animations */
+    .feature-card {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+
+    .feature-card:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      border-color: rgba(102, 126, 234, 0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+
+    .feature-card:hover h3,
+    .feature-card:hover p {
+      color: #ffffff !important;
+    }
+
+    .feature-card-primary {
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      color: #1e293b;
+    }
+
+    .feature-card-primary:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      border-color: rgba(102, 126, 234, 0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      transform: translateY(-8px) scale(1.02);
+    }
+
+    .feature-card-primary h3,
+    .feature-card-primary p {
+      color: #1e293b;
+    }
+
+    .feature-card-primary:hover h3,
+    .feature-card-primary:hover p {
+      color: #ffffff !important;
+    }
+
+
+    /* Text Animations */
+    .text-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .text-gradient-orange {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .custom-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.3);
+      outline: none;
+      margin: 20px 0;
+    }
+
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .custom-slider-dark {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .custom-slider-dark::-webkit-slider-thumb {
+      background: #667eea;
+    }
+
+    #myVideo,
+    #myVideo * {
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+
+    /* Loading animations */
+    .fade-in {
+      opacity: 0;
+      animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .fade-in-delay-1 {
+      animation-delay: 0.1s;
+    }
+
+    .fade-in-delay-2 {
+      animation-delay: 0.2s;
+    }
+
+    .fade-in-delay-3 {
+      animation-delay: 0.3s;
+    }
+
+    .fade-in-delay-4 {
+      animation-delay: 0.4s;
+    }
+
+    /* Scroll reveal */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s ease;
+    }
+
+    .scroll-reveal.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Gradient backgrounds */
+    .bg-gradient-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .bg-gradient-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .bg-gradient-tertiary {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    /* Figma-style font weights and typography - Ultra thin */
+    .figma-text-sm {
       font-size: 14px;
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => document.body.removeChild(toast), 3000);
-  }
-}
-
-function displayHarmonyPalettesInSidebar(harmonyType, paletteCollectionName, backgroundVariation) {
-  const container = document.getElementById('harmonyPalettesContainer');
-  if (!container) return;
-  
-  container.innerHTML = ''; // Clear existing content
-  
-  const palettes = window[paletteCollectionName];
-  
-  if (!palettes) {
-    container.innerHTML = '<div class="text-center text-muted">No palettes generated</div>';
-    return;
-  }
-  
-  // Determine how many palettes to show based on background variation
-  const palettesToShow = backgroundVariation === 'mixed' ? 15 : 10;
-  
-  // Helper functions (copied from your trending palette code)
-  function rgbToHex(r, g, b) {
-    return '#' + [r, g, b].map(x => {
-      const hex = x.toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    }).join('');
-  }
-  
-  function rgbToHsl(r, g, b) {
-    try {
-      r /= 255;
-      g /= 255;
-      b /= 255;
-      
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
-      
-      if (max === min) {
-        h = s = 0;
-      } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        
-        switch (max) {
-          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-      }
-      
-      return [h * 360, s * 100, l * 100];
-    } catch (e) {
-      return [Math.random() * 360, 70 + Math.random() * 30, 45 + Math.random() * 25];
-    }
-  }
-  
-  function hslToRgb(h, s, l) {
-    try {
-      h /= 360;
-      s /= 100;
-      l /= 100;
-      
-      let r, g, b;
-      
-      if (s === 0) {
-        r = g = b = l;
-      } else {
-        const hue2rgb = (p, q, t) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
-        };
-        
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
-      }
-      
-      return [
-        Math.round(r * 255),
-        Math.round(g * 255),
-        Math.round(b * 255)
-      ];
-    } catch (e) {
-      return [
-        Math.floor(Math.random() * 256),
-        Math.floor(Math.random() * 256),
-        Math.floor(Math.random() * 256)
-      ];
-    }
-  }
-  
-  function getColorName(rgb) {
-    try {
-      const [r, g, b] = rgb;
-      
-      const rNorm = r / 255;
-      const gNorm = g / 255;
-      const bNorm = b / 255;
-      const max = Math.max(rNorm, gNorm, bNorm);
-      const min = Math.min(rNorm, gNorm, bNorm);
-      const diff = max - min;
-      
-      let h = 0;
-      if (max !== min) {
-        if (max === rNorm) {
-          h = (60 * ((gNorm - bNorm) / diff) + 360) % 360;
-        } else if (max === gNorm) {
-          h = (60 * ((bNorm - rNorm) / diff) + 120) % 360;
-        } else {
-          h = (60 * ((rNorm - gNorm) / diff) + 240) % 360;
-        }
-      }
-      
-      const v = max;
-      
-      let hueName;
-      if (h < 15 || h >= 345) hueName = "Red";
-      else if (h >= 15 && h < 45) hueName = "Orange";
-      else if (h >= 45 && h < 75) hueName = "Yellow";
-      else if (h >= 75 && h < 165) hueName = "Green";
-      else if (h >= 165 && h < 195) hueName = "Cyan";
-      else if (h >= 195 && h < 255) hueName = "Blue";
-      else if (h >= 255 && h < 285) hueName = "Purple";
-      else if (h >= 285 && h < 345) hueName = "Pink";
-      
-      let shadePrefix = "";
-      if (v < 0.4) shadePrefix = "Dark";
-      else if (v > 0.7) shadePrefix = "Light";
-      
-      return shadePrefix ? `${shadePrefix} ${hueName}` : hueName;
-    } catch (e) {
-      return "Color";
-    }
-  }
-  
-  function prepareDisplayColors(colors) {
-    const MAX_DISPLAY_COUNT = 8;
-    const MIN_DISPLAY_COUNT = 4;
-    
-    let validColors = colors.filter(color => 
-      Array.isArray(color) && 
-      color.length === 3 && 
-      color.every(val => typeof val === 'number' && !isNaN(val) && val >= 0 && val <= 255)
-    );
-    
-    if (validColors.length === 0) {
-      validColors = [];
-      for (let i = 0; i < MIN_DISPLAY_COUNT; i++) {
-        const hue = i * (360 / MIN_DISPLAY_COUNT);
-        validColors.push(hslToRgb(hue, 70 + Math.random() * 30, 45 + Math.random() * 25));
-      }
-      return validColors;
-    }
-    
-    const colorFamilies = [
-      { name: "Red", range: [345, 15] },
-      { name: "Orange", range: [15, 45] },
-      { name: "Yellow", range: [45, 75] },
-      { name: "Green", range: [75, 165] },
-      { name: "Cyan", range: [165, 195] },
-      { name: "Blue", range: [195, 255] },
-      { name: "Purple", range: [255, 285] },
-      { name: "Pink", range: [285, 345] }
-    ];
-    
-    const colorsByFamily = {};
-    colorFamilies.forEach(family => {
-      colorsByFamily[family.name] = [];
-    });
-    
-    validColors.forEach(color => {
-      const [h, s, l] = rgbToHsl(...color);
-      
-      let foundFamily = false;
-      for (const family of colorFamilies) {
-        if (family.name === "Red") {
-          if (h >= family.range[0] || h < family.range[1]) {
-            colorsByFamily[family.name].push(color);
-            foundFamily = true;
-            break;
-          }
-        } else if (h >= family.range[0] && h < family.range[1]) {
-          colorsByFamily[family.name].push(color);
-          foundFamily = true;
-          break;
-        }
-      }
-      
-      if (!foundFamily) {
-        colorsByFamily['Blue'].push(color);
-      }
-    });
-    
-    let displayColors = [validColors[0]];
-    
-    const [firstColorH, firstColorS, firstColorL] = rgbToHsl(...validColors[0]);
-    let firstColorFamily = null;
-    
-    for (const family of colorFamilies) {
-      if (family.name === "Red") {
-        if (firstColorH >= family.range[0] || firstColorH < family.range[1]) {
-          firstColorFamily = family.name;
-          break;
-        }
-      } else if (firstColorH >= family.range[0] && firstColorH < family.range[1]) {
-        firstColorFamily = family.name;
-        break;
-      }
-    }
-    
-    const sortedFamilies = Object.entries(colorsByFamily)
-      .sort((a, b) => b[1].length - a[1].length)
-      .filter(([_, colors]) => colors.length > 0);
-    
-    let optimalDisplayCount = Math.min(
-      MAX_DISPLAY_COUNT,
-      Math.max(MIN_DISPLAY_COUNT, sortedFamilies.length + 1)
-    );
-    
-    for (const [familyName, familyColors] of sortedFamilies) {
-      if (familyName === firstColorFamily) continue;
-      if (displayColors.length >= optimalDisplayCount) break;
-      
-      let bestColor = familyColors[0];
-      let highestSat = 0;
-      
-      for (const color of familyColors) {
-        const [_, s, __] = rgbToHsl(...color);
-        if (s > highestSat) {
-          highestSat = s;
-          bestColor = color;
-        }
-      }
-      
-      displayColors.push(bestColor);
-    }
-    
-    return displayColors.slice(0, MAX_DISPLAY_COUNT);
-  }
-  
-// Replace your existing generateHarmonyPreview function with this corrected version
-async function generateHarmonyPreview(previewCanvas, paletteColors, paletteIndex, harmonyType) {
-  try {
-    // Create unique cache key that includes harmony type
-    const cacheKey = `${harmonyType}_${paletteIndex}`;
-    
-    // Check cache first with proper harmony type distinction
-    if (window.palettePreviewCache && 
-        window.palettePreviewCache['harmony'] && 
-        window.palettePreviewCache['harmony'][cacheKey]) {
-        
-        const cachedPreview = window.palettePreviewCache['harmony'][cacheKey];
-        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-        
-        // Clear canvas without white background
-        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-        
-        console.log(`Loading cached ${harmonyType} preview for palette ${paletteIndex}`);
-        
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                const scale = Math.min(
-                    previewCanvas.width / img.width,
-                    previewCanvas.height / img.height
-                );
-                const scaledWidth = img.width * scale;
-                const scaledHeight = img.height * scale;
-                const x = (previewCanvas.width - scaledWidth) / 2;
-                const y = (previewCanvas.height - scaledHeight) / 2;
-                
-                ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-                markHarmonyPreviewReady(previewCanvas);
-                resolve();
-            };
-            img.onerror = () => {
-                console.warn(`Failed to load cached ${harmonyType} preview, regenerating...`);
-                // Clear the bad cache entry
-                delete window.palettePreviewCache['harmony'][cacheKey];
-                drawHarmonyFallbackPreview(previewCanvas, paletteIndex, harmonyType);
-                resolve();
-            };
-            img.src = cachedPreview;
-        });
+      font-weight: 300;
+      line-height: 1.5;
     }
 
-    const originalCanvas = document.getElementById('layer_canvas_1');
-    if (!originalCanvas) {
-      console.error('No original canvas found for harmony preview');
-      drawHarmonyFallbackPreview(previewCanvas, paletteIndex, harmonyType);
-      return;
+    .figma-text-base {
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.5;
     }
-    
-    console.log(`Generating NEW ${harmonyType} preview ${paletteIndex} with harmony colors`);
-    
-    // **GET ORIGINAL COLORS FOR MAPPING - BUT USE HARMONY PALETTE AS TARGET**
-    const originalImageData = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height);
-    
-    // WITH THIS SIMPLIFIED VERSION:
-    let originalColors = [];
-    try {
-      // Use the same reliable method as the normal function
-      const originalImageData = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height);
-      originalColors = await getDistinctColors(originalImageData, 30, 20, 40);
-    } catch (e) {
-      console.warn('Error getting original colors for harmony preview:', e);
-      // Use a simple fallback - take colors from the first few pixels
-      const ctx = originalCanvas.getContext('2d');
-      const pixelData = ctx.getImageData(0, 0, Math.min(10, originalCanvas.width), 1).data;
-      for (let i = 0; i < pixelData.length; i += 4) {
-        if (pixelData[i + 3] > 0) { // Only non-transparent pixels
-          originalColors.push([pixelData[i], pixelData[i + 1], pixelData[i + 2]]);
-        }
-      }
-    }
-    
-    if (!originalColors || originalColors.length === 0) {
-      console.error('No original colors found for harmony preview');
-      // Create 200x200 preview from original image without processing
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = 200;
-      tempCanvas.height = 200;
-      const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-      
-      // Scale original to 200x200
-      const originalAspect = originalCanvas.width / originalCanvas.height;
-      let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-      
-      if (originalAspect > 1) {
-        drawWidth = 200;
-        drawHeight = 200 / originalAspect;
-        offsetY = (200 - drawHeight) / 2;
-      } else {
-        drawHeight = 200;
-        drawWidth = 200 * originalAspect;
-        offsetX = (200 - drawWidth) / 2;
-      }
-      
-      tempCtx.drawImage(originalCanvas, offsetX, offsetY, drawWidth, drawHeight);
-      
-      const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-      ctx.clearRect(0, 0, 200, 200);
-      ctx.drawImage(tempCanvas, 0, 0, 200, 200);
-      cacheHarmonyPreview(previewCanvas, paletteIndex, harmonyType);
-      markHarmonyPreviewReady(previewCanvas);
-      return;
-    }
-    
-    // **CREATE 600x600 PROCESSING CANVAS WITH TRANSPARENCY**
-    const processingCanvas = document.createElement('canvas');
-    processingCanvas.width = 600;
-    processingCanvas.height = 600;
-    const processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
-    
-    // Scale and draw the original image to 600x600 maintaining aspect ratio
-    const originalAspect = originalCanvas.width / originalCanvas.height;
-    let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-    
-    if (originalAspect > 1) {
-      drawWidth = 600;
-      drawHeight = 600 / originalAspect;
-      offsetY = (600 - drawHeight) / 2;
-    } else {
-      drawHeight = 600;
-      drawWidth = 600 * originalAspect;
-      offsetX = (600 - drawWidth) / 2;
-    }
-    
-    // Draw the original image to 600x600 (preserving transparency)
-    processingCtx.drawImage(originalCanvas, offsetX, offsetY, drawWidth, drawHeight);
-    
-    // **GET IMAGE DATA FROM 600x600 FOR PROCESSING**
-    const imageData = processingCtx.getImageData(0, 0, 600, 600);
-    
-    // **CRITICAL FIX: USE HARMONY PALETTE COLORS AS TARGET, NOT ORIGINAL COLORS**
-    const colorMappings = [];
 
-    // Create mappings for ALL original colors, cycling through the harmony palette
-    for (let i = 0; i < originalColors.length; i++) {
-      const targetIndex = i % paletteColors.length;
-      colorMappings.push({
-        originalColor: originalColors[i],
-        targetColor: paletteColors[targetIndex]
-      });
+    .figma-text-lg {
+      font-size: 18px;
+      font-weight: 300;
+      line-height: 1.4;
     }
+
+    .figma-text-xl {
+      font-size: 20px;
+      font-weight: 300;
+      line-height: 1.4;
+    }
+
+    .figma-text-2xl {
+      font-size: 24px;
+      font-weight: 300;
+      line-height: 1.33;
+    }
+
+    .figma-text-3xl {
+      font-size: 30px;
+      font-weight: 300;
+      line-height: 1.2;
+    }
+
+    .figma-text-4xl {
+      font-size: 36px;
+      font-weight: 300;
+      line-height: 1.1;
+    }
+
+    .figma-text-5xl {
+      font-size: 48px;
+      font-weight: 300;
+      line-height: 1.1;
+    }
+
+    .figma-text-6xl {
+      font-size: 60px;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    /* Hero text - Figma style massive bold headlines */
+    .figma-hero {
+      font-size: 55px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    @media (max-width: 768px) {
+      .figma-hero {
+        font-size: 48px;
+        line-height: 1;
+      }
+    }
+
+    /* Solid background sections like Figma */
+    .section-solid-light {
+      background: #feffc7;
+      border-top: 1px solid rgba(226, 232, 240, 0.8);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .section-solid-dark {
+      background: #1e293b;
+      color: white;
+    }
+
+    .section-solid-purple {
+      background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+      color: white;
+    }
+
+    .section-solid-blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+    }
+
+    .section-solid-green {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .section-solid-gray {
+      background: #f1f5f9;
+      border-top: 1px solid rgba(203, 213, 225, 0.6);
+      border-bottom: 1px solid rgba(203, 213, 225, 0.6);
+    }
+
+    .section-figma-purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+      color: white;
+    }
+
+    .section-figma-green {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+    }
+
+    /* Testimonial card styles */
+    .testimonial-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Scrollable testimonial container */
+    .testimonial-scroll-container {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* IE and Edge */
+    }
+
+    .testimonial-scroll-container::-webkit-scrollbar {
+      display: none;
+      /* Chrome, Safari, Opera */
+    }
+
+    .testimonial-scroll-wrapper {
+      display: flex;
+      gap: 24px;
+      padding: 20px 0;
+      animation: scrollTestimonials 30s linear infinite;
+      width: max-content;
+    }
+
+    .testimonial-scroll-wrapper:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes scrollTestimonials {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-33.33%);
+      }
+    }
+
+    .testimonial-card-scroll {
+      min-width: 350px;
+      max-width: 350px;
+      flex-shrink: 0;
+    }
+
+    /* Pricing card styles */
+    .pricing-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transition: all 0.4s ease;
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .pricing-card.featured {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .pricing-card.featured:hover {
+      transform: scale(1.08) translateY(-8px);
+    }
+
+    /* Company logo grid */
+    .company-logo {
+      opacity: 0.6;
+      transition: opacity 0.3s ease;
+      filter: grayscale(100%);
+    }
+
+    .company-logo:hover {
+      opacity: 1;
+      filter: grayscale(0%);
+    }
+
+    h2 {
+      font-family: var(--f-font-sans,
+          "__figmaSans_a26a19",
+          "__figmaSans_Fallback_a26a19",
+          SF Pro Display,
+          system-ui,
+          helvetica,
+          sans-serif);
+    }
+
+    /* Palette Animation Styles */
+    .funky-text-landing {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 18px;
+      font-weight: 300;
+      color: #000000;
+      text-align: left;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: gentleBounce 3s ease-in-out infinite;
+    }
+
+    .funky-text-landing:hover {
+      transform: scale(1.05) translateY(-2px);
+      color: #333333;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+      animation: hoverBounce 0.6s ease-in-out infinite;
+    }
+
+    .funky-text-landing .line1,
+    .funky-text-landing .line2 {
+      display: block;
+      line-height: 1.2;
+      transition: transform 0.2s ease;
+    }
+
+    .funky-text-landing .line2 {
+      font-size: 18px;
+      margin-top: 1px;
+    }
+
+    .funky-text-landing:hover .line1 {
+      transform: translateX(-2px);
+    }
+
+    .funky-text-landing:hover .line2 {
+      transform: translateX(2px);
+    }
+
+    .main-animation-container-landing {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      flex-wrap: nowrap;
+      width: 100%;
+      max-width: 550px;
+    }
+
+    .image-pair-landing {
+      display: none;
+      align-items: baseline;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    .image-pair-landing.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .animation-left-cnt-landing {
+      border: 8px solid black;
+      border-right: 0;
+      border-top-left-radius: 15px;
+      border-bottom-left-radius: 15px;
+      display: block;
+      max-width: 180px;
+      height: auto;
+    }
+
+    .animation-right-cnt-landing {
+      border: 8px solid black;
+      border-top-right-radius: 15px;
+      border-bottom-right-radius: 15px;
+      border-top-left-radius: 15px;
+      border-bottom-left-radius: 0;
+      display: block;
+      max-width: 270px;
+      height: auto;
+    }
+
+    .navigation-top {
+      font-weight: inherit;
+    }
+
+    @keyframes gentleBounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes hoverBounce {
+
+      0%,
+      20%,
+      50%,
+      80%,
+      100% {
+        transform: scale(1.05) translateY(-2px);
+      }
+
+      40% {
+        transform: scale(1.08) translateY(-6px);
+      }
+
+      60% {
+        transform: scale(1.08) translateY(-4px);
+      }
+    }
+
+    /* Responsive styles for palette animation */
+    @media (max-width: 768px) {
+      .main-animation-container-landing {
+        max-width: 420px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 150px;
+        border-width: 6px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 230px;
+        border-width: 6px;
+      }
+
+      .funky-text-landing {
+        font-size: 16px;
+        margin-bottom: 15px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 16px;
+      }
+
+      /* Adjust container size for tablets */
+      .w-\[500px\].h-96 {
+        width: 420px;
+        height: 320px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .main-animation-container-landing {
+        max-width: 350px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 120px;
+        border-width: 5px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 190px;
+        border-width: 5px;
+      }
+
+      .funky-text-landing {
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 14px;
+      }
+
+      /* Adjust container size for mobile */
+      .w-\[500px\].h-96 {
+        width: 350px;
+        height: 280px;
+      }
+    }
+
+    @media (max-width: 320px) {
+      .main-animation-container-landing {
+        max-width: 300px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 100px;
+        border-width: 4px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 160px;
+        border-width: 4px;
+      }
+
+      .funky-text-landing {
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+  <!-- Navigation -->
+  <div class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/60">
+    <nav class="backdrop-blur-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <!-- Logo -->
+          <div class="flex items-center gap-3 animate-fade-in-left">
+            <a href="/">
+              <img src="{% static 'images/logo2.png' %}" alt="Colorify Logo" width="190px" />
+            </a>
+          </div>
+          <!-- Navigation Links -->
+<div class="hidden md:flex items-center gap-8 animate-fade-in-up ">
+    <a href="{% url 'home' %}"
+       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Home</a>
+    <a href="{% url 'about' %}"
+       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">About us</a>
+    <a href="{% url 'plans' %}"
+       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Pricing</a>
+    <a href="{% url 'contact' %}"
+       class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact us</a>
+
+    {% if user.is_authenticated %}
+        <a href="{% url 'account_logout' %}"
+           class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+    {% else %}
+        <a href="{% url 'account_login' %}"
+           class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Login</a>
+    {% endif %}
+</div>
+
+
+          <!-- Mobile menu button -->
+          <div class="md:hidden">
+            <button id="mobile-menu-button" class="p-2 rounded-lg hover:bg-slate-100 transition-all duration-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu"
+          class="mobile-menu md:hidden bg-white/95 backdrop-blur-md py-2 px-4 rounded-lg mt-2 shadow-xl border border-slate-200">
+          <a href="{% url 'home' %}" class="block py-2 text-gray-600 hover:text-gray-900">Home</a>
+          <a href="{% url 'about' %}" class="block py-2 text-gray-600 hover:text-gray-900">About us</a>
+          <a href="{% url 'plans' %}" class="block py-2 text-gray-600 hover:text-gray-900">Plans</a>
+          <a href="{% url 'contact' %}" class="block py-2 text-gray-600 hover:text-gray-900">Contact us</a>
+          {% if user.is_authenticated %}
+              <a href="{% url 'account_logout' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
+          {% else %}
+              <a href="{% url 'account_login' %}" class="block w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Try it Now</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+  </div>
+  {% block content %}
+  <div class="bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div class="mx-auto px-4 pt-6 relative overflow-hidden">
+      <!-- Animated Background Elements -->
+      <div class="absolute top-80 left-0 right-0 z-0 animate-pulse-slow">
+        <img src="./static/images/Vector%2049.png" alt="wave background" class="w-full object-cover opacity-30" />
+      </div>
+
+      <!-- Floating Elements -->
+      <div
+        class="absolute top-1/4 right-1/4 w-64 h-64 bg-gradient-tertiary rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float">
+      </div>
+
+
+      <!-- Main Content -->
+      <div class="relative z-10">
+        <!-- Hero Section -->
+        <div class="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto min-h-[80vh]">
+          <!-- Left Side: Content -->
+          <div class="w-full md:w-1/2 text-center md:text-left fade-in">
+            <h1 class="figma-hero mb-8">
+              Generate <br /><span class="text-gradient">Color Matching</span>
+              with a single click<br />
+              <span class="text-gradient">Powered by AI</span>
+            </h1>
+
+            <p class="figma-text-xl text-slate-600 max-w-2xl mx-auto md:mx-0 fade-in-delay-1">
+              Built for digital print units, mills, and design studios worldwide
+            </p>
+
+          <div class="mt-10 flex flex-wrap justify-center md:justify-start gap-4 relative z-20 fade-in-delay-2">
+            <a href="/tif-editor/" class="btn-primary px-8 py-4 text-white rounded-2xl font-light shadow-xl text-lg">
+              Start Creating
+            </a>
+            
+            {% comment %} <!-- Fixed Edit Tiff file button with authentication check -->
+            {% if user.is_authenticated %}
+              <a href="/tif-editor/" class="btn-secondary px-8 py-4 bg-white text-slate-700 rounded-2xl border-2 border-slate-200 font-light shadow-lg text-lg">
+                Edit Tiff file
+              </a>
+            {% else %}
+              <button
+                class="btn-secondary px-8 py-4 bg-white text-slate-700 rounded-2xl border-2 border-slate-200 font-light shadow-lg text-lg"
+                onclick="toggleModal('loginModal')">
+                Edit Tiff file
+              </button>
+            {% endif %} {% endcomment %}
+          </div>
+          </div>
+
+          <!-- Right Side: Enhanced Image Placeholder -->
+          <div class="w-full md:w-1/2 flex justify-center items-center mt-10 md:mt-0 fade-in-delay-3">
+            <div class="relative hover-scale">
+              <div
+                class="w-[500px] h-96 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl flex flex-col items-center justify-center text-slate-500 border border-slate-200 shadow-2xl overflow-hidden p-8">
+<div class="funky-text-landing">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
     
-    console.log(`Creating color mappings for ${harmonyType} preview:`, colorMappings.length, 'mappings');
-    
-    let processedImageData;
-    
-    // Apply color mappings to 600x600 image
-    if (typeof ColorProcessor !== 'undefined') {
-      const colorProcessor = new ColorProcessor();
-      const processingImageUrl = processingCanvas.toDataURL('image/png'); // PNG preserves transparency
-      processedImageData = await colorProcessor.applyMultipleColorMappings(
-        processingImageUrl,
-        colorMappings,
-        useJimp=true
-      );
-    } else {
-      // Fallback: Simple color replacement on 600x600 image
-      const pixels = imageData.data;
-      const tolerance = 30;
-      
-      for (let i = 0; i < pixels.length; i += 4) {
-        const a = pixels[i + 3];
-        
-        // **ONLY PROCESS NON-TRANSPARENT PIXELS**
-        if (a > 0) {
-          const currentColor = [pixels[i], pixels[i + 1], pixels[i + 2]];
-          
-          let closestMapping = null;
-          let minDistance = Infinity;
-          
-          for (const mapping of colorMappings) {
-            const distance = colorDifference(currentColor, mapping.originalColor);
-            if (distance < minDistance && distance < tolerance) {
-              minDistance = distance;
-              closestMapping = mapping;
+    .funky-text {
+      font-family: 'Indie Flower', cursive;
+      font-size: 1.1em;
+      letter-spacing: 1px;
+    }
+  </style>
+  
+  <span class="line1 funky-text" style="position: absolute; left: -110%; top: 95%;">
+    SELECT PALETTE
+    <img style="margin-left: 30px;" width="50px" height="50px" src="{% static 'images/arrow.svg' %}" alt="arrow" />
+  </span>
+  <span class="line2 funky-text" style="position: relative; left: 70%;">
+    INSTANT RESULT
+    <img style="margin-left: 30px;" width="50px" height="50px" src="{% static 'images/arrow.svg' %}" alt="arrow" />
+  </span>
+</div>
+
+                <div class="main-animation-container-landing">
+                  <div class="image-pair-landing active" data-pair="1">
+                    <img class="animation-left-cnt-landing" src="./static/images/1.png" alt="Image 1">
+                    <img class="animation-right-cnt-landing" src="./static/images/1a.png" alt="Image 1a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="2">
+                    <img class="animation-left-cnt-landing" src="./static/images/2.png" alt="Image 2">
+                    <img class="animation-right-cnt-landing" src="./static/images/2a.png" alt="Image 2a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="3">
+                    <img class="animation-left-cnt-landing" src="./static/images/3.png" alt="Image 3">
+                    <img class="animation-right-cnt-landing" src="./static/images/3a.png" alt="Image 3a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="4">
+                    <img class="animation-left-cnt-landing" src="./static/images/4.png" alt="Image 4">
+                    <img class="animation-right-cnt-landing" src="./static/images/4a.png" alt="Image 4a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="5">
+                    <img class="animation-left-cnt-landing" src="./static/images/5.png" alt="Image 5">
+                    <img class="animation-right-cnt-landing" src="./static/images/5a.png" alt="Image 5a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="6">
+                    <img class="animation-left-cnt-landing" src="./static/images/6.png" alt="Image 6">
+                    <img class="animation-right-cnt-landing" src="./static/images/6a.png" alt="Image 6a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="7">
+                    <img class="animation-left-cnt-landing" src="./static/images/7.png" alt="Image 7">
+                    <img class="animation-right-cnt-landing" src="./static/images/7a.png" alt="Image 7a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="8">
+                    <img class="animation-left-cnt-landing" src="./static/images/8.png" alt="Image 8">
+                    <img class="animation-right-cnt-landing" src="./static/images/8a.png" alt="Image 8a">
+                  </div>
+                </div>
+              </div>
+              <!-- Decorative elements -->
+              <div class="absolute -top-4 -right-4 w-8 h-8 bg-gradient-secondary rounded-full animate-float"></div>
+              <div class="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-tertiary rounded-full animate-float"
+                style="animation-delay: 0.5s"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enhanced Video Section -->
+        <div class="relative mt-36 max-w-5xl mx-auto scroll-reveal">
+          <div
+            class="absolute top-[30%] left-[95%] w-[20%] h-[50%] bg-gradient-tertiary rounded-full -z-10 blur-xl opacity-30 animate-float">
+          </div>
+
+
+          <!-- Background Decorative Elements -->
+          <div class="absolute -right-20 top-20 w-[200px] h-[500px] opacity-100 animate-float">
+            <div class="w-full h-full rounded-[80px] bg-gradient-primary opacity-20"></div>
+          </div>
+          <div class="absolute -left-20 top-80 w-[190px] h-[500px] opacity-100 animate-float"
+            style="animation-delay: 0.5s">
+            <div class="w-full h-full rounded-[80px] bg-gradient-secondary opacity-20"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Modal -->
+  <div id="loginModal"
+    class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-96 max-w-lg mx-4 hover-scale">
+      <h2 class="text-2xl font-normal text-slate-800 mb-2">Please Login</h2>
+      <p class="text-slate-600 mb-6">
+        You need to log in to edit Tiff files and access premium features.
+      </p>
+      <div class="flex gap-3">
+        <a href="http://colorify.3mindstech.com/accounts/login/"
+          class="flex-1 btn-primary text-white px-6 py-3 rounded-xl font-light text-center shadow-lg">
+          Login
+        </a>
+        <button class="flex-1 btn-secondary bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-light shadow-lg"
+          onclick="toggleModal('loginModal')">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="mx-auto px-6  sm:px-6 lg:px-10" style="background-color: #FFF4E5;">
+    <!-- Enhanced First Section -->
+    <div class="scroll-reveal">
+      <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+        <!-- Content LEFT -->
+        <div class="lg:block w-full lg:w-1/2">
+          <div class="text-[25px] text-gradient font-normal mb-6 tracking-wider uppercase">
+            ABOUT US
+          </div>
+          <h2 class="figma-text-5xl mb-6">
+            Empowering the Future of Color Matching with
+            <div class="text-gradient-orange mt-2">
+              <span class="relative">
+                <span class="text-gradient-orange">AI</span>
+                <svg class="absolute -bottom-6 right-0 w-40 h-8" viewBox="0 0 1200 100">
+                  <path d="M0,50 Q600,-80 1200,50" stroke="#ff6b6b" stroke-width="25" fill="none" opacity="0.7" />
+                </svg>
+              </span>
+            </div>
+          </h2>
+          <p class="figma-text-lg text-slate-600 mb-8">
+            We help the textile and print industry achieve flawless color accuracy. Our AI-powered platform removes
+            guesswork and delivers perfect matches in one click--saving time, reducing errors, and cutting costs
+          </p>
+          <button class="btn-primary text-white px-8 py-4 rounded-2xl font-light shadow-xl hover-lift" onclick="window.location.href='/tif-editor/'">
+            Know more
+            
+          </button>
+        </div>
+
+              <!-- Video RIGHT -->
+              <div class="w-full lg:w-1/2 flex items-center justify-center">
+                  <div class="relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 hover:scale-105">
+                      <video id="myVideo" class="w-full h-full rounded-3xl" poster="" autoplay loop muted playsinline>
+                          <source src="{% static 'images/arrowvideov2.mp4' %}" type="video/mp4" />
+                          Your browser does not support the video tag.
+                      </video>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </main>
+  
+  <!-- Enhanced Features Section -->
+  <div class="py-20 px-4 scroll-reveal" style="background-color: #E0F7F5">
+    <div class="max-w-6xl mx-auto">
+      <!-- Heading Section -->
+      <div class="text-center mb-16">
+        <h2 class="figma-text-5xl mb-6">
+          <span>Our Key </span>
+          <span class="relative">
+            <span class="text-gradient">Features</span>
+            <svg class="absolute -bottom-6 left-1 w-40 h-8" viewBox="0 0 1200 100">
+              <path d="M0,50 Q600,-80 1200,50" stroke="#667eea" stroke-width="25" fill="none" opacity="0.7" />
+            </svg>
+          </span>
+        </h2>
+        <p class="figma-text-xl text-slate-600 max-w-3xl mx-auto">
+          Everything you need for accurate, effortless, and fast color matching.
+        </p>
+      </div>
+
+      <!-- Enhanced Features Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- One-Click Color Matching Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="{% static 'images/one- click color matching.png' %}" alt="One-Click Color Matching"  />
+            <div class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">One-Click Color Matching</h3>
+          <p class="figma-text-base text-slate-600">
+            Generate accurate color matches instantly--no manual adjustments, no guesswork.
+          </p>
+        </div>
+
+        <!-- Built for Professionals Card -->
+        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="{% static 'images/built for professionals.png' %}" alt="Built for Professionals"  />
+            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl mb-4">Built for Professionals</h3>
+          <p class="figma-text-base text-white/90">
+            Tailored for digital print units, mills, and design studios--optimized for high-volume production.
+          </p>
+        </div>
+
+        <!-- Real-Time Preview Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/real time preview.jpg" alt="Real-Time Preview"  />
+            <div class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Real-Time Preview</h3>
+          <p class="figma-text-base text-slate-600">
+            See how your matched colors look before printing, reducing errors and rework.
+          </p>
+        </div>
+
+        <!-- AI-Powered Accuracy Card -->
+        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/ai powered accuracy.png" alt="AI-Powered Accuracy"  />
+            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl mb-4">AI-Powered Accuracy</h3>
+          <p class="figma-text-base text-white/90">
+            Our advanced AI ensures consistent, print-ready colors every time.
+          </p>
+        </div>
+
+        <!-- Cloud-Based Access Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/cloud based access.png" alt="Cloud-Based Access"  />
+            <div class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Cloud-Based Access</h3>
+          <p class="figma-text-base text-slate-600">
+            Work from anywhere with secure cloud storage and quick accessibility for your team.
+          </p>
+        </div>
+
+        <!-- Unlimited Color Combinations Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/unlimited color combination.png" alt="Unlimited Color Combinations"  />
+            <div class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Unlimited Color Combinations</h3>
+          <p class="figma-text-base text-slate-600">
+            Explore endless color possibilities with automatic generation of matching combinations tailored to your design needs.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Why Subscribe Section (Figma-style blue background) -->
+  <section class="py-10 md:py-20 px-4 md:px-8 lg:px-20 scroll-reveal" style="background-color: #F2ECF8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
+        <!-- Left Content -->
+        <div class="w-full lg:max-w-xl text-center lg:text-left">
+          <h2 class="figma-text-3xl md:figma-text-4xl lg:figma-text-5xl mb-4 md:mb-6">
+            Why Choose
+            <span class="relative">
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600">Colorify Studio?</span>
+              <svg class="absolute -bottom-3 md:-bottom-5 left-0 w-20 md:w-28 h-4 md:h-6 mb-1" viewBox="0 0 1200 100">
+                <path d="M0,50 Q600,-80 1200,50" stroke="#fbbf24" stroke-width="25" fill="none" />
+              </svg>
+            </span>
+            <br />Design Smarter, Faster!
+          </h2>
+
+          <p class="figma-text-lg md:figma-text-xl mb-8 md:mb-12">
+            Unlock the full potential of your designs with Colorify Studio's
+            subscription. Here's why it's a game-changer for designers:
+          </p>
+
+          <div class="space-y-6 md:space-y-8">
+            <h3 class="figma-text-xl md:figma-text-2xl lg:figma-text-3xl">Our Special Key Features</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <!-- Feature Items -->
+              <div class="space-y-3 md:space-y-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Offer More, Sell More</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base"> Generate Color Variations in Seconds</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Save Time, Cut Production Costs</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base"> Access Seasonal Color Trend Reports</span>
+                </div>
+              </div>
+
+              <!-- Right Column Features -->
+              <div class="space-y-3 md:space-y-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Unleash Limitless Creative Possibilities</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Stay Ahead of the Competition</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Works Seamlessly with Complex Print Files</span>
+                </div>
+               
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Content -->
+        <div class="relative w-full lg:w-auto mt-8 lg:mt-0 flex justify-center">
+          <!-- Background Circles - Hidden on mobile for cleaner look -->
+          <div class="hidden lg:block absolute top-20 left-[55%] w-[50%] h-[90%] bg-pink-300 rounded-full opacity-80">
+          </div>
+          <div
+            class="hidden lg:block absolute bottom-[30%] -right-[5%] w-[55%] h-80 bg-blue-400 rounded-full opacity-80">
+          </div>
+
+          <!-- Video/Image Container -->
+          <div class="relative w-full max-w-md md:max-w-lg lg:w-[600px] bg-white rounded-2xl shadow-xl overflow-hidden">
+            <video id="myVideo2" class="w-full h-full object-cover rounded-2xl" poster="">
+              <source src="./static/images/Venice_10.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <!-- Play Button Overlay -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <button id="playPauseButton2"
+                class="w-12 h-12 md:w-16 md:h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all">
+                <svg id="playIcon2" class="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none">
+                  <path d="M8 5v14l11-7z" fill="#4052FF" />
+                </svg>
+                <svg id="pauseIcon2" class="w-6 h-6 md:w-8 md:h-8 hidden" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="#4052FF" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Second Section (Gradient Background) - Made Responsive -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 md:mt-20">
+      <div
+        class="w-full rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:15px">
+        <h1 class="figma-text-3xl md:figma-text-4xl lg:figma-hero text-white mb-6 md:mb-8">
+          Ready to Simplify Color Matching?
+        </h1>
+        <p class="figma-text-lg md:figma-text-xl lg:figma-text-2xl text-white/90 mb-6 md:mb-10 max-w-3xl mx-auto">
+          Start designing faster, smarter, and with perfect color accuracy--no guesswork, no delays.
+        </p>
+       <a href="/tif-editor/"
+   class="bg-white text-slate-800 px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 
+          rounded-xl md:rounded-2xl figma-text-base md:figma-text-lg 
+          hover:bg-slate-50 transition-all duration-300 shadow-xl 
+          hover:shadow-2xl hover:scale-105 inline-block text-center" style="background:#feffc7;">
+  Start Creating
+</a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Company Logos Section (Figma-style solid background) -->
+  <section class="section-solid-light py-16 scroll-reveal">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <p class="figma-text-lg">
+          <span style="font-size: 30px;">Eliminate costly color mismatches in textile printing </span> <br> <span
+              style="font-size: 30px;font-weight: bold;"> 10x faster, 100% accurate,
+              and AI-driven</span>
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="py-24 scroll-reveal" style="background-color: #FFFBE6;">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="figma-text-5xl text-slate-900 mb-6">
+          What our <span class="text-gradient">customers</span> say
+        </h2>
+        <p class="figma-text-xl text-slate-600 max-w-3xl mx-auto">
+          Hear from designers and teams who've transformed their workflow with <br>
+          <span class="font-medium">Colorify Studio</span>
+        </p>
+      </div>
+
+      <div class="testimonial-scroll-container">
+        <div class="testimonial-scroll-wrapper">
+          <!-- Testimonial 1 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                A
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Amit Trivedi
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Production Head, Fabloom Textiles (Mill)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "Colorify Studio helped us cut down color correction time by more than 50%."
+            </p>
+          </div>
+
+          <!-- Testimonial 2 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                N
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Neha Kapoor
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Lead Designer, Chromica Studio (Design Studio)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "It's like having a color expert on-call--our design flow has never been smoother."
+            </p>
+          </div>
+
+          <!-- Testimonial 3 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-tertiary rounded-full flex items-center justify-center text-white font-light mr-4">
+                R
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Ravi Nair
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Operations Manager, Printigo Digital (Digital Unit)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "We finally stopped struggling with color consistency across print batches."
+            </p>
+          </div>
+
+          <!-- Testimonial 4 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                M
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Megha Desai
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Creative Director, Desai & Co. Design (Design Studio)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "One-click matching is not a gimmick--it's become an everyday essential for us."
+            </p>
+          </div>
+
+          <!-- Testimonial 5 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                S
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Sandeep Verma
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Plant Supervisor, TrueWeave Mills (Mill)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "Colorify Studio helped us reduce rejections and improve delivery speed."
+            </p>
+          </div>
+
+          <!-- Testimonial 6 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-tertiary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                R
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Ritika Iyer
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Print Head, Inkflow Technologies (Digital Print Unit)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "The AI suggestions are spot on--our clients love the new color options."
+            </p>
+          </div>
+
+          <!-- Duplicate testimonials for seamless scroll -->
+          <!-- Testimonial 1 (Duplicate) -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                S
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Sarah Chen
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Lead Designer at Stripe
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "Colorify has completely transformed our design workflow. The
+              AI-powered color suggestions are incredibly accurate and save us
+              hours of work every week."
+            </p>
+          </div>
+
+          <!-- Testimonial 2 (Duplicate) -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                M
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Marcus Johnson
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Creative Director at Shopify
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "The trend-based color generation is a game-changer. Our clients
+              love the modern, cohesive palettes we create using Colorify's AI
+              engine."
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+ {% endblock %}
+
+
+<footer class="py-16 pl-10 pr-10"
+  style="background-color:#222831; color: white !important;">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+      <!-- Brand -->
+      <div class="space-y-6">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
+          <img src="{% static 'images/logo birds-180px.png' %}" alt="Colorify Logo" width="70px" height="70px" />
+          <span class="font-light text-2xl text-white">COLORIFY</span>
+        </a>
+      </div>
+        <p class="text-white/90 leading-relaxed">
+          Revolutionizing design with AI-powered color intelligence. <br />
+          <span class="font-light text-white">Helping you paint better!</span>
+        </p>
+      </div>
+
+      <!-- Links -->
+      <div>
+  <h3 class="font-light text-white mb-6 text-lg underline underline-offset-4 decoration-2">
+    QUICK LINKS
+  </h3>
+        <ul class="space-y-3">
+          <li>
+            <a href="/" class="text-white/80 hover:text-white transition-colors duration-300 font-light">Home</a>
+          </li>
+          <li>
+            <a href="/privacy-policy/"
+              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Privacy Policy</a>
+          </li>
+          <li>
+            <a href="/terms-of-service/"
+              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Terms of
+              Service</a>
+          </li>
+          <li>
+            <a href="/cancellation-policy/"
+              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Cancellation Policy</a>
+          </li>
+          <li>
+            <a href="/shipping-policy/"
+              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Shipping Policy</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Affiliate -->
+      <div>
+        <h3 class="font-light text-white mb-6 text-lg underline underline-offset-4">PARTNERSHIPS</h3>
+        <p class="text-white/90 mb-6 leading-relaxed">
+          Join us and start getting paid<br />
+          for all the subscriptions you sell
+        </p>
+        <button onclick="window.location.href='/affiliate/'"
+          class="btn-secondary bg-white/20 text-white py-3 px-6 rounded-xl font-light hover:bg-white/30 transition-all duration-300 shadow-md border border-white/30">
+          Become a Promoter
+        </button>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="font-light text-white mb-6 text-lg underline underline-offset-4">STAY UPDATED</h3>
+        <p class="text-white/90 mb-6 leading-relaxed">
+          Get exclusive color trends, design tips, and special offers
+        </p>
+        <div class="flex bg-white/10 rounded-xl border border-white/30 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+          <input type="email" placeholder="Enter your email"
+            class="flex-1 py-3 px-4 text-sm focus:outline-none bg-transparent text-white placeholder-white/70" />
+          <button>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 pr-10" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enhanced Bottom Footer -->
+    <div class="mt-16 pt-8 border-t border-white/30 flex flex-col md:flex-row items-center justify-between">
+      <p class="text-white/80 font-light">
+        © 2025 Colorify Studio | All Rights Reserved
+      </p>
+      <div>
+        <h4 class="text-white/90 font-light">Recognised By</h4>
+        <div class="flex justify-center">
+          <img src={% static 'images/startupIndia1.png' %} alt="Startup India"
+            class="h-16 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6 md:mt-0">
+        <div class="text-center">
+          <a href="https://www.linkedin.com/in/harsh-bhutra-39000ab6/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors duration-300">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.047-1.856-3.047-1.856 0-2.136 1.445-2.136 2.939v5.677H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+            <span class="font-light text-sm">Always Open to Ideas - Connect on LinkedIn</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Horizontal Divider and Credits -->
+  <!-- <div class="mt-8 pt-6">
+    <div class="flex items-center justify-between">
+      <div class="flex-1 border-t border-white/30"></div>
+      <div class="flex items-center gap-3 px-6">
+        <span class="text-white/70 font-light text-sm">Crafted with elegance by</span>
+        <img src="{% static 'images/3minds.png' %}" alt="3 Minds Digital" class="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
+      </div>
+    </div>
+  </div> -->
+</footer>
+
+  {% block extra_js %}{% endblock %}
+  <script>
+    // Function to create video controls
+    function setupVideoControls(videoId, buttonId, playIconId, pauseIconId) {
+      const video = document.getElementById(videoId);
+      const playPauseButton = document.getElementById(buttonId);
+      const playIcon = document.getElementById(playIconId);
+      const pauseIcon = document.getElementById(pauseIconId);
+
+      if (!video || !playPauseButton || !playIcon || !pauseIcon) return;
+
+      function togglePlayPause() {
+        if (video.paused) {
+          // Pause all other videos first
+          document.querySelectorAll("video").forEach((v) => {
+            if (v !== video) {
+              v.pause();
+              // Reset other video buttons
+              const otherVideoId = v.id;
+              const otherPlayIcon = document.getElementById(
+                `playIcon${otherVideoId.slice(-1)}`
+              );
+              const otherPauseIcon = document.getElementById(
+                `pauseIcon${otherVideoId.slice(-1)}`
+              );
+              if (otherPlayIcon && otherPauseIcon) {
+                otherPlayIcon.classList.remove("hidden");
+                otherPauseIcon.classList.add("hidden");
+              }
             }
-          }
-          
-          if (closestMapping) {
-            pixels[i] = closestMapping.targetColor[0];
-            pixels[i + 1] = closestMapping.targetColor[1];
-            pixels[i + 2] = closestMapping.targetColor[2];
-            // Keep original alpha: pixels[i + 3] = a;
-          }
+          });
+
+          video.play();
+          playIcon.classList.add("hidden");
+          pauseIcon.classList.remove("hidden");
+        } else {
+          video.pause();
+          playIcon.classList.remove("hidden");
+          pauseIcon.classList.add("hidden");
         }
       }
-      
-      processingCtx.putImageData(imageData, 0, 0);
-      processedImageData = processingCanvas.toDataURL('image/png'); // PNG preserves transparency
-    }
-    
-    // **CREATE 200x200 PREVIEW FROM PROCESSED 600x600 IMAGE**
-    return new Promise((resolve) => {
-      const resultImg = new Image();
-      resultImg.onload = () => {
-        // Create 200x200 preview canvas
-        const previewTempCanvas = document.createElement('canvas');
-        previewTempCanvas.width = 200;
-        previewTempCanvas.height = 200;
-        const previewTempCtx = previewTempCanvas.getContext('2d', { willReadFrequently: true });
-        
-        // Scale down the 600x600 processed image to 200x200
-        previewTempCtx.drawImage(resultImg, 0, 0, 200, 200);
-        
-        // Draw to final preview canvas
-        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-        ctx.clearRect(0, 0, 200, 200);
-        ctx.drawImage(previewTempCanvas, 0, 0, 200, 200);
-        
-        // Cache the 200x200 preview WITH HARMONY TYPE
-        const finalPreviewData = previewTempCanvas.toDataURL('image/png');
-        cacheHarmonyPreview(previewCanvas, paletteIndex, harmonyType, finalPreviewData);
-        markHarmonyPreviewReady(previewCanvas);
-        console.log(`${harmonyType} harmony preview ${paletteIndex} generated and cached successfully`);
-        resolve();
-      };
-      resultImg.onerror = (e) => {
-        console.error(`Error loading processed ${harmonyType} harmony preview:`, e);
-        drawHarmonyFallbackPreview(previewCanvas, paletteIndex, harmonyType);
-        resolve();
-      };
-      resultImg.src = processedImageData;
-    });
-    
-  } catch (error) {
-    console.error(`Error generating ${harmonyType} harmony preview:`, error);
-    drawHarmonyFallbackPreview(previewCanvas, paletteIndex, harmonyType);
-  }
-}
 
+      playPauseButton.addEventListener("click", togglePlayPause);
+      video.addEventListener("click", togglePlayPause);
 
-function cacheHarmonyPreview(previewCanvas, paletteIndex, harmonyType, previewData = null) {
-  try {
-    if (!window.palettePreviewCache) {
-      window.palettePreviewCache = {};
-    }
-    if (!window.palettePreviewCache['harmony']) {
-      window.palettePreviewCache['harmony'] = {};
-    }
-    
-    // Use combined key to prevent cross-contamination
-    const cacheKey = `${harmonyType}_${paletteIndex}`;
-    
-    const dataToCache = previewData || previewCanvas.toDataURL('image/png');
-    window.palettePreviewCache['harmony'][cacheKey] = dataToCache;
-    console.log(`Cached ${harmonyType} harmony preview for palette ${paletteIndex} with key: ${cacheKey}`);
-  } catch (error) {
-    console.warn('Error caching harmony preview:', error);
-  }
-}
-
-// Add this function to clear harmony cache when switching harmony types
-function clearHarmonyPreviewCache(harmonyType = null) {
-  try {
-    if (!window.palettePreviewCache || !window.palettePreviewCache['harmony']) {
-      return;
-    }
-    
-    if (harmonyType) {
-      // Clear only specific harmony type
-      const keysToDelete = Object.keys(window.palettePreviewCache['harmony'])
-        .filter(key => key.startsWith(`${harmonyType}_`));
-      
-      keysToDelete.forEach(key => {
-        delete window.palettePreviewCache['harmony'][key];
+      video.addEventListener("ended", function () {
+        playIcon.classList.remove("hidden");
+        pauseIcon.classList.add("hidden");
       });
-      
-      console.log(`Cleared ${keysToDelete.length} cached previews for ${harmonyType}`);
-    } else {
-      // Clear all harmony previews
-      window.palettePreviewCache['harmony'] = {};
-      console.log('Cleared all harmony preview cache');
-    }
-  } catch (error) {
-    console.warn('Error clearing harmony preview cache:', error);
-  }
-}
-// Updated fallback preview function
-function drawHarmonyFallbackPreview(canvas, paletteIndex, harmonyType) {
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#f5f5f5';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#999';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '12px sans-serif';
-  ctx.fillText(`${harmonyType}`, canvas.width/2, canvas.height/2 - 10);
-  ctx.fillText(`${paletteIndex}`, canvas.width/2, canvas.height/2 + 10);
-  markHarmonyPreviewReady(canvas);
-}
 
-
-function colorDifference(color1, color2) {
-  const [r1, g1, b1] = color1;
-  const [r2, g2, b2] = color2;
-  return Math.sqrt(
-    Math.pow(r2 - r1, 2) + 
-    Math.pow(g2 - g1, 2) + 
-    Math.pow(b2 - b1, 2)
-  );
-}
-
-  
-  function markHarmonyPreviewReady(canvas) {
-    const container = canvas.closest('.palette-clickable-container');
-    if (container) {
-      container.classList.add('preview-ready');
+      // Hide default video controls
+      video.removeAttribute("controls");
     }
-  }
-  
-  // Show full palette modal function
-  function showHarmonyFullPaletteModal(fullPalette, harmonyType, paletteIndex) {
-    // Remove any existing modal
-    const existingModal = document.getElementById('harmonyFullPaletteModal');
-    if (existingModal) {
-      existingModal.remove();
-    }
-    
-    const bgVariation = fullPalette._backgroundVariation || 'regular';
-    const strategy = fullPalette._strategy || 'Standard';
-    
-    // Create modal
-    const modal = document.createElement('div');
-    modal.id = 'harmonyFullPaletteModal';
-    modal.className = 'full-palette-modal';
-    modal.style.display = 'block';
-    
-    const modalContent = document.createElement('div');
-    modalContent.className = 'full-palette-modal-content';
-    
-    const closeBtn = document.createElement('span');
-    closeBtn.className = 'close-palette-modal';
-    closeBtn.innerHTML = '&times;';
-    closeBtn.onclick = () => modal.remove();
-    
-    const title = document.createElement('h3');
-    title.className = 'palette-modal-title';
-    title.textContent = `${harmonyType} Harmony Palette ${paletteIndex} (${bgVariation} bg, ${strategy}) - All Colors`;
-    
-    const colorsContainer = document.createElement('div');
-    colorsContainer.className = 'all-colors-container';
-    
-    fullPalette.forEach((color, index) => {
-      if (Array.isArray(color) && color.length === 3) {
-        const colorDiv = document.createElement('div');
-        colorDiv.className = 'full-palette-color';
-        colorDiv.style.backgroundColor = `rgb(${color.join(',')})`;
-        
-        const colorInfo = document.createElement('div');
-        colorInfo.className = 'color-info';
-        const hexValue = rgbToHex(color[0], color[1], color[2]);
-        const colorName = index === 0 ? `Background (${bgVariation})` : getColorName(color);
-        colorInfo.textContent = `${colorName}\n${hexValue}`;
-        
-        colorDiv.appendChild(colorInfo);
-        colorsContainer.appendChild(colorDiv);
+
+    function toggleModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal.classList.contains("hidden")) {
+        modal.classList.remove("hidden");
+      } else {
+        modal.classList.add("hidden");
       }
+    }
+
+    // Setup controls for videos
+    setupVideoControls(
+      "myVideo2",
+      "playPauseButton2",
+      "playIcon2",
+      "pauseIcon2"
+    );
+
+    // Mobile menu functionality
+    const mobileMenuButton = document.getElementById("mobile-menu-button");
+    const mobileMenu = document.getElementById("mobile-menu");
+
+    mobileMenuButton.addEventListener("click", () => {
+      mobileMenu.classList.toggle("active");
     });
-    
-    modalContent.appendChild(closeBtn);
-    modalContent.appendChild(title);
-    modalContent.appendChild(colorsContainer);
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
-    
-    // Close modal when clicking outside
-    modal.onclick = (e) => {
-      if (e.target === modal) {
-        modal.remove();
+
+    // Scroll reveal animation
+    function revealOnScroll() {
+      const reveals = document.querySelectorAll(".scroll-reveal");
+
+      for (let i = 0; i < reveals.length; i++) {
+        const windowHeight = window.innerHeight;
+        const elementTop = reveals[i].getBoundingClientRect().top;
+        const elementVisible = 150;
+
+        if (elementTop < windowHeight - elementVisible) {
+          reveals[i].classList.add("revealed");
+        }
       }
-    };
-  }
-  
-  // Create palette items
-  for (let i = 0; i < Math.min(palettesToShow, Object.keys(palettes).length); i++) {
-    const palette = palettes[i];
-    
-    if (!palette || palette.length === 0) continue;
-    
-    // Get background variation info
-    const bgVariation = palette._backgroundVariation || 'regular';
-    const strategy = palette._strategy || 'Standard';
-    
-    // Create layer-toggle-item structure to match your trending palettes
-    const layerToggleItem = document.createElement('div');
-    layerToggleItem.className = 'layer-toggle-item d-flex flex-column gap-2';
-    
-    // Add background variation and strategy indicator
-    const bgIndicator = document.createElement('div');
-    bgIndicator.className = 'bg-variation-indicator';
-    
-    // Extract the color name from the strategy (Red_HighSat -> Red)
-    const strategyParts = strategy.split('_');
-    const colorName = strategyParts[0] || 'Mixed';
-    const variationType = strategyParts[1] || 'Standard';
-    
-    bgIndicator.textContent = `${colorName} - ${bgVariation.charAt(0).toUpperCase() + bgVariation.slice(1)}`;
-    bgIndicator.style.cssText = `
-      font-size: 10px;
-      text-align: center;
-      padding: 2px 4px;
-      border-radius: 3px;
-      margin-bottom: 2px;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    `;
-    
-    // Style the indicator based on background type
-    switch (bgVariation) {
-      case 'dark':
-        bgIndicator.style.backgroundColor = '#333';
-        bgIndicator.style.color = '#fff';
-        break;
-      case 'faint':
-        bgIndicator.style.backgroundColor = '#f8f9fa';
-        bgIndicator.style.color = '#666';
-        bgIndicator.style.border = '1px solid #dee2e6';
-        break;
-      case 'regular':
-      default:
-        bgIndicator.style.backgroundColor = '#e9ecef';
-        bgIndicator.style.color = '#495057';
-        break;
     }
-    
-    layerToggleItem.appendChild(bgIndicator);
-    
-    // Create the main color palette container (matching your existing structure)
-    const colorPaletteDiv = document.createElement('div');
-    colorPaletteDiv.className = 'color-palette d-flex flex-column';
-    colorPaletteDiv.id = `harmony_colorPalette_${i}`;
-    
-    // Create clickable container (same as trending)
-    const clickableContainer = document.createElement('div');
-    clickableContainer.classList.add('palette-clickable-container');
-    clickableContainer.dataset.paletteIndex = i;
-    clickableContainer.dataset.collection = 'harmony';
-    
-    // Add preview container
-    const previewContainer = document.createElement('div');
-    previewContainer.classList.add('palette-preview-container');
-    clickableContainer.appendChild(previewContainer);
-    
-    // Create preview canvas
-    const previewCanvas = document.createElement('canvas');
-    previewCanvas.width = 200;
-    previewCanvas.height = 200;
-    previewCanvas.classList.add('palette-preview-canvas');
-    previewContainer.appendChild(previewCanvas);
-    
-    // Create swatch container
-    const swatchContainer = document.createElement('div');
-    swatchContainer.classList.add('swatch-container');
-    clickableContainer.appendChild(swatchContainer);
-    
-    // Prepare display colors (same logic as trending)
-    const displayColors = prepareDisplayColors(palette);
-    
-    // Add color swatches
-    displayColors.forEach((color, idx) => {
-      if (Array.isArray(color) && color.length === 3) {
-        const swatch = document.createElement('div');
-        swatch.classList.add('color-swatch');
-        swatch.style.backgroundColor = `rgb(${color.join(',')})`;
-        
-        const hexValue = rgbToHex(color[0], color[1], color[2]);
-        const colorName = idx === 0 ? `Background (${bgVariation})` : getColorName(color);
-        swatch.title = `${colorName} - ${hexValue}`;
-        
-        swatchContainer.appendChild(swatch);
+
+    // Smooth parallax scrolling for floating elements
+    function updateParallax() {
+      const scrolled = window.pageYOffset;
+      const parallaxElements = document.querySelectorAll(".animate-float");
+
+      parallaxElements.forEach((element, index) => {
+        const speed = 0.1 + index * 0.05;
+        const yPos = -(scrolled * speed);
+        element.style.transform = `translateY(${yPos}px)`;
+      });
+    }
+
+    // Enhanced button hover effects
+    function initButtonEffects() {
+      const buttons = document.querySelectorAll(
+        ".btn-primary, .btn-secondary"
+      );
+
+      buttons.forEach((button) => {
+        button.addEventListener("mouseenter", function () {
+          this.style.transform = "translateY(-2px) scale(1.02)";
+        });
+
+        button.addEventListener("mouseleave", function () {
+          this.style.transform = "translateY(0) scale(1)";
+        });
+      });
+    }
+
+    // Card tilt effect
+    function initCardTilt() {
+      const cards = document.querySelectorAll(
+        ".feature-card, .feature-card-primary"
+      );
+
+      cards.forEach((card) => {
+        card.addEventListener("mousemove", function (e) {
+          const rect = this.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+
+          const rotateX = (y - centerY) / 10;
+          const rotateY = (centerX - x) / 10;
+
+          this.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+        });
+
+        card.addEventListener("mouseleave", function () {
+          this.style.transform =
+            "perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)";
+        });
+      });
+    }
+
+    // Loading animation
+    function initLoadingAnimations() {
+      const fadeElements = document.querySelectorAll(".fade-in");
+
+      fadeElements.forEach((element, index) => {
+        setTimeout(() => {
+          element.style.opacity = "1";
+          element.style.transform = "translateY(0)";
+        }, index * 100);
+      });
+    }
+
+    // Navbar background on scroll
+    function updateNavbar() {
+      const navbar = document.querySelector("nav").parentElement;
+      if (window.scrollY > 50) {
+        navbar.classList.add("bg-white/95");
+        navbar.classList.remove("bg-white/80");
+      } else {
+        navbar.classList.add("bg-white/80");
+        navbar.classList.remove("bg-white/95");
       }
+    }
+
+    // Palette Animation JavaScript
+    function initPaletteAnimation() {
+      let currentPair = 0;
+      const imagePairs = document.querySelectorAll('.image-pair-landing');
+      const totalPairs = imagePairs.length;
+
+      if (totalPairs === 0) return; // Exit if no image pairs found
+
+      function switchToNextPair() {
+        // Remove active class from current pair
+        imagePairs[currentPair].classList.remove('active');
+        
+        // Move to next pair (loop back to 0 when reaching the end)
+        currentPair = (currentPair + 1) % totalPairs;
+        
+        // Add active class to new current pair
+        imagePairs[currentPair].classList.add('active');
+      }
+
+      // Start animation after page loads
+      setTimeout(() => {
+        setInterval(switchToNextPair, 800); // Change image every 800ms
+      }, 1000); // Start after 1 second
+    }
+
+    // Initialize all functions
+    document.addEventListener("DOMContentLoaded", function () {
+      initLoadingAnimations();
+      initButtonEffects();
+      initCardTilt();
+      initPaletteAnimation(); // Initialize palette animation
+
+      // Set up event listeners
+      window.addEventListener("scroll", () => {
+        revealOnScroll();
+        updateParallax();
+        updateNavbar();
+      });
+
+      // Initial calls
+      revealOnScroll();
+      updateNavbar();
     });
+
+    // Performance optimization for scroll events
+    let ticking = false;
+
+    function requestTick() {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateParallax();
+          revealOnScroll();
+          updateNavbar();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener("scroll", requestTick);
+  </script>
+</body>
+
+</html>
