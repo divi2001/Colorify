@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Colorify - Landing{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="black" viewBox="0 0 16 16"><path d="M14.082 2.182a.5.5 0 0 1 .103.557L8.528 15.467a.5.5 0 0 1-.917-.007L5.57 10.694.803 8.652a.5.5 0 0 1-.006-.916l12.728-5.657a.5.5 0 0 1 .556.103zM2.25 8.184l3.897 1.67a.5.5 0 0 1 .262.263l1.67 3.897L12.743 3.52z"/></svg>') 16 16, auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div class="mx-auto px-4 pt-6 relative overflow-hidden">
+      <!-- Animated Background Elements -->
+      <div class="absolute top-80 left-0 right-0 z-0 animate-pulse-slow">
+        <img src="./static/images/Vector%2049.png" alt="wave background" class="w-full object-cover opacity-30" />
+      </div>
+
+      <!-- Floating Elements -->
+      <div
+        class="absolute top-1/4 right-1/4 w-64 h-64 bg-gradient-tertiary rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float">
+      </div>
+
+      <!-- Main Content -->
+      <div class="relative z-10">
+        <!-- Hero Section -->
+        <div class="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto min-h-[80vh]">
+          <!-- Left Side: Content -->
+          <div class="w-full md:w-1/2 text-center md:text-left fade-in">
+            <h1 class="figma-hero mb-8">
+              Generate <br /><span class="text-gradient">Color Matching</span>
+              with a single click<br />
+              <span class="text-gradient">Powered by AI</span>
+            </h1>
+
+            <p class="figma-text-xl text-slate-600 max-w-2xl mx-auto md:mx-0 fade-in-delay-1">
+              Built for digital print units, mills, and design studios worldwide
+            </p>
+
+            <div class="mt-10 flex flex-wrap justify-center md:justify-start gap-4 relative z-20 fade-in-delay-2">
+              <a href="/tif-editor/" class="btn-primary px-8 py-4 text-white rounded-2xl font-light shadow-xl text-lg">
+                Try Demo
+              </a>
+              <button
+                class="btn-secondary px-8 py-4 bg-white text-slate-700 rounded-2xl border-2 border-slate-200 font-light shadow-lg text-lg"
+                onclick="toggleModal('loginModal')">
+                Edit Tiff file
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Side: Enhanced Image Placeholder -->
+          <div class="w-full md:w-1/2 flex justify-center items-center mt-10 md:mt-0 fade-in-delay-3">
+            <div class="relative hover-scale">
+              <div
+                class="w-[500px] h-96 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl flex flex-col items-center justify-center text-slate-500 border border-slate-200 shadow-2xl overflow-hidden p-8">
+                <!-- Animation Content -->
+                <div class="funky-text-landing">
+                  <span class="line1" style="position: absolute; left: -120%; top: 95%;">
+                    Select Palette
+                    <img style="margin-left: 30px;" width="50px" height="50px" src="./arrow.svg" alt="arrow" />
+                  </span>
+                  <span class="line2" style="position: relative; left: 70%;">
+                    Instant Result
+                    <img style="margin-left: 30px;" width="50px" height="50px" src="./arrow.svg" alt="arrow" />
+                  </span>
+                </div>
+
+                <div class="main-animation-container-landing">
+                  <div class="image-pair-landing active" data-pair="1">
+                    <img class="animation-left-cnt-landing" src="./1.png" alt="Image 1">
+                    <img class="animation-right-cnt-landing" src="./1a.png" alt="Image 1a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="2">
+                    <img class="animation-left-cnt-landing" src="./2.png" alt="Image 2">
+                    <img class="animation-right-cnt-landing" src="./2a.png" alt="Image 2a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="3">
+                    <img class="animation-left-cnt-landing" src="./3.png" alt="Image 3">
+                    <img class="animation-right-cnt-landing" src="./3a.png" alt="Image 3a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="4">
+                    <img class="animation-left-cnt-landing" src="./4.png" alt="Image 4">
+                    <img class="animation-right-cnt-landing" src="./4a.png" alt="Image 4a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="5">
+                    <img class="animation-left-cnt-landing" src="./5.png" alt="Image 5">
+                    <img class="animation-right-cnt-landing" src="./5a.png" alt="Image 5a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="6">
+                    <img class="animation-left-cnt-landing" src="./6.png" alt="Image 6">
+                    <img class="animation-right-cnt-landing" src="./6a.png" alt="Image 6a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="7">
+                    <img class="animation-left-cnt-landing" src="./7.png" alt="Image 7">
+                    <img class="animation-right-cnt-landing" src="./7a.png" alt="Image 7a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="8">
+                    <img class="animation-left-cnt-landing" src="./8.png" alt="Image 8">
+                    <img class="animation-right-cnt-landing" src="./8a.png" alt="Image 8a">
+                  </div>
+                </div>
+              </div>
+              <!-- Decorative elements -->
+              <div class="absolute -top-4 -right-4 w-8 h-8 bg-gradient-secondary rounded-full animate-float"></div>
+              <div class="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-tertiary rounded-full animate-float"
+                style="animation-delay: 0.5s"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Modal -->
+  <div id="loginModal"
+    class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-96 max-w-lg mx-4 hover-scale">
+      <h2 class="text-2xl font-normal text-slate-800 mb-2">Please Login</h2>
+      <p class="text-slate-600 mb-6">
+        You need to log in to edit Tiff files and access premium features.
+      </p>
+      <div class="flex gap-3">
+        <a href="/accounts/login/"
+          class="flex-1 btn-primary text-white px-6 py-3 rounded-xl font-light text-center shadow-lg">
+          Login
+        </a>
+        <button class="flex-1 btn-secondary bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-light shadow-lg"
+          onclick="toggleModal('loginModal')">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Enhanced First Section -->
+    <div class="mb-20 scroll-reveal">
+      <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+        <!-- Content LEFT -->
+        <div class="lg:block w-full lg:w-1/2">
+<div class="text-[25px] font-normal mb-6 tracking-wider uppercase">
+  ABOUT US
+</div>
+
+          <h2 class="figma-text-5xl mb-6">
+            Empowering the Future of Color Matching with
+            <div class="text-gradient-orange mt-2">
+              <span class="relative ml-2">
+                <span class="text-gradient-orange">AI</span>
+                <svg class="absolute -bottom-6 right-0 w-40 h-8" viewBox="0 0 1200 100">
+                  <path d="M0,50 Q600,-80 1200,50" stroke="#ff6b6b" stroke-width="25" fill="none" opacity="0.7" />
+                </svg>
+              </span>
+            </div>
+          </h2>
+          <p class="figma-text-lg text-slate-600 mb-8">
+            We help the textile and print industry achieve flawless color accuracy. Our AI-powered platform removes
+            guesswork and delivers perfect matches in one click--saving time, reducing errors, and cutting costs
+          </p>
+          <button class="btn-primary text-white px-8 py-4 rounded-2xl font-light shadow-xl hover-lift">
+            Know more
+          </button>
+        </div>
+
+        <!-- Video RIGHT -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center hover-scale">
+          <div class="relative rounded-3xl overflow-hidden shadow-2xl">
+            <video id="myVideo" class="w-full h-full rounded-3xl" poster="" autoplay loop muted playsinline>
+              <source src="./static/images/Venice_10.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}

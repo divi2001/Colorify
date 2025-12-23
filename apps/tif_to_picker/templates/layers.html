@@ -35,6 +35,47 @@
 https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
 "></script>
 
+    <!-- Custom CSS for Harmony Tooltip -->
+    <style>
+      .harmony-tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        max-width: 280px;
+        z-index: 999999;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      
+      .harmony-tooltip::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: 20px;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-bottom: 5px solid rgba(0, 0, 0, 0.9);
+      }
+      
+      .custom-harmony-dropdown .dropdown-item {
+        position: relative;
+        transition: background-color 0.2s ease;
+      }
+      
+      .custom-harmony-dropdown .dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: #495057;
+      }
+      
+      .harmony-option {
+        cursor: pointer;
+      }
+    </style>
+
         
         <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -229,25 +270,71 @@ document.addEventListener('DOMContentLoaded', function() {
            #harmonyMenu {
             display: none;
         }
-      .loader {
-        width: 120px;
-        height: 22px;
+        
+      /* Colorify Loading Screen Styles */
+      .colorify-loader {
+        text-align: center;
+        padding: 40px;
+        background: white;
         border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        min-width: 300px;
+      }
+      
+      .logo-container {
+        margin-bottom: 20px;
+      }
+      
+      .colorify-logo {
+        height: 60px;
+        width: auto;
+        animation: logoFloat 2s ease-in-out infinite;
+      }
+      
+      @keyframes logoFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+      
+      .loading-text {
+        font-size: 24px;
+        font-weight: bold;
         color: #514b82;
-        border: 2px solid;
-        position: relative;
+        margin-bottom: 30px;
+        letter-spacing: 2px;
       }
-      .loader::before {
-        content: "";
-        position: absolute;
-        margin: 2px;
-        inset: 0 100% 0 0;
-        border-radius: inherit;
-        background: currentColor;
-        animation: l6 2s infinite;
+      
+      .progress-container {
+        margin-bottom: 20px;
       }
-      @keyframes l6 {
-          100% {inset:0}
+      
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+      
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #514b82, #7c6db8);
+        border-radius: 10px;
+        width: 0%;
+        transition: width 0.3s ease;
+        animation: progressShimmer 2s infinite;
+      }
+      
+      @keyframes progressShimmer {
+        0% { background-position: -200px 0; }
+        100% { background-position: 200px 0; }
+      }
+      
+      .loading-message {
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
       }
 
       .fav-count {
@@ -258,8 +345,19 @@ document.addEventListener('DOMContentLoaded', function() {
   </head>
 
   <body>
- <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;">
-    <div class="loader"></div>
+ <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-95 z-50" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;">
+    <div class="colorify-loader">
+      <div class="logo-container">
+        <img src="{% static 'images/logo2.png' %}" alt="Colorify" class="colorify-logo">
+      </div>
+      <div class="loading-text">COLORIFY</div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="main-progress-fill"></div>
+        </div>
+      </div>
+      <div class="loading-message" id="main-loading-message">Initializing...</div>
+    </div>
 </div>
 
     <!-- Main Content Area  -->
@@ -268,47 +366,52 @@ document.addEventListener('DOMContentLoaded', function() {
       <div
         id="leftMostColumn"
         class="sidebar d-flex flex-column"
-        style="flex: 0 0 12%"
+        style="flex: 0 0 12%; position: relative;"
       >
-        <button
-          class="btn btn-sm m-2 d-flex align-items-center"
-          onclick="toggleSidebar('leftMostColumn', this)"
-        >
-          <i class="bi bi-caret-left-fill ms-auto"></i>
-        </button>
-        <div class="header-logo" style="margin:0 auto;" >
-          <a href="{% url 'home' %}">
-            <img src="{% static 'images/logo birds-180px.png' %}" alt="Colorify Logo" style="max-width: 100%; height: auto; max-height: 40px;">
-          </a>
+        <div class="d-flex align-items-center justify-content-between m-2">
+          <div class="flex-grow-1 d-flex justify-content-center">
+            <div class="header-logo">
+              <a href="{% url 'home' %}">
+                <img src="{% static 'images/logo birds-180px.png' %}" alt="Colorify Logo" style="max-width: 100%; height: auto; max-height: 40px;">
+              </a>
+            </div>
+          </div>
+          <button
+            class="btn btn-sm d-flex align-items-center justify-content-center"
+            onclick="toggleSidebar('leftMostColumn', this)"
+            style="border: none; background: #fff; position: absolute; top: 8px; right: 8px;"
+          >
+            <i class="bi bi-caret-left-fill"></i>
+          </button>
         </div>
         <ul class="mostLeftUl">
           <li>
             <a href="#" id="inspirationButton">
-              <i class="bi bi-brightness-alt-high me-2 mx-1"></i>
+              <i class="bi bi-brightness-alt-high me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">Inspiration</span>
             </a>
           </li>
           <li>
             <a href="#" id="trendingButton">
-              <i class="bi bi-graph-up-arrow mx-1"></i>
+              <i class="bi bi-graph-up-arrow me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">Trending</span>
             </a>
           </li>
           <li>
             <a href="#" id="effectsButton">
-              <i class="bi bi-magic mx-1"></i>
+              <i class="bi bi-magic me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">Effects</span>
             </a>
           </li>
          <li>
             <a href="#" id="favoriteButton">
-              <i class="bi bi-star mx-1"></i>
+              <i class="bi bi-star me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">Favourite</span>
             </a>
           </li>  
 <li id="harmonyButtonContainer">
     <a href="#" id="harmonyButton">
-        <i class="bi bi-palette2 mx-1"></i>
+        <i class="bi bi-palette2 me-2" style="width: 16px; display: inline-block;"></i>
         <span class="textSpan">Harmony</span>
     </a>
 </li>
@@ -379,19 +482,19 @@ document.addEventListener('DOMContentLoaded', function() {
           </li> {% endcomment %}
           <li>
             <a href="#" id="ssCollectionButton">
-              <i class="bi bi-collection mx-1"></i>
+              <i class="bi bi-collection me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">SS Collection</span>
             </a>
           </li>
           <li>
             <a href="#" id="awCollectionButton">
-              <i class="bi bi-collection mx-1"></i>
+              <i class="bi bi-collection me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">AW Collection</span>
             </a>
           </li>
          <li>
           <a href="#" id="mockupsButton">
-            <i class="bi bi-brush-fill mx-1"></i>
+            <i class="bi bi-brush-fill me-2" style="width: 16px; display: inline-block;"></i>
             <span class="textSpan">Mockups</span>
           </a>
         </li>
@@ -400,20 +503,20 @@ document.addEventListener('DOMContentLoaded', function() {
    onclick="window.location=this.href"
    class="block text-sm text-gray-700 hover:bg-gray-100" 
    role="menuitem">
-    <i class="bi bi-person-circle mx-1"></i>
+    <i class="bi bi-person-circle me-2" style="width: 16px; display: inline-block;"></i>
     <span class="textSpan">Your Profile</span>
 </a>
 
 </li>
 {% comment %} <li>
     <a href="#" class="block text-sm text-gray-700 hover:bg-gray-100" role="menuitem" tabindex="-1">
-        <i class="bi bi-gear-fill mx-1"></i>
+        <i class="bi bi-gear-fill me-2" style="width: 16px; display: inline-block;"></i>
         <span class="textSpan">Settings</span>
     </a>
 </li> {% endcomment %}
 <li>
     <a href="{% url 'account_logout' %}" onclick="window.location=this.href" class="block text-sm text-gray-700 hover:bg-gray-100" role="menuitem" >
-        <i class="bi bi-box-arrow-right mx-1"></i>
+        <i class="bi bi-box-arrow-right me-2" style="width: 16px; display: inline-block;"></i>
         <span class="textSpan">Sign out</span>
     </a>
 </li>
@@ -422,12 +525,12 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
 
 
-        <div id="secondaryColumn" class="sidebar d-flex flex-column" style="flex: 0 0 20%;">
+        <div id="secondaryColumn" class="sidebar d-flex flex-column" style="flex: 0 0 16%;">
                     <button 
-  class="btn-sm m-2 d-flex align-items-center nav-btn " 
+  class="btn btn-sm d-flex align-items-center justify-content-center nav-btn" 
   onclick="toggleSidebar('secondaryColumn', this)" 
-  style="border: none; background: #fff">
-    <i class="bi bi-caret-left-fill ms-auto"></i>
+  style="border: none; background: #fff; position: absolute; top: 8px; right: 8px;">
+    <i class="bi bi-caret-left-fill"></i>
 </button>
 
           
@@ -657,13 +760,78 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- Harmony Content -->
 <!-- Harmony Content -->
 <div class="sidebar-content" id="harmonyContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Color Harmony</h2>
+  <div class="d-flex align-items-center justify-content-center mb-3">
+    <h2 class="fw-bold fs-4 mb-0">Color Harmony</h2>
+    <i class="bi bi-info-circle ms-2 text-primary" 
+       style="cursor: pointer; font-size: 1.2rem;" 
+       data-bs-toggle="modal" 
+       data-bs-target="#harmonyInfoModal"
+       title="Learn about color harmony types"></i>
+  </div>
   
   <!-- Harmony Type Selector -->
   <div class="harmony-selector mb-3 px-3">
     <label for="harmonyTypeSelect" class="form-label">Harmony Type:</label>
-    <select class="form-select form-select-sm" id="harmonyTypeSelect">
-      <option value="Monochromatic">Monochromatic</option>
+    
+    <!-- Custom Dropdown with Hover Descriptions -->
+    <div class="custom-harmony-dropdown position-relative">
+      <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="harmonyDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
+        <span id="selectedHarmonyText">Monochromatic</span>
+      </button>
+      <ul class="dropdown-menu w-100" aria-labelledby="harmonyDropdownButton" id="harmonyDropdownMenu">
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Monochromatic" 
+             data-description="Uses variations of a single color by changing saturation and brightness. Perfect for cohesive, calming designs.">
+            Monochromatic
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Analogous"
+             data-description="Uses colors next to each other on the color wheel. Creates serene, comfortable designs often found in nature.">
+            Analogous
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Complementary"
+             data-description="Uses colors directly opposite on the color wheel. Creates high contrast and vibrant, attention-grabbing designs.">
+            Complementary
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Split Complementary"
+             data-description="Uses a base color and two colors adjacent to its complement. Strong contrast but less jarring than complementary.">
+            Split Complementary
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Triadic"
+             data-description="Uses three colors evenly spaced around the color wheel. Creates vibrant, balanced designs with strong visual impact.">
+            Triadic
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Tetradic"
+             data-description="Uses four colors in two complementary pairs. Creates rich, varied color schemes with lots of possibilities.">
+            Tetradic
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Square"
+             data-description="Uses four colors evenly spaced around the color wheel. Creates dynamic, energetic designs with balanced contrast.">
+            Square
+          </a>
+        </li>
+      </ul>
+      
+      <!-- Tooltip for descriptions -->
+      <div id="harmonyTooltip" class="harmony-tooltip" style="display: none;">
+        <div class="tooltip-content"></div>
+      </div>
+    </div>
+    
+    <!-- Hidden select for form compatibility -->
+    <select class="form-select form-select-sm d-none" id="harmonyTypeSelect">
+      <option value="Monochromatic" selected>Monochromatic</option>
       <option value="Analogous">Analogous</option>
       <option value="Complementary">Complementary</option>
       <option value="Split Complementary">Split Complementary</option>
@@ -673,17 +841,22 @@ document.addEventListener('DOMContentLoaded', function() {
     </select>
     
     <!-- Background Variation Selector -->
-    <label for="backgroundVariationSelect" class="form-label mt-2">Background Style:</label>
+    <label for="backgroundVariationSelect" class="form-label mt-2">Tone Variation:</label>
     <select class="form-select form-select-sm" id="backgroundVariationSelect">
-      <option value="regular">Regular</option>
+      <option value="faint">Light</option>
+      <option value="regular">Medium</option>
       <option value="dark">Dark</option>
-      <option value="faint">Faint</option>
       <option value="mixed">Mixed (All Variations)</option>
     </select>
     
     <button class="btn btn-primary btn-sm mt-2 w-100" id="generateHarmonyBtn">
       <i class="bi bi-magic"></i> Generate Harmony
     </button>
+    
+    <!-- Note about clicking again for more options -->
+    <div class="text-center mt-2">
+      <small class="text-muted fst-italic">click again for more options</small>
+    </div>
   </div>
   
   <hr />
@@ -800,19 +973,8 @@ document.addEventListener('DOMContentLoaded', function() {
   <h2 class="ms-auto me-auto fw-bold text-center fs-4">Favourite Collection</h2>
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
-      
-    {% for layer in layers %}
-
-    <div class="layer-toggle-item d-flex flex-column gap-2">
-        <div id="fav_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
-        <div class="d-flex align-items-center justify-content-between w-100">
-        <button type="button" id="" class="btn">
-          <i class="bi bi-star"></i>
-      </button>
-        </div>
-    </div>
-    {% endfor %}
-</div>
+      <!-- Favorites will be loaded dynamically here -->
+  </div>
 </div> 
 <!-- Base Color Content -->
 <!-- Base Color Content -->
@@ -1095,17 +1257,33 @@ function showGlobalLoadingIndicator() {
         return;
     }
     
+    // Initialize main loading screen
+    const mainProgressFill = document.getElementById('main-progress-fill');
+    const mainLoadingMessage = document.getElementById('main-loading-message');
+    
+    if (mainProgressFill) {
+        mainProgressFill.style.width = '0%';
+    }
+    
+    if (mainLoadingMessage) {
+        mainLoadingMessage.textContent = 'Preparing to load images...';
+    }
+    
     const indicator = document.createElement('div');
     indicator.id = 'global-loading-indicator';
     indicator.innerHTML = `
         <div class="loading-backdrop">
-            <div class="loading-content">
-                <div class="spinner"></div>
-                <h3>Loading Images...</h3>
-                <p id="loading-progress">Preparing to load images...</p>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
+            <div class="colorify-loader">
+                <div class="logo-container">
+                    <img src="{% static 'images/logo2.png' %}" alt="Colorify" class="colorify-logo">
                 </div>
+                <div class="loading-text">COLORIFY</div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+                <div class="loading-message" id="loading-progress">Loading Images...</div>
             </div>
         </div>
     `;
@@ -1133,59 +1311,6 @@ function showGlobalLoadingIndicator() {
             align-items: center;
             justify-content: center;
         }
-        
-        .loading-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            text-align: center;
-            max-width: 300px;
-            width: 90%;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 15px;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3498db, #2ecc71);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
-        .loading-content h3 {
-            margin: 0 0 10px 0;
-            color: #333;
-            font-size: 18px;
-        }
-        
-        .loading-content p {
-            margin: 0;
-            color: #666;
-            font-size: 14px;
-        }
     `;
     
     document.head.appendChild(style);
@@ -1197,18 +1322,38 @@ function hideGlobalLoadingIndicator() {
     if (indicator) {
         indicator.style.display = 'none';
     }
+    
+    // Hide main loading screen
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+    }
 }
 
 function updateLoadingProgress(current, total, message) {
     const progressText = document.getElementById('loading-progress');
     const progressFill = document.getElementById('progress-fill');
     
+    // Update main loading screen
+    const mainProgressFill = document.getElementById('main-progress-fill');
+    const mainLoadingMessage = document.getElementById('main-loading-message');
+    
+    const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+    
+    if (mainProgressFill) {
+        mainProgressFill.style.width = percentage + '%';
+    }
+    
+    if (mainLoadingMessage) {
+        mainLoadingMessage.textContent = message || `Loading image ${current} of ${total}...`;
+    }
+    
+    // Update secondary loading indicators if they exist
     if (progressText) {
         progressText.textContent = message || `Loading image ${current} of ${total}...`;
     }
     
     if (progressFill) {
-        const percentage = total > 0 ? (current / total) * 100 : 0;
         progressFill.style.width = `${percentage}%`;
     }
 }
@@ -1953,6 +2098,154 @@ window.canvasErrorCount = 0;
           </div>
         </div>
       </div>
+
+      <!-- Harmony Info Modal -->
+      <div class="modal fade" id="harmonyInfoModal" tabindex="-1" aria-labelledby="harmonyInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="harmonyInfoModalLabel">
+                <i class="bi bi-palette2 me-2"></i>Color Harmony Types
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row">
+                <div class="col-12">
+                  <p class="text-muted mb-4">Color harmony refers to the pleasing arrangement of colors that creates a sense of order and visual appeal. Here are the different harmony types available:</p>
+                </div>
+              </div>
+              
+              <div class="accordion" id="harmonyAccordion">
+                <!-- Monochromatic -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="monochromaticHeading">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#monochromaticCollapse" aria-expanded="true" aria-controls="monochromaticCollapse">
+                      <strong>Monochromatic</strong>
+                    </button>
+                  </h2>
+                  <div id="monochromaticCollapse" class="accordion-collapse collapse show" aria-labelledby="monochromaticHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses variations of a single color by changing its saturation and brightness.</p>
+                      <p><strong>Best for:</strong> Creating a cohesive, calming, and sophisticated look. Perfect for minimalist designs.</p>
+                      <p><strong>Example:</strong> Different shades and tints of blue - from navy to light sky blue.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Analogous -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="analogousHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#analogousCollapse" aria-expanded="false" aria-controls="analogousCollapse">
+                      <strong>Analogous</strong>
+                    </button>
+                  </h2>
+                  <div id="analogousCollapse" class="accordion-collapse collapse" aria-labelledby="analogousHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses colors that are next to each other on the color wheel.</p>
+                      <p><strong>Best for:</strong> Creating serene and comfortable designs. Often found in nature.</p>
+                      <p><strong>Example:</strong> Blue, blue-green, and green or red, red-orange, and orange.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Complementary -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="complementaryHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#complementaryCollapse" aria-expanded="false" aria-controls="complementaryCollapse">
+                      <strong>Complementary</strong>
+                    </button>
+                  </h2>
+                  <div id="complementaryCollapse" class="accordion-collapse collapse" aria-labelledby="complementaryHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses colors that are directly opposite each other on the color wheel.</p>
+                      <p><strong>Best for:</strong> Creating high contrast and vibrant designs that grab attention.</p>
+                      <p><strong>Example:</strong> Red and green, blue and orange, yellow and purple.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Split Complementary -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="splitComplementaryHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#splitComplementaryCollapse" aria-expanded="false" aria-controls="splitComplementaryCollapse">
+                      <strong>Split Complementary</strong>
+                    </button>
+                  </h2>
+                  <div id="splitComplementaryCollapse" class="accordion-collapse collapse" aria-labelledby="splitComplementaryHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses a base color and the two colors adjacent to its complement.</p>
+                      <p><strong>Best for:</strong> Providing strong visual contrast while being less jarring than complementary colors.</p>
+                      <p><strong>Example:</strong> Red with blue-green and yellow-green instead of just green.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Triadic -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="triadicHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#triadicCollapse" aria-expanded="false" aria-controls="triadicCollapse">
+                      <strong>Triadic</strong>
+                    </button>
+                  </h2>
+                  <div id="triadicCollapse" class="accordion-collapse collapse" aria-labelledby="triadicHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses three colors evenly spaced around the color wheel.</p>
+                      <p><strong>Best for:</strong> Creating vibrant and balanced designs with strong visual impact.</p>
+                      <p><strong>Example:</strong> Red, yellow, and blue or orange, green, and purple.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tetradic -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="tetradicHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tetradicCollapse" aria-expanded="false" aria-controls="tetradicCollapse">
+                      <strong>Tetradic (Rectangle)</strong>
+                    </button>
+                  </h2>
+                  <div id="tetradicCollapse" class="accordion-collapse collapse" aria-labelledby="tetradicHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses four colors arranged into two complementary pairs.</p>
+                      <p><strong>Best for:</strong> Creating rich and varied color schemes with lots of possibilities.</p>
+                      <p><strong>Example:</strong> Red and green paired with blue and orange.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Square -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="squareHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#squareCollapse" aria-expanded="false" aria-controls="squareCollapse">
+                      <strong>Square</strong>
+                    </button>
+                  </h2>
+                  <div id="squareCollapse" class="accordion-collapse collapse" aria-labelledby="squareHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses four colors evenly spaced around the color wheel, forming a square.</p>
+                      <p><strong>Best for:</strong> Creating dynamic and energetic designs with balanced contrast.</p>
+                      <p><strong>Example:</strong> Red, yellow-green, cyan, and blue-violet.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 p-3 bg-light rounded">
+                <h6><i class="bi bi-lightbulb me-2"></i>Pro Tips:</h6>
+                <ul class="mb-0 small">
+                  <li>Start with monochromatic or analogous schemes for a safe, pleasing result</li>
+                  <li>Use complementary colors sparingly for accent and emphasis</li>
+                  <li>Consider the mood you want to create - warm colors energize, cool colors calm</li>
+                  <li>Test your harmony on different background variations to see what works best</li>
+                </ul>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
 
   <!-- Footer -->
@@ -1996,7 +2289,7 @@ window.canvasErrorCount = 0;
 </div>
 
     
-    <div class="image-adjustments">
+    <div class="image-adjustments" style="position: relative;">
       <button type="button" class="btn shadow-lg " id="adjustmentToggle">
         <svg width="19" height="19" viewBox="0 0 34 33" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clip-path="url(#clip0_384_2340)">
@@ -2017,7 +2310,7 @@ window.canvasErrorCount = 0;
           </defs>
         </svg>
       </button>
-      <div id="adjustmentPanel" class="adjustment-panel" style="display: none;">
+      <div id="adjustmentPanel" class="adjustment-panel" style="display: none; position: absolute; bottom: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 300px; margin-bottom: 5px;">
           <div class="sliders-container"></div>
       </div>
     </div>
@@ -2476,6 +2769,12 @@ document.getElementById('fileInput').onchange = function() {
                 if (this.id === 'harmonyButton') {
                     // Initialize harmony functionality if needed
                     console.log('Harmony section opened');
+                }
+                
+                // Special handling for favorites
+                if (this.id === 'favoriteButton') {
+                    console.log('🌟 Favorites section opened - loading favorites...');
+                    loadFavorites();
                 }
                 
             } else {
@@ -3147,42 +3446,16 @@ function loadInspirationContent() {
 }
 
 function downloadPDF(pdfId, title) {
-    // Create a proper download URL
-    const downloadUrl = `inspiration-pdfs/download/${pdfId}/`;
+    console.log('🔍 downloadPDF called with:', { pdfId, title });
     
-    fetch(downloadUrl, {
-        method: 'GET',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Download failed');
-        }
-        return response.blob();
-    })
-    .then(blob => {
-        // Create a temporary URL for the blob
-        const url = window.URL.createObjectURL(blob);
-        
-        // Create a temporary anchor element and trigger download
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `${title}.pdf`;
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        // Clean up
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-    })
-    .catch(error => {
-        console.error('Download error:', error);
-        alert('Failed to download PDF. Please try again.');
-    });
+    // Create a proper PDF URL to open in new tab (absolute path)
+    const pdfUrl = `/tif-editor/inspiration-pdfs/download/${pdfId}/`;
+    console.log('📄 PDF URL constructed:', pdfUrl);
+    
+    // Open PDF in new tab
+    console.log('🚀 Opening PDF in new tab...');
+    window.open(pdfUrl, '_blank');
+    console.log('✅ window.open() called successfully');
 }
 
 function toggleLike(pdfId, element) {
@@ -3216,25 +3489,6 @@ function getCookie(name) {
       }
   }
   return cookieValue;
-}
-
-function downloadPDF(pdfUrl, title) {
-  fetch(pdfUrl)
-      .then(response => response.blob())
-      .then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = title;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-      })
-      .catch(error => {
-          console.error('Error downloading PDF:', error);
-          alert('Error downloading the PDF');
-      });
 }
 
 function initializePDFEvents() {
@@ -8714,7 +8968,6 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     // Create the same structure as trending palettes with STAR BUTTON
     const clickableContainer = document.createElement('div');
     clickableContainer.classList.add('palette-clickable-container');
-    clickableContainer.style.border = '2px solid #ffd700'; // Gold border for favorites
     paletteContainer.appendChild(clickableContainer);
     
     // Add data attributes
@@ -8796,17 +9049,15 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     // Display color swatches underneath
     const swatchContainer = document.createElement('div');
     swatchContainer.classList.add('swatch-container');
-    swatchContainer.style.backgroundColor = '#fff8dc'; // Light gold background
     clickableContainer.appendChild(swatchContainer);
     
     // Show first 8 colors as swatches
     const colorsToShow = validColors.slice(0, 8);
     
-    colorsToShow.forEach((color, idx) => {89
+    colorsToShow.forEach((color, idx) => {
         const swatch = document.createElement('div');
         swatch.classList.add('color-swatch');
         swatch.style.backgroundColor = `rgb(${color.join(',')})`;
-        swatch.style.border = '1px solid #ffd700'; // Gold border
         
         const hexValue = rgbToHex(color[0], color[1], color[2]);
         swatch.title = `Color ${idx + 1}: ${hexValue}`;
@@ -12520,20 +12771,36 @@ function groupColorsByFamily(colors) {
 
 // UPDATED loadFavorites function (WITHOUT the sync call)
 async function loadFavorites() {
+    console.log('🔄 loadFavorites called');
     try {
+        console.log('📡 Making fetch request to /tif-editor/api/palettes/favorites/');
         const response = await fetch('/tif-editor/api/palettes/favorites/');
-        if (!response.ok) throw new Error(`Failed to load favorites`);
+        console.log('📡 Response received:', response.status, response.statusText);
+        
+        if (!response.ok) throw new Error(`Failed to load favorites: ${response.status}`);
         
         const favorites = await response.json();
-        //console.log("🟢 FRONTEND RECEIVED from API:", favorites.length, "favorites");
+        console.log("🟢 FRONTEND RECEIVED from API:", favorites.length, "favorites");
+        console.log("🟢 First favorite sample:", favorites[0]);
         
         const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+        console.log('🎯 Favorites container found:', !!favContainer);
+        
+        if (!favContainer) {
+            console.error('❌ Favorites container not found!');
+            return;
+        }
+        
+        console.log('🧹 Clearing container...');
         favContainer.innerHTML = '';
 
         if (favorites.length === 0) {
+            console.log('📭 No favorites found');
             showNoFavoritesMessage(0, "You haven't saved any favorite palettes yet.");
             return;
         }
+
+        console.log('🎨 Processing', favorites.length, 'favorites');
 
         // Get current image colors
         let currentImageColors = null;
@@ -12548,32 +12815,25 @@ async function loadFavorites() {
                 );
             }
         } catch (e) {
-            //console.log('Error reading localStorage colors:', e);
+            console.log('Error reading localStorage colors:', e);
         }
 
+        console.log('🖼️ Current image colors:', currentImageColors ? currentImageColors.length : 'none');
+
+        // If no current image colors, show all favorites anyway
         if (!currentImageColors || currentImageColors.length < 4) {
-            favContainer.innerHTML = `
-                <div class="alert alert-warning text-center w-100">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>No Image Colors Available</strong>
-                    <div class="mt-2 small">
-                        Please load an image first to see compatible favorite palettes.
-                    </div>
-                    <button class="btn btn-sm btn-primary mt-2" onclick="loadFavorites()">
-                        <i class="bi bi-arrow-clockwise"></i> Retry
-                    </button>
-                </div>
-            `;
+            console.log('🎨 No current image colors - showing all favorites');
+            displayAllFavorites(favorites);
             return;
         }
 
-        //console.log(`🎨 Filtering favorites based on current image colors`);
+        console.log(`🎨 Filtering favorites based on current image colors`);
 
         const matchingFavorites = [];
         const nonMatchingFavorites = [];
         
         favorites.forEach((favorite, originalIndex) => {
-            //console.log(`\n--- Checking palette "${favorite.name}" (ID: ${favorite.id}) ---`);
+            console.log(`\n--- Checking palette "${favorite.name}" (ID: ${favorite.id}) ---`);
             
             if (favorite.source_image_colors && Array.isArray(favorite.source_image_colors) && favorite.source_image_colors.length > 0) {
                 const colorsMatch = areColorsEqual(currentImageColors, favorite.source_image_colors);
@@ -12586,94 +12846,175 @@ async function loadFavorites() {
                         originalIndex 
                     };
                     matchingFavorites.push(processedFavorite);
-                    //console.log(`✅ "${favorite.name}" matches current image - added to matching list`);
+                    console.log(`✅ "${favorite.name}" matches current image - added to matching list`);
                 } else {
                     nonMatchingFavorites.push({ ...favorite, originalIndex });
-                    //console.log(`❌ "${favorite.name}" doesn't match current image`);
+                    console.log(`❌ "${favorite.name}" doesn't match current image`);
                 }
             } else {
                 nonMatchingFavorites.push({ ...favorite, originalIndex });
-                //console.log(`❌ "${favorite.name}" has no source colors stored`);
+                console.log(`❌ "${favorite.name}" has no source colors stored`);
             }
         });
 
-        //console.log(`\n🎨 Final Results: ${matchingFavorites.length} matching, ${nonMatchingFavorites.length} non-matching`);
+        console.log(`\n🎨 Final Results: ${matchingFavorites.length} matching, ${nonMatchingFavorites.length} non-matching`);
 
-        if (matchingFavorites.length === 0) {
+        // Show matching favorites first, then non-matching ones
+        if (matchingFavorites.length > 0) {
+            console.log('🎯 Displaying matching favorites...');
+            displayFavoritesSection(matchingFavorites, 'Matching Current Image', true);
+        }
+        
+        if (nonMatchingFavorites.length > 0) {
+            console.log('🎯 Displaying non-matching favorites...');
+            displayFavoritesSection(nonMatchingFavorites, 'Other Favorites', false);
+        }
+
+        console.log('✅ loadFavorites completed successfully');
+
+    } catch (error) {
+        console.error('❌ Error loading favorites:', error);
+        const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+        if (favContainer) {
             favContainer.innerHTML = `
-                <div class="alert alert-warning text-center w-100">
+                <div class="alert alert-danger text-center w-100">
                     <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>No Matching Palettes Found</strong>
+                    <strong>Error Loading Favorites</strong>
                     <div class="mt-2 small">
-                        No saved palettes match your current image colors.
+                        ${error.message}
                     </div>
-                    <button class="btn btn-sm btn-warning mt-2" onclick="showAllFavoritesOverride()">
-                        <i class="bi bi-eye"></i> Show All Anyway
+                    <button class="btn btn-sm btn-primary mt-2" onclick="loadFavorites()">
+                        <i class="bi bi-arrow-clockwise"></i> Retry
                     </button>
                 </div>
             `;
-            return;
         }
-
-        // Clear and initialize the favorite palette colors storage
-        window.favPaletteColors = {};
-        
-        // Display matching favorites with appropriate icons
-        matchingFavorites.forEach((favorite, displayIndex) => {
-            //console.log(`\n--- Displaying palette ${displayIndex}: "${favorite.name}" (ID: ${favorite.id}) ---`);
-            const colors = favorite.colors;
-            //console.log('Colors being displayed (first 5):', colors.slice(0, 5));
-            
-            // Store the colors
-            window.favPaletteColors[displayIndex] = colors;
-            
-            // Determine if this is a harmony palette
-            const isHarmony = favorite.type === 'HR' || favorite.type === 'HARMONY';
-            const iconClass = isHarmony ? 'bi-star-fill' : 'bi-star-fill';
-            
-            // Create palette HTML with appropriate icon
-            const paletteHtml = `
-                <div class="layer-toggle-item d-flex flex-column gap-2" data-favorite-id="${favorite.id}" data-favorite-name="${favorite.name}">
-                    <div id="fav_colorPalette_${displayIndex}" class="color-palette d-flex flex-column"></div>
-                    <div class="d-flex align-items-center justify-content-center w-100">
-                        <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}" data-palette-type="${favorite.type}">
-                            <i class="${iconClass}"></i>
-                            <span class="fav-count">${favorite.favorites_count}</span>
-                        </button>
-                    </div>
-                    <div class="text-center small mt-1">
-                        <strong>${favorite.name}</strong>
-
-                    </div>
-                </div>
-            `;
-            
-            favContainer.insertAdjacentHTML('beforeend', paletteHtml);
-            
-            //console.log(`🎨 CALLING displayFavoritePalette for index ${displayIndex}`);
-            //console.log(`   Input colors (first 5):`, colors.slice(0, 5));
-            
-            // Call displayFavoritePalette to create the preview interface
-            displayFavoritePalette(displayIndex, colors, 'fav', 6, 1);
-            
-            // Add click event listener for the favorite button to remove from favorites
-            const favoriteBtn = document.querySelector(`[data-palette-id="${favorite.id}"]`);
-            if (favoriteBtn) {
-                favoriteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent triggering the palette click
-                    removeFavorite(favoriteBtn, displayIndex);
-                });
-            }
-        });
-
-        //console.log('\n🔍 Final verification of stored palettes:');
-        Object.keys(window.favPaletteColors).forEach(key => {
-            //console.log(`Palette ${key} (first 3):`, window.favPaletteColors[key].slice(0, 3), '...');
-        });
-
-    } catch (error) {
-        console.error('Error loading favorites:', error);
     }
+}
+
+// Helper function to display all favorites when no image colors are available
+function displayAllFavorites(favorites) {
+    console.log('📋 displayAllFavorites called with', favorites.length, 'favorites');
+    const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+    
+    if (!favContainer) {
+        console.error('❌ Favorites container not found in displayAllFavorites!');
+        return;
+    }
+    
+    // Add info message
+    favContainer.innerHTML = `
+        <div class="alert alert-info text-center w-100 mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>All Your Favorites (${favorites.length})</strong>
+            <div class="mt-1 small">
+                Load an image to see which palettes match your current colors
+            </div>
+        </div>
+    `;
+    
+    console.log('🎨 Calling displayFavoritesSection with all favorites');
+    displayFavoritesSection(favorites, null, false);
+}
+
+// Helper function to display a section of favorites
+function displayFavoritesSection(favorites, sectionTitle, isMatching) {
+    console.log('🎯 displayFavoritesSection called with', favorites.length, 'favorites, title:', sectionTitle);
+    const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+    
+    if (!favContainer) {
+        console.error('❌ Favorites container not found in displayFavoritesSection!');
+        return;
+    }
+    
+    // Add section title if provided
+    if (sectionTitle) {
+        const titleHtml = `
+            <div class="w-100 text-center mb-2">
+                <h6 class="text-muted mb-0">
+                    <i class="bi ${isMatching ? 'bi-check-circle text-success' : 'bi-star text-warning'} me-1"></i>
+                    ${sectionTitle}
+                </h6>
+            </div>
+        `;
+        favContainer.insertAdjacentHTML('beforeend', titleHtml);
+    }
+    
+    // Clear and initialize the favorite palette colors storage
+    if (!window.favPaletteColors) {
+        window.favPaletteColors = {};
+    }
+    
+    // Display favorites
+    favorites.forEach((favorite, displayIndex) => {
+        // Use a unique index that accounts for existing favorites
+        const uniqueIndex = Object.keys(window.favPaletteColors).length;
+        
+        console.log(`\n--- Displaying palette ${uniqueIndex}: "${favorite.name}" (ID: ${favorite.id}) ---`);
+        
+        // Process colors
+        let colors;
+        if (favorite.colors && Array.isArray(favorite.colors)) {
+            if (favorite.colors.length > 0 && typeof favorite.colors[0] === 'object' && favorite.colors[0].red !== undefined) {
+                // Colors are in {red, green, blue} format
+                colors = favorite.colors.map(color => [color.red, color.green, color.blue]);
+            } else {
+                // Colors are already in [r, g, b] format
+                colors = favorite.colors;
+            }
+        } else {
+            colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]; // Fallback colors
+        }
+        
+        console.log('Colors being displayed (first 3):', colors.slice(0, 3));
+        
+        // Store the colors
+        window.favPaletteColors[uniqueIndex] = colors;
+        
+        // Determine if this is a harmony palette
+        const isHarmony = favorite.type === 'HR' || favorite.type === 'HARMONY';
+        const iconClass = 'bi-star-fill';
+        
+        // Create palette HTML with appropriate icon
+        const paletteHtml = `
+            <div class="layer-toggle-item d-flex flex-column gap-2" data-favorite-id="${favorite.id}" data-favorite-name="${favorite.name}">
+                <div id="fav_colorPalette_${uniqueIndex}" class="color-palette d-flex flex-column"></div>
+                <div class="d-flex align-items-center justify-content-center w-100">
+                    <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}" data-palette-type="${favorite.type}">
+                        <i class="${iconClass}"></i>
+                        <span class="fav-count">${favorite.favorites_count || 0}</span>
+                    </button>
+                </div>
+                <div class="text-center small mt-1">
+                    <strong>${favorite.name}</strong>
+                </div>
+            </div>
+        `;
+        
+        favContainer.insertAdjacentHTML('beforeend', paletteHtml);
+        
+        console.log(`🎨 CALLING displayFavoritePalette for index ${uniqueIndex}`);
+        console.log(`   Input colors (first 3):`, colors.slice(0, 3));
+        
+        // Call displayFavoritePalette to create the preview interface
+        try {
+            displayFavoritePalette(uniqueIndex, colors, 'fav', 6, 1);
+            console.log(`✅ Successfully displayed palette ${uniqueIndex}`);
+        } catch (error) {
+            console.error(`❌ Error displaying palette ${uniqueIndex}:`, error);
+        }
+        
+        // Add click event listener for the favorite button to remove from favorites
+        const favoriteBtn = document.querySelector(`[data-palette-id="${favorite.id}"]`);
+        if (favoriteBtn) {
+            favoriteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the palette click
+                removeFavorite(favoriteBtn, uniqueIndex);
+            });
+        }
+    });
+    
+    console.log('✅ displayFavoritesSection completed');
 }
 
 // NEW: Function to update stars in trending/SS/AW/harmony sections based on current image colors
@@ -13245,10 +13586,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const targetId = this.getAttribute('href').substring(1);
             
             if (targetId === 'favCollectionContent') {
-                // Delay loading to give time for colors to be available
-                setTimeout(() => {
-                    loadFavorites();
-                }, 4000); // Wait 1 second
+                // Load favorites immediately when tab is clicked
+                loadFavorites();
             }
         });
     });
@@ -18020,6 +18359,64 @@ document.addEventListener('DOMContentLoaded', function() {
       await processHarmony(ctx, 1, canvas, 0, selectedHarmonyType, true, selectedBackgroundVariation);
     });
   }
+
+  // Custom Harmony Dropdown with Hover Tooltips
+  const harmonyDropdownButton = document.getElementById('harmonyDropdownButton');
+  const harmonyDropdownMenu = document.getElementById('harmonyDropdownMenu');
+  const harmonyTooltip = document.getElementById('harmonyTooltip');
+  const selectedHarmonyText = document.getElementById('selectedHarmonyText');
+  
+  if (harmonyDropdownMenu && harmonyTooltip) {
+    // Handle dropdown option clicks
+    harmonyDropdownMenu.addEventListener('click', function(e) {
+      if (e.target.classList.contains('harmony-option')) {
+        e.preventDefault();
+        const selectedValue = e.target.getAttribute('data-value');
+        const selectedText = e.target.textContent;
+        
+        // Update button text
+        selectedHarmonyText.textContent = selectedText;
+        
+        // Update hidden select for form compatibility
+        harmonyTypeSelect.value = selectedValue;
+        
+        // Hide dropdown
+        const dropdown = bootstrap.Dropdown.getInstance(harmonyDropdownButton);
+        if (dropdown) {
+          dropdown.hide();
+        }
+      }
+    });
+    
+    // Handle hover tooltips
+    harmonyDropdownMenu.addEventListener('mouseenter', function(e) {
+      if (e.target.classList.contains('harmony-option')) {
+        const description = e.target.getAttribute('data-description');
+        if (description) {
+          const tooltipContent = harmonyTooltip.querySelector('.tooltip-content');
+          tooltipContent.textContent = description;
+          
+          // Position tooltip relative to viewport
+          const rect = e.target.getBoundingClientRect();
+          
+          harmonyTooltip.style.left = (rect.right + 10) + 'px';
+          harmonyTooltip.style.top = rect.top + 'px';
+          harmonyTooltip.style.display = 'block';
+        }
+      }
+    }, true);
+    
+    harmonyDropdownMenu.addEventListener('mouseleave', function(e) {
+      if (e.target.classList.contains('harmony-option')) {
+        harmonyTooltip.style.display = 'none';
+      }
+    }, true);
+    
+    // Hide tooltip when dropdown closes
+    harmonyDropdownButton.addEventListener('hidden.bs.dropdown', function() {
+      harmonyTooltip.style.display = 'none';
+    });
+  }
 });
 
 // Update keyboard shortcuts to include background variations
@@ -19888,6 +20285,35 @@ lockOverlay.style.pointerEvents = "none";
 // Add event listener for shuffle button
 document.querySelector('.btn-success2').addEventListener('click', handleShuffleColors);
 document.addEventListener('DOMContentLoaded', loadFavorites);
+
+// Load favorites immediately on page load (without delays)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOMContentLoaded - Loading favorites immediately');
+    console.log('🔍 Testing if this code runs at all');
+    
+    // Test if the favorites container exists
+    const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+    console.log('🎯 Favorites container found:', !!favContainer);
+    
+    if (favContainer) {
+        console.log('✅ Container exists, calling loadFavorites in 1 second...');
+        // Load favorites immediately
+        setTimeout(() => {
+            console.log('⏰ Timeout triggered - calling loadFavorites');
+            loadFavorites();
+        }, 1000); // Increased delay to 1 second
+    } else {
+        console.error('❌ Favorites container not found! Cannot load favorites.');
+    }
+});
+
+// Add a global function for manual testing
+window.testLoadFavorites = function() {
+    console.log('🧪 Manual test: Loading favorites...');
+    loadFavorites();
+};
+
+console.log('🔧 Favorites loading script loaded. You can test manually with: testLoadFavorites()');
 // Add this to your existing DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', function() {
     const layerColors = {};

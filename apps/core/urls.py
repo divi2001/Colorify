@@ -1,11 +1,14 @@
 # apps\core\urls.py
 from django.urls import path
 from .views.project_views import (
-    contact_form_submission,
     create_new_project,
     project_list,
     rename_project,
     delete_project
+)
+from .views.contact_views import (
+    contact_form_submission,
+    affiliate_form_submission
 )
 from .views.user_views import (
     update_user_name,
@@ -27,8 +30,11 @@ from .views.user_views import (
 )
 
 urlpatterns = [
-    # Project endpoints
+    # Contact and Affiliate endpoints
     path('contact-form-submission/', contact_form_submission, name='contact-form-submission'),
+    path('affiliate-form-submission/', affiliate_form_submission, name='affiliate-form-submission'),
+    
+    # Project endpoints
     path('create-new-project/', create_new_project, name='create-new-project'),
     path('projects/', project_list, name='project-list'),
     path('projects/<int:project_id>/rename/', rename_project, name='rename-project'),

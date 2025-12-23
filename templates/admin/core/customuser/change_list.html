@@ -1,0 +1,10 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    <li>
+        <a href="{% url 'admin:core_customuser_export_excel' %}" class="button" style="background-color: #417690; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px;">
+            Export to Excel
+        </a>
+    </li>
+    {{ block.super }}
+{% endblock %}

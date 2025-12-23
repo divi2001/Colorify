@@ -151,30 +151,52 @@ def remove_favorite_palette(request, palette_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_favorites(request):
-    favorites = PaletteFavorite.objects.filter(user=request.user).select_related('palette')
+    print(f"🚀 === GET_FAVORITES API CALLED ===")
+    print(f"🔍 get_favorites called for user: {request.user.username} (ID: {request.user.id})")
+    print(f"🔐 User is authenticated: {request.user.is_authenticated}")
+    print(f"📡 Request method: {request.method}")
+    print(f"🌐 Request path: {request.path}")
     
-   
-    
-    data = []
-    for favorite in favorites:
-        palette = favorite.palette
-        colors = palette.colors.all().values('red', 'green', 'blue')
-        colors_list = list(colors)
-   
+    try:
+        favorites = PaletteFavorite.objects.filter(user=request.user).select_related('palette')
+        print(f"📊 Found {favorites.count()} favorite records for user {request.user.username}")
         
-        data.append({
-            'id': palette.id,
-            'name': palette.name,
-            'type': palette.type,
-            'favorites_count': palette.favorites_count,
-            'source_image_colors': palette.source_image_colors,
-            'colors': colors_list
-        })
-    
-   
-  
-    
-    return Response(data)
+        data = []
+        for favorite in favorites:
+            palette = favorite.palette
+            print(f"  📋 Processing palette: {palette.name} (ID: {palette.id}, Type: {palette.type})")
+            
+            colors = palette.colors.all().values('red', 'green', 'blue')
+            colors_list = list(colors)
+            print(f"    🎨 Palette has {len(colors_list)} colors")
+            
+            if colors_list:
+                print(f"    🎨 First 3 colors: {colors_list[:3]}")
+            
+            source_colors = palette.source_image_colors
+            print(f"    🖼️ Source image colors: {source_colors[:3] if source_colors else 'None'}")
+            
+            data.append({
+                'id': palette.id,
+                'name': palette.name,
+                'type': palette.type,
+                'favorites_count': palette.favorites_count,
+                'source_image_colors': palette.source_image_colors,
+                'colors': colors_list
+            })
+        
+        print(f"✅ Returning {len(data)} favorites to frontend")
+        if data:
+            print(f"📤 Sample favorite: {data[0]['name']} with {len(data[0]['colors'])} colors")
+        
+        return Response(data)
+        
+    except Exception as e:
+        print(f"❌ ERROR in get_favorites: {str(e)}")
+        print(f"❌ Exception type: {type(e).__name__}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return Response({'error': str(e)}, status=500)
 
 @require_POST
 @staff_member_required

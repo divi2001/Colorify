@@ -241,6 +241,55 @@ class InspirationView(View):
 inspiration_view = InspirationView.as_view()
 
 
+def download_pdf(request, pdf_id):
+    """Download or view PDF file"""
+    print(f"🔍 download_pdf called with pdf_id: {pdf_id}")
+    print(f"📡 Request method: {request.method}")
+    print(f"🌐 Request path: {request.path}")
+    
+    try:
+        print(f"🔎 Looking for PDF with ID: {pdf_id}")
+        pdf = get_object_or_404(InspirationPDF, id=pdf_id)
+        print(f"✅ Found PDF: {pdf.title}")
+        
+        # Check if the PDF file exists
+        if not pdf.pdf_file or not pdf.pdf_file.name:
+            print(f"❌ PDF {pdf_id} has no file attached")
+            logger.error(f"PDF {pdf_id} has no file attached")
+            return HttpResponse("PDF file not found", status=404)
+        
+        print(f"📁 PDF file path: {pdf.pdf_file.name}")
+        print(f"💾 Full file path: {pdf.pdf_file.path}")
+        
+        # Check if the file exists on disk
+        if not os.path.exists(pdf.pdf_file.path):
+            print(f"❌ PDF file does not exist on disk: {pdf.pdf_file.path}")
+            logger.error(f"PDF file does not exist on disk: {pdf.pdf_file.path}")
+            return HttpResponse("PDF file not found on disk", status=404)
+        
+        print(f"✅ PDF file exists on disk")
+        
+        # Open and serve the PDF file
+        with open(pdf.pdf_file.path, 'rb') as pdf_file:
+            print(f"📖 Reading PDF file...")
+            file_content = pdf_file.read()
+            print(f"📊 PDF file size: {len(file_content)} bytes")
+            
+            response = HttpResponse(file_content, content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="{pdf.title}.pdf"'
+            print(f"🚀 Returning PDF response with content-type: application/pdf")
+            return response
+        
+    except InspirationPDF.DoesNotExist:
+        print(f"❌ PDF with ID {pdf_id} does not exist")
+        logger.error(f"PDF with ID {pdf_id} does not exist")
+        return HttpResponse("PDF not found", status=404)
+    except Exception as e:
+        print(f"💥 Error serving PDF {pdf_id}: {str(e)}")
+        logger.error(f"Error serving PDF {pdf_id}: {str(e)}")
+        return HttpResponse(f"Error serving PDF: {str(e)}", status=500)
+
+
 @csrf_exempt
 def analyze_color(request):
     if request.method == 'POST':
