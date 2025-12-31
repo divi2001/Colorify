@@ -24,6 +24,26 @@
             <a href="{% url 'home' %}#key-features"
               class="navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Blog</a>
 
+            <!-- Language Selector -->
+            <div class="relative inline-block language-selector-wrapper">
+              <select id="language-select" class="language-dropdown">
+                <option value="">Select Language</option>
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+                <option value="gu">Gujarati</option>
+                <option value="bn">Bengali</option>
+                <option value="ta">Tamil</option>
+                <option value="te">Telugu</option>
+                <option value="ml">Malayalam</option>
+                <option value="kn">Kannada</option>
+                <option value="mr">Marathi</option>
+                <option value="pa">Punjabi</option>
+                <option value="or">Odia</option>
+                <option value="as">Assamese</option>
+              </select>
+              <div id="google_translate_element" style="display: none;"></div>
+            </div>
+            
             {% if user.is_authenticated %}
                 <a href="{% url 'account_logout' %}"
                   class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
@@ -51,6 +71,26 @@
   <a href="{% url 'plans' %}" class="block py-2 text-gray-600 hover:text-gray-900">Pricing</a>
   <a href="{% url 'contact' %}" class="block py-2 text-gray-600 hover:text-gray-900">Contact us</a>
   <a href="{% url 'home' %}#key-features" class="block py-2 text-gray-600 hover:text-gray-900">Blog</a>
+  <!-- Language Selector for Mobile -->
+  <div class="py-2 language-selector-wrapper">
+    <select id="language-select-mobile" class="language-dropdown w-full">
+      <option value="">Select Language</option>
+      <option value="en">English</option>
+      <option value="hi">Hindi</option>
+      <option value="gu">Gujarati</option>
+      <option value="bn">Bengali</option>
+      <option value="ta">Tamil</option>
+      <option value="te">Telugu</option>
+      <option value="ml">Malayalam</option>
+      <option value="kn">Kannada</option>
+      <option value="mr">Marathi</option>
+      <option value="pa">Punjabi</option>
+      <option value="or">Odia</option>
+      <option value="as">Assamese</option>
+    </select>
+    <div id="google_translate_element_mobile" style="display: none;"></div>
+  </div>
+  
   {% if user.is_authenticated %}
       <a href="{% url 'account_logout' %}" class="btn-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700">Logout</a>
   {% else %}

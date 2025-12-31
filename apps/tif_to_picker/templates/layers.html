@@ -51,6 +51,13 @@ https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
         transition: opacity 0.2s ease;
       }
       
+      .sticky-header-custom{
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #fff;
+        padding-top: 8px;
+      }
       .harmony-tooltip::before {
         content: '';
         position: absolute;
@@ -529,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button 
   class="btn btn-sm d-flex align-items-center justify-content-center nav-btn" 
   onclick="toggleSidebar('secondaryColumn', this)" 
-  style="border: none; background: #fff; position: absolute; top: 8px; right: 8px;">
+  style="border: none; background: #fff; position: absolute; top: 8px; right: 8px; z-index: 50;">
     <i class="bi bi-caret-left-fill"></i>
 </button>
 
@@ -537,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <!-- Trending Content -->
      
           <div class="sidebar-content" id="trendingContent" style="display: none;">
-            <h2 class="ms-auto me-auto fw-bold text-center fs-4">Trending Palette</h2>
+            <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Trending Palette</h2>
             <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -630,8 +637,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
     
-        <div class="sidebar-content m-4" id="inspirationContent">
-          <h2 class="ms-auto me-auto fw-bold text-center fs-4">Inspirations</h2>
+        <div class="sidebar-content m-4" style="margin:0.75rem !important;" id="inspirationContent">
+          <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Inspirations</h2>
           <div class="inspiration-content">
               <div class="pdf-grid">
 
@@ -639,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
       </div>
       <div class="sidebar-content" id="effectsContent" style="display: none;">
-        <h2 class="ms-auto me-auto fw-bold text-center fs-4">Effects</h2>
+        <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Effects</h2>
         <div class="effects-grid">
             <div class="effect-item" data-effect="grayscale">
                 <div class="effect-preview">
@@ -723,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
 <div class="sidebar-content" id="paletteGeneratorContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Color Picker</h2>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Color Picker</h2>
   <hr />
   
   <!-- Controls -->
@@ -876,7 +883,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
      <!-- SS Collection Content -->
      <div class="sidebar-content" id="ssCollectionContent" style="display: none;">
-      <h2 class="ms-auto me-auto fw-bold text-center fs-4">SS Collection</h2>
+      <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">SS Collection</h2>
       <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -970,7 +977,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
 
 <div class="sidebar-content" id="favCollectionContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Favourite Collection</h2>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Favourite Collection</h2>
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       <!-- Favorites will be loaded dynamically here -->
@@ -979,7 +986,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Base Color Content -->
 <!-- Base Color Content -->
 <div class="sidebar-content" id="baseColorContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Base Colors</h2>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Base Colors</h2>
   <div class="base-colors-grid">
     <!-- Color blocks will be generated here -->
   </div>
@@ -995,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- AW Collection Content -->
 <div class="sidebar-content" id="awCollectionContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">AW Collection</h2>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">AW Collection</h2>
   <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -1107,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <div class="sidebar-content" id="mockupsContent" style="display: none;">
-    <h2 class="ms-auto me-auto fw-bold text-center fs-4">Mockups</h2>
+    <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Mockups</h2>
     <div class="mockups-grid">
         <!-- Mockups will be loaded here via AJAX -->
         <div class="text-center">
@@ -2280,9 +2287,8 @@ window.canvasErrorCount = 0;
                  0V5.707L5.354 7.854a.5.5 0 
                  1 1-.708-.708z"/>
     </svg>
-    Upload
+    Upload files
 </a>
-
             </form>
         </div>
     </div>
@@ -2372,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .scroll-container,
 .palette-selector,
 #image-color-pickers {
-    overflow-x: auto !important;
+    overflow-x: hidden !important;
     scroll-behavior: smooth !important;
 }
 
@@ -3408,7 +3414,7 @@ function loadInspirationContent() {
         .then(response => response.json())
         .then(data => {
             let htmlContent = `
-                <h2 class="ms-auto me-auto fw-bold text-center fs-4">Inspirations</h2>
+                <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Inspirations</h2>
                 <div class="inspiration-content">
                     <div class="pdf-grid">
             `;
@@ -7044,7 +7050,6 @@ async function selectBaseColor(color) {
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
-            width: 200px;
             margin-bottom: 15px;
         }
         
@@ -10418,7 +10423,6 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                 transition: transform 0.2s, box-shadow 0.2s;
                 position: relative;
-                width: 200px;
                 margin-bottom: 15px;
             }
             

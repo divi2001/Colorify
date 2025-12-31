@@ -13,6 +13,96 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
   {% block extra_css %}{% endblock %}
+  
+  <!-- Google Translate Script -->
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      // Initialize for desktop (hidden)
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,hi,gu,bn,ta,te,ml,kn,mr,pa,or,as',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element');
+      
+      // Also initialize for mobile (hidden)
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,hi,gu,bn,ta,te,ml,kn,mr,pa,or,as',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element_mobile');
+      
+      // Handle custom dropdown changes - sync with Google Translate
+      function setupLanguageSelector() {
+        const desktopSelect = document.getElementById('language-select');
+        const mobileSelect = document.getElementById('language-select-mobile');
+        
+        function changeLanguage(langCode) {
+          if (!langCode || langCode === '') {
+            // Reset to English - remove cookie and hash
+            document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            if (window.location.hash && window.location.hash.indexOf('googtrans') !== -1) {
+              window.location.hash = '';
+            }
+            window.location.reload();
+            return;
+          }
+          
+          // Set Google Translate cookie with correct format: /en|langCode
+          const langPair = 'en|' + langCode;
+          const cookieValue = '/' + langPair;
+          
+          // Set cookie - this is the format Google Translate expects
+          document.cookie = 'googtrans=' + cookieValue + '; path=/; max-age=63072000';
+          
+          // Set hash to trigger Google Translate on reload
+          window.location.hash = '#googtrans(' + langPair + ')';
+          
+          // Reload page to apply translation
+          window.location.reload();
+        }
+        
+        function setupSelect(selectElement) {
+          if (!selectElement) return;
+          
+          selectElement.addEventListener('change', function() {
+            const selectedValue = this.value;
+            changeLanguage(selectedValue);
+          });
+        }
+        
+        // Setup both dropdowns
+        setupSelect(desktopSelect);
+        setupSelect(mobileSelect);
+        
+        // Set current language in dropdown if already translated
+        const currentLang = document.cookie.match(/googtrans=([^;]+)/);
+        if (currentLang) {
+          const langValue = currentLang[1].replace('/', '');
+          const langPair = langValue.split('|');
+          if (langPair.length > 1 && langPair[1] !== 'en') {
+            const currentLangCode = langPair[1];
+            if (desktopSelect) desktopSelect.value = currentLangCode;
+            if (mobileSelect) mobileSelect.value = currentLangCode;
+          }
+        }
+      }
+      
+      // Wait for Google Translate to initialize, then setup our dropdowns
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(setupLanguageSelector, 1000);
+          setTimeout(setupLanguageSelector, 2000);
+        });
+      } else {
+        setTimeout(setupLanguageSelector, 1000);
+        setTimeout(setupLanguageSelector, 2000);
+      }
+    }
+  </script>
+  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  
   <style>
     * {
       font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -639,6 +729,61 @@
 
     .navigation-top {
       font-weight: inherit;
+    }
+
+    /* Language Selector Styling */
+    .language-selector-wrapper {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .language-dropdown {
+      padding: 6px 32px 6px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 300;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      outline: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%231e293b' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px;
+      min-width: 140px;
+    }
+
+    .language-dropdown:hover {
+      border-color: #667eea;
+      box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .language-dropdown:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Hide Google Translate branding and frames */
+    .goog-te-banner-frame,
+    .goog-te-balloon-frame,
+    .goog-te-balloon-frame .goog-te-menu-value span {
+      display: none !important;
+    }
+
+    body {
+      top: 0 !important;
+    }
+
+    /* Hide Google Translate default dropdown */
+    #google_translate_element,
+    #google_translate_element_mobile {
+      display: none !important;
     }
 
     @keyframes gentleBounce {
