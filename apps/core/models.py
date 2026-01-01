@@ -8,13 +8,16 @@ import os
 
 class Contact(models.Model):
     SUBJECT_CHOICES = [
-        ('general', 'General Inquiry'),
-        ('support', 'Technical Support'),
+        ('become_affiliate', 'Become a Promoter'),
+        ('technical_support', 'Technical Support'),
+        ('feature_request', 'Feature Request'),
         ('billing', 'Billing Question'),
+        ('partnership', 'Partnership Inquiry'),
+        ('general', 'General Inquiry'),
         ('other', 'Other'),
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='contacts')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='contacts', null=True, blank=True)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     email = models.EmailField()
@@ -117,3 +120,37 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
+
+class NewsletterSubscription(models.Model):
+    email = models.EmailField(unique=True)
+    is_active = models.BooleanField(default=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.email} ({'Active' if self.is_active else 'Inactive'})"
+
+    class Meta:
+        ordering = ['-subscribed_at']
+
+class Affiliate(models.Model):
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    email = models.EmailField()
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    message = models.TextField()
+    website_url = models.URLField(blank=True, null=True)
+    social_media_followers = models.CharField(max_length=100, blank=True, null=True)
+    experience = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ], default='pending')
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} - {self.email}"
+
+    class Meta:
+        ordering = ['-created_at']

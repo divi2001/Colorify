@@ -46,13 +46,32 @@ def profile_dashboard_view(request):
     # Get current subscription information
     current_subscription = None
     try:
-        current_subscription = UserSubscription.objects.get(user=request.user)
+        current_subscription = UserSubscription.objects.select_related('plan').get(user=request.user)
     except UserSubscription.DoesNotExist:
         pass
 
+    # Calculate storage usage data
+    storage_data = {}
+    if current_subscription and current_subscription.plan:
+        storage_used_gb = current_subscription.storage_used_mb / 1024
+        storage_limit_gb = current_subscription.plan.storage_limit_mb / 1024
+        storage_remaining_gb = storage_limit_gb - storage_used_gb
+        storage_percentage = (current_subscription.storage_used_mb / current_subscription.plan.storage_limit_mb) * 100
+        
+        storage_data = {
+            'used_gb': round(storage_used_gb, 2),
+            'limit_gb': round(storage_limit_gb, 2),
+            'remaining_gb': round(storage_remaining_gb, 2),
+            'percentage': round(storage_percentage, 1),
+            'used_mb': current_subscription.storage_used_mb,
+            'limit_mb': current_subscription.plan.storage_limit_mb,
+            'remaining_mb': current_subscription.plan.storage_limit_mb - current_subscription.storage_used_mb
+        }
+
     context = {
         'user': request.user,
-        'current_subscription': current_subscription
+        'current_subscription': current_subscription,
+        'storage_data': storage_data
     }
     
     return render(request, 'pages/profile-dashboard.html', context)

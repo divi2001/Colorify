@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Colorify - Home{% endblock %}
+
+{% block content %}
+  <div class="bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div class="mx-auto px-4 pt-6 relative overflow-hidden">
+      <!-- Animated Background Elements -->
+      <div class="absolute top-80 left-0 right-0 z-0 animate-pulse-slow">
+        <img src="./static/images/Vector%2049.png" alt="wave background" class="w-full object-cover opacity-30" />
+      </div>
+
+      <!-- Floating Elements -->
+      <div
+        class="absolute top-1/4 right-1/4 w-64 h-64 bg-gradient-tertiary rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float">
+      </div>
+
+
+      <!-- Main Content -->
+      <div class="relative z-10">
+        <!-- Hero Section -->
+        <div class="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto min-h-[80vh]">
+          <!-- Left Side: Content -->
+          <div class="w-full md:w-1/2 text-center md:text-left fade-in">
+            <h1 class="figma-hero mb-8">
+              Generate <br /><span class="text-gradient">Color Matching</span>
+              with a single click<br />
+              <span class="text-gradient">Powered by AI</span>
+            </h1>
+
+            <p class="figma-text-xl text-slate-600 max-w-2xl mx-auto md:mx-0 fade-in-delay-1">
+              Built for digital print units, mills, and design studios worldwide
+            </p>
+
+          <div class="mt-10 flex flex-wrap justify-center md:justify-start gap-4 relative z-20 fade-in-delay-2">
+            <a href="/tif-editor/" class="btn-primary px-8 py-4 text-white rounded-2xl font-light shadow-xl text-lg">
+              Start Creating
+            </a>
+          </div>
+          </div>
+
+          <!-- Right Side: Enhanced Image Placeholder -->
+          <div class="w-full md:w-1/2 flex justify-center items-center mt-10 md:mt-0 fade-in-delay-3">
+            <div class="relative hover-scale">
+              <div
+                class="w-[500px] h-96 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl flex flex-col items-center justify-center text-slate-500 border border-slate-200 shadow-2xl overflow-hidden p-8">
+<div class="funky-text-landing">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+    
+    .funky-text {
+      font-family: 'Indie Flower', cursive;
+      font-size: 1.1em;
+      letter-spacing: 1px;
+    }
+  </style>
+  
+  <span class="line1 funky-text" style="position: absolute; left: -110%; top: 95%;">
+    SELECT PALETTE
+    <img style="margin-left: 30px;" width="50px" height="50px" src="{% static 'images/arrow.svg' %}" alt="arrow" />
+  </span>
+  <span class="line2 funky-text" style="position: relative; left: 70%;">
+    INSTANT RESULT
+    <img style="margin-left: 30px;" width="50px" height="50px" src="{% static 'images/arrow.svg' %}" alt="arrow" />
+  </span>
+</div>
+
+                <div class="main-animation-container-landing">
+                  <div class="image-pair-landing active" data-pair="1">
+                    <img class="animation-left-cnt-landing" src="./static/images/1.png" alt="Image 1">
+                    <img class="animation-right-cnt-landing" src="./static/images/1a.png" alt="Image 1a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="2">
+                    <img class="animation-left-cnt-landing" src="./static/images/2.png" alt="Image 2">
+                    <img class="animation-right-cnt-landing" src="./static/images/2a.png" alt="Image 2a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="3">
+                    <img class="animation-left-cnt-landing" src="./static/images/3.png" alt="Image 3">
+                    <img class="animation-right-cnt-landing" src="./static/images/3a.png" alt="Image 3a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="4">
+                    <img class="animation-left-cnt-landing" src="./static/images/4.png" alt="Image 4">
+                    <img class="animation-right-cnt-landing" src="./static/images/4a.png" alt="Image 4a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="5">
+                    <img class="animation-left-cnt-landing" src="./static/images/5.png" alt="Image 5">
+                    <img class="animation-right-cnt-landing" src="./static/images/5a.png" alt="Image 5a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="6">
+                    <img class="animation-left-cnt-landing" src="./static/images/6.png" alt="Image 6">
+                    <img class="animation-right-cnt-landing" src="./static/images/6a.png" alt="Image 6a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="7">
+                    <img class="animation-left-cnt-landing" src="./static/images/7.png" alt="Image 7">
+                    <img class="animation-right-cnt-landing" src="./static/images/7a.png" alt="Image 7a">
+                  </div>
+
+                  <div class="image-pair-landing" data-pair="8">
+                    <img class="animation-left-cnt-landing" src="./static/images/8.png" alt="Image 8">
+                    <img class="animation-right-cnt-landing" src="./static/images/8a.png" alt="Image 8a">
+                  </div>
+                </div>
+              </div>
+              <!-- Decorative elements -->
+              <div class="absolute -top-4 -right-4 w-8 h-8 bg-gradient-secondary rounded-full animate-float"></div>
+              <div class="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-tertiary rounded-full animate-float"
+                style="animation-delay: 0.5s"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enhanced Video Section -->
+        <div class="relative mt-36 max-w-5xl mx-auto scroll-reveal">
+          <div
+            class="absolute top-[30%] left-[95%] w-[20%] h-[50%] bg-gradient-tertiary rounded-full -z-10 blur-xl opacity-30 animate-float">
+          </div>
+
+
+          <!-- Background Decorative Elements -->
+          <div class="absolute -right-20 top-20 w-[200px] h-[500px] opacity-100 animate-float">
+            <div class="w-full h-full rounded-[80px] bg-gradient-primary opacity-20"></div>
+          </div>
+          <div class="absolute -left-20 top-80 w-[190px] h-[500px] opacity-100 animate-float"
+            style="animation-delay: 0.5s">
+            <div class="w-full h-full rounded-[80px] bg-gradient-secondary opacity-20"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Modal -->
+  <div id="loginModal"
+    class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-96 max-w-lg mx-4 hover-scale">
+      <h2 class="text-2xl font-normal text-slate-800 mb-2">Please Login</h2>
+      <p class="text-slate-600 mb-6">
+        You need to log in to edit Tiff files and access premium features.
+      </p>
+      <div class="flex gap-3">
+        <a href="{% url 'account_login' %}"
+          class="flex-1 btn-primary text-white px-6 py-3 rounded-xl font-light text-center shadow-lg">
+          Login
+        </a>
+        <button class="flex-1 btn-secondary bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-light shadow-lg"
+          onclick="toggleModal('loginModal')">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="mx-auto px-6  sm:px-6 lg:px-10" style="background-color: #FFF4E5;">
+    <!-- Enhanced First Section -->
+    <div class="scroll-reveal">
+      <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+        <!-- Content LEFT -->
+        <div class="lg:block w-full lg:w-1/2">
+          <div class="text-[25px] text-gradient font-normal mb-6 tracking-wider uppercase">
+            ABOUT US
+          </div>
+          <h2 class="figma-text-5xl mb-6">
+            Empowering the Future of Color Matching with
+            <div class="text-gradient-orange mt-2">
+              <span class="relative">
+                <span class="text-gradient-orange">AI</span>
+                <svg class="absolute -bottom-6 right-0 w-40 h-8" viewBox="0 0 1200 100">
+                  <path d="M0,50 Q600,-80 1200,50" stroke="#ff6b6b" stroke-width="25" fill="none" opacity="0.7" />
+                </svg>
+              </span>
+            </div>
+          </h2>
+          <p class="figma-text-lg text-slate-600 mb-8">
+            We help the textile and print industry achieve flawless color accuracy. Our AI-powered platform removes
+            guesswork and delivers perfect matches in one click--saving time, reducing errors, and cutting costs
+          </p>
+          <button class="btn-primary text-white px-8 py-4 rounded-2xl font-light shadow-xl hover-lift" onclick="window.location.href='/tif-editor/'">
+            Know more
+          </button>
+        </div>
+
+              <!-- Video RIGHT -->
+              <div class="w-full lg:w-1/2 flex items-center justify-center">
+                  <div class="relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 hover:scale-105">
+                      <video id="myVideo" class="w-full h-full rounded-3xl" poster="" autoplay loop muted playsinline>
+                          <source src="{% static 'images/arrowvideov2.mp4' %}" type="video/mp4" />
+                          Your browser does not support the video tag.
+                      </video>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </main>
+  
+  <!-- Enhanced Features Section -->
+  <div class="py-20 px-4 scroll-reveal" style="background-color: #E0F7F5">
+    <div class="max-w-6xl mx-auto">
+      <!-- Heading Section -->
+      <div class="text-center mb-16">
+        <h2 class="figma-text-5xl mb-6">
+          <span>Our Key </span>
+          <span class="relative">
+            <span class="text-gradient">Features</span>
+            <svg class="absolute -bottom-6 left-1 w-40 h-8" viewBox="0 0 1200 100">
+              <path d="M0,50 Q600,-80 1200,50" stroke="#667eea" stroke-width="25" fill="none" opacity="0.7" />
+            </svg>
+          </span>
+        </h2>
+        <p class="figma-text-xl text-slate-600 max-w-3xl mx-auto">
+          Everything you need for accurate, effortless, and fast color matching.
+        </p>
+      </div>
+
+      <!-- Enhanced Features Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Generation Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/one- click color matching.png" alt="Generation"
+               />
+            <div
+              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">One-Click Color Matching</h3>
+          <p class="figma-text-base text-slate-600">
+            Generate accurate color matches instantly--no manual adjustments, no guesswork.
+          </p>
+        </div>
+         <!-- Customization Card -->
+         <div class="feature-card-primary text-white rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/built for professionals.png" alt="Customization"
+               />
+            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+          <h3 class="figma-text-2xl mb-4">Built for Professionals</h3>
+          <p class="figma-text-base text-white/90">
+            Tailored for digital print units, mills, and design studios--optimized for high-volume production.
+          </p>
+        </div>
+
+        <!-- Export Options Card -->
+ 
+      </div>
+      
+      <!-- Customization Card -->
+      <div class="feature-card-primary text-white rounded-3xl p-8 group">
+               <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/ai powered accuracy.png" alt="Export"
+               />
+            <div
+              class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4"> Real-Time Preview</h3>
+          <p class="figma-text-base text-slate-600">
+            See how your matched colors look before printing, reducing errors and rework.
+          </p>
+        </div>
+        <div class="mb-6 relative overflow-hidden rounded-2xl">
+          <img src="./static/images/real time preview.jpg" alt="Customization"
+             />
+          <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+        </div>
+        <h3 class="figma-text-2xl mb-4">AI-Powered Accuracy</h3>
+        <p class="figma-text-base text-white/90">
+          Our advanced AI ensures consistent, print-ready colors every time.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8" style="padding-top: 30px;">
+        <!-- Generation Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/cloud based access.png" alt="Generation"
+               />
+            <div
+              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4"> Cloud-Based Access</h3>
+          <p class="figma-text-base text-slate-600">
+            Work from anywhere with secure cloud storage and quick accessibility for your team.
+          </p>
+        </div>
+
+        <!-- Export Options Card -->
+        <div class="feature-card rounded-3xl p-8 group">
+          <div class="mb-6 relative overflow-hidden rounded-2xl">
+            <img src="./static/images/unlimited color combination.png" alt="Export"
+               />
+            <div
+              class="absolute inset-0 bg-gradient-tertiary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
+          </div>
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Unlimited Color Combinations</h3>
+          <p class="figma-text-base text-slate-600">
+            Explore endless color possibilities with automatic generation of matching combinations tailored to your
+            design needs.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Why Subscribe Section (Figma-style blue background) -->
+  <section class="py-10 md:py-20 px-4 md:px-8 lg:px-20 scroll-reveal" style="background-color: #F2ECF8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
+        <!-- Left Content -->
+        <div class="w-full lg:max-w-xl text-center lg:text-left">
+          <h2 class="figma-text-3xl md:figma-text-4xl lg:figma-text-5xl mb-4 md:mb-6">
+            Why Choose
+            <span class="relative">
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600">Colorify Studio?</span>
+              <svg class="absolute -bottom-3 md:-bottom-5 left-0 w-20 md:w-28 h-4 md:h-6 mb-1" viewBox="0 0 1200 100">
+                <path d="M0,50 Q600,-80 1200,50" stroke="#fbbf24" stroke-width="25" fill="none" />
+              </svg>
+            </span>
+            <br />Design Smarter, Faster!
+          </h2>
+
+          <p class="figma-text-lg md:figma-text-xl mb-8 md:mb-12">
+            Unlock the full potential of your designs with Colorify Studio's
+            subscription. Here's why it's a game-changer for designers:
+          </p>
+
+          <div class="space-y-6 md:space-y-8">
+            <h3 class="figma-text-xl md:figma-text-2xl lg:figma-text-3xl">Our Special Key Features</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <!-- Feature Items -->
+              <div class="space-y-3 md:space-y-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Offer More, Sell More</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base"> Generate Color Variations in Seconds</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Save Time, Cut Production Costs</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base"> Access Seasonal Color Trend Reports</span>
+                </div>
+              </div>
+
+              <!-- Right Column Features -->
+              <div class="space-y-3 md:space-y-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Unleash Limitless Creative Possibilities</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Stay Ahead of the Competition</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Works Seamlessly with Complex Print Files</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Content -->
+        <div class="relative w-full lg:w-auto mt-8 lg:mt-0 flex justify-center">
+          <!-- Background Circles - Hidden on mobile for cleaner look -->
+          <div class="hidden lg:block absolute top-20 left-[55%] w-[50%] h-[90%] bg-pink-300 rounded-full opacity-80">
+          </div>
+          <div
+            class="hidden lg:block absolute bottom-[30%] -right-[5%] w-[55%] h-80 bg-blue-400 rounded-full opacity-80">
+          </div>
+
+          <!-- Video/Image Container -->
+          <div class="relative w-full max-w-md md:max-w-lg lg:w-[600px] bg-white rounded-2xl shadow-xl overflow-hidden">
+            <video id="myVideo2" class="w-full h-full object-cover rounded-2xl" poster="">
+              <source src="./static/images/Venice_10.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <!-- Play Button Overlay -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <button id="playPauseButton2"
+                class="w-12 h-12 md:w-16 md:h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all">
+                <svg id="playIcon2" class="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none">
+                  <path d="M8 5v14l11-7z" fill="#4052FF" />
+                </svg>
+                <svg id="pauseIcon2" class="w-6 h-6 md:w-8 md:h-8 hidden" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" fill="#4052FF" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Second Section (Gradient Background) - Made Responsive -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 md:mt-20">
+      <div
+        class="w-full rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:15px">
+        <h1 class="figma-text-3xl md:figma-text-4xl lg:figma-hero text-white mb-6 md:mb-8">
+          Ready to Simplify Color Matching?
+        </h1>
+        <p class="figma-text-lg md:figma-text-xl lg:figma-text-2xl text-white/90 mb-6 md:mb-10 max-w-3xl mx-auto">
+          Start designing faster, smarter, and with perfect color accuracy--no guesswork, no delays.
+        </p>
+       <a href="/tif-editor/"
+   class="bg-white text-slate-800 px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 
+          rounded-xl md:rounded-2xl figma-text-base md:figma-text-lg 
+          hover:bg-slate-50 transition-all duration-300 shadow-xl 
+          hover:shadow-2xl hover:scale-105 inline-block text-center" style="background:#feffc7;">
+  Start Creating
+</a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Company Logos Section (Figma-style solid background) -->
+  <section class="section-solid-light py-16 scroll-reveal">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <p class="figma-text-lg">
+          <span style="font-size: 30px;">Eliminate costly color mismatches in textile printing </span> <br> <span
+              style="font-size: 30px;font-weight: bold;"> 10x faster, 100% accurate,
+              and AI-driven</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="py-24 scroll-reveal" style="background-color: #FFFBE6;">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="figma-text-5xl text-slate-900 mb-6">
+          What our <span class="text-gradient">customers</span> say
+        </h2>
+        <p class="figma-text-xl text-slate-600 max-w-3xl mx-auto">
+          Hear from designers and teams who've transformed their workflow with <br>
+          <span class="font-medium">Colorify Studio</span>
+        </p>
+      </div>
+
+      <div class="testimonial-scroll-container">
+        <div class="testimonial-scroll-wrapper">
+          <!-- Testimonial 1 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                A
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Amit Trivedi
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Production Head, Fabloom Textiles (Mill)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "Colorify Studio helped us cut down color correction time by more than 50%."
+            </p>
+          </div>
+
+          <!-- Testimonial 2 -->
+          <div class="testimonial-card testimonial-card-scroll">
+            <div class="flex items-center mb-6">
+              <div
+                class="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-normal mr-4">
+                N
+              </div>
+              <div>
+                <div class="figma-text-lg font-light text-slate-900">
+                  Neha Kapoor
+                </div>
+                <div class="figma-text-sm text-slate-600">
+                  Lead Designer, Chromica Studio (Design Studio)
+                </div>
+              </div>
+            </div>
+            <div class="flex mb-4">
+              <!-- 5 stars -->
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <p class="figma-text-base text-slate-700 leading-relaxed">
+              "It's like having a color expert on-call--our design flow has never been smoother."
+            </p>
+          </div>
+
+          <!-- Additional testimonials would continue here... -->
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

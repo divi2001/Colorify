@@ -241,6 +241,55 @@ class InspirationView(View):
 inspiration_view = InspirationView.as_view()
 
 
+def download_pdf(request, pdf_id):
+    """Download or view PDF file"""
+    print(f"🔍 download_pdf called with pdf_id: {pdf_id}")
+    print(f"📡 Request method: {request.method}")
+    print(f"🌐 Request path: {request.path}")
+    
+    try:
+        print(f"🔎 Looking for PDF with ID: {pdf_id}")
+        pdf = get_object_or_404(InspirationPDF, id=pdf_id)
+        print(f"✅ Found PDF: {pdf.title}")
+        
+        # Check if the PDF file exists
+        if not pdf.pdf_file or not pdf.pdf_file.name:
+            print(f"❌ PDF {pdf_id} has no file attached")
+            logger.error(f"PDF {pdf_id} has no file attached")
+            return HttpResponse("PDF file not found", status=404)
+        
+        print(f"📁 PDF file path: {pdf.pdf_file.name}")
+        print(f"💾 Full file path: {pdf.pdf_file.path}")
+        
+        # Check if the file exists on disk
+        if not os.path.exists(pdf.pdf_file.path):
+            print(f"❌ PDF file does not exist on disk: {pdf.pdf_file.path}")
+            logger.error(f"PDF file does not exist on disk: {pdf.pdf_file.path}")
+            return HttpResponse("PDF file not found on disk", status=404)
+        
+        print(f"✅ PDF file exists on disk")
+        
+        # Open and serve the PDF file
+        with open(pdf.pdf_file.path, 'rb') as pdf_file:
+            print(f"📖 Reading PDF file...")
+            file_content = pdf_file.read()
+            print(f"📊 PDF file size: {len(file_content)} bytes")
+            
+            response = HttpResponse(file_content, content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="{pdf.title}.pdf"'
+            print(f"🚀 Returning PDF response with content-type: application/pdf")
+            return response
+        
+    except InspirationPDF.DoesNotExist:
+        print(f"❌ PDF with ID {pdf_id} does not exist")
+        logger.error(f"PDF with ID {pdf_id} does not exist")
+        return HttpResponse("PDF not found", status=404)
+    except Exception as e:
+        print(f"💥 Error serving PDF {pdf_id}: {str(e)}")
+        logger.error(f"Error serving PDF {pdf_id}: {str(e)}")
+        return HttpResponse(f"Error serving PDF: {str(e)}", status=500)
+
+
 @csrf_exempt
 def analyze_color(request):
     if request.method == 'POST':
@@ -304,6 +353,256 @@ def analyze_color(request):
         'success': False,
         'error': 'Method not allowed'
     })
+
+
+# Initialize recolorer globally (like Flask version)
+_recolorer = None
+_processing_lock = None
+_lock_timestamp = None
+
+def get_recolorer():
+    """Get or create the global recolorer instance."""
+    global _recolorer
+    if _recolorer is None:
+        from .palette_recolor_standalone import PaletteRecolor
+        _recolorer = PaletteRecolor(sample_level=16, luminance_flag=True)
+    return _recolorer
+
+def get_processing_lock():
+    """Get or create the global processing lock."""
+    global _processing_lock, _lock_timestamp
+    if _processing_lock is None:
+        import threading
+        _processing_lock = threading.Lock()
+        _lock_timestamp = None
+    
+    # Check if lock is stuck (held for more than 60 seconds)
+    if _lock_timestamp is not None:
+        import time
+        if time.time() - _lock_timestamp > 60:
+            print("⚠️ Lock was stuck for >60s, force releasing...")
+            try:
+                _processing_lock.release()
+            except:
+                pass
+            _lock_timestamp = None
+    
+    return _processing_lock
+
+def update_lock_timestamp():
+    """Update the timestamp when lock is acquired."""
+    global _lock_timestamp
+    import time
+    _lock_timestamp = time.time()
+
+def clear_lock_timestamp():
+    """Clear the timestamp when lock is released."""
+    global _lock_timestamp
+    _lock_timestamp = None
+
+
+def decode_image_data(image_data):
+    """
+    Decode image data from various formats.
+    Supports: base64 data URL, raw base64, or file upload
+    """
+    try:
+        # If it's a data URL (data:image/png;base64,...)
+        if isinstance(image_data, str) and image_data.startswith('data:image'):
+            # Extract base64 part
+            base64_data = image_data.split(',')[1]
+            image_bytes = base64.b64decode(base64_data)
+        elif isinstance(image_data, str):
+            # Try as raw base64
+            image_bytes = base64.b64decode(image_data)
+        else:
+            # Assume it's already bytes
+            image_bytes = image_data
+        
+        # Open as PIL Image
+        image = Image.open(io.BytesIO(image_bytes))
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        return image
+    
+    except Exception as e:
+        raise ValueError(f"Failed to decode image: {str(e)}")
+
+
+@csrf_exempt
+def process_image_with_jimp(request):
+    """
+    Django endpoint for palette-based image recoloring.
+    Compatible with existing frontend that sends colorMappings.
+    
+    Expected request:
+    - Form data with 'image' file OR 'imageData' base64
+    - 'colorMappings' JSON string with format:
+      [
+        {"originalColor": [r, g, b], "targetColor": [r, g, b]},
+        ...
+      ]
+    """
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'error': 'Method not allowed'
+        }, status=405)
+    
+    # Get the processing lock
+    lock = get_processing_lock()
+    
+    # Try to acquire lock without blocking
+    acquired = lock.acquire(blocking=False)
+    
+    if not acquired:
+        # Another request is being processed
+        return JsonResponse({
+            'success': False,
+            'error': 'Server is busy processing another image. Please wait and try again.',
+            'busy': True
+        }, status=503)
+    
+    # Mark when lock was acquired
+    update_lock_timestamp()
+    
+    try:
+        print("=" * 60)
+        print("Received image processing request")
+        
+        # Get recolorer instance
+        recolorer = get_recolorer()
+        
+        # Get image data
+        image = None
+        
+        # Try to get from file upload first
+        if 'image' in request.FILES:
+            print("Loading image from file upload")
+            file = request.FILES['image']
+            # Read file content and use decode_image_data for consistency
+            file_content = file.read()
+            image = Image.open(io.BytesIO(file_content))
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+        
+        # Try to get from form data
+        elif 'imageData' in request.POST:
+            print("Loading image from imageData")
+            image_data = request.POST['imageData']
+            image = decode_image_data(image_data)
+        
+        # Try to get from JSON body
+        elif request.content_type == 'application/json':
+            print("Loading image from JSON body")
+            data = json.loads(request.body)
+            if 'imageData' in data:
+                image = decode_image_data(data['imageData'])
+            elif 'image' in data:
+                image = decode_image_data(data['image'])
+        
+        if image is None:
+            return JsonResponse({
+                'success': False,
+                'error': 'No image data provided. Send as "image" file or "imageData" base64'
+            }, status=400)
+        
+        print(f"Image loaded: {image.size}")
+        
+        # Get color mappings
+        color_mappings_str = None
+        if 'colorMappings' in request.POST:
+            color_mappings_str = request.POST['colorMappings']
+        elif request.content_type == 'application/json':
+            data = json.loads(request.body)
+            if 'colorMappings' in data:
+                color_mappings_str = json.dumps(data['colorMappings'])
+        
+        if not color_mappings_str:
+            return JsonResponse({
+                'success': False,
+                'error': 'No colorMappings provided'
+            }, status=400)
+        
+        # Parse color mappings
+        color_mappings = json.loads(color_mappings_str)
+        print(f"Color mappings: {len(color_mappings)} pairs")
+        
+        # Extract original and target colors
+        original_colors = []
+        target_colors = []
+        
+        for mapping in color_mappings:
+            original = mapping.get('originalColor')
+            target = mapping.get('targetColor')
+            
+            if original and target:
+                # Ensure they're tuples of 3 integers
+                original_colors.append(tuple([int(c) for c in original[:3]]))
+                target_colors.append(tuple([int(c) for c in target[:3]]))
+        
+        if not original_colors or not target_colors:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid color mappings format'
+            }, status=400)
+        
+        print(f"Original colors: {original_colors}")
+        print(f"Target colors: {target_colors}")
+        
+        # Save image temporarily (same as Flask version - simple temp file)
+        temp_input = 'temp_input.png'
+        image.save(temp_input)
+        
+        # Apply palette-based recoloring
+        print("Applying palette-based recoloring...")
+        result_image = recolorer.recolor_image(
+            image_path=temp_input,
+            original_colors=original_colors,
+            new_colors=target_colors,
+            output_path=None  # Return PIL Image
+        )
+        
+        # Clean up temp file
+        if os.path.exists(temp_input):
+            os.remove(temp_input)
+        
+        # Encode result to base64
+        print("Encoding result...")
+        buffer = io.BytesIO()
+        result_image.save(buffer, format='PNG')
+        buffer.seek(0)
+        image_base64 = base64.b64encode(buffer.getvalue()).decode()
+        result_base64 = f'data:image/png;base64,{image_base64}'
+        
+        print("Processing complete!")
+        print("=" * 60)
+        
+        return JsonResponse({
+            'success': True,
+            'processedImage': result_base64,
+            'message': 'Image processed successfully'
+        })
+    
+    except Exception as e:
+        print(f"Error processing image: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+    
+    finally:
+        # Always release the lock when done
+        try:
+            lock.release()
+            clear_lock_timestamp()
+            print("✅ Released processing lock")
+        except Exception as e:
+            print(f"⚠️ Error releasing lock: {e}")
 
 
 def process_svg_upload(request):

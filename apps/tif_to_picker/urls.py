@@ -1,6 +1,6 @@
 # apps\tif_to_picker\urls.py
 from django.urls import path
-from .views import upload_tiff,single_layer_color_picker,export_file,process_svg_upload,analyze_color, upgrade_plan, checkout
+from .views import upload_tiff,single_layer_color_picker,export_file,process_svg_upload,analyze_color, upgrade_plan, checkout, process_image_with_jimp
 from . import views
 from apps.subscription_module.views import create_favorite_palette,remove_favorite_palette,get_favorites
 
@@ -16,6 +16,7 @@ urlpatterns = [
     path('upload-svg/', process_svg_upload, name='process_svg_upload'),
     path('analyze-color/', analyze_color, name='analyze-color'),
     path('inspiration-pdfs/', views.inspiration_view, name='inspiration_pdfs'),
+    path('inspiration-pdfs/download/<int:pdf_id>/', views.download_pdf, name='download_pdf'),
     path('api/palettes/', views.get_palettes, name='get_palettes'),
     
     # Add the new URL pattern for layer-specific palettes
@@ -25,6 +26,9 @@ urlpatterns = [
     path('api/palettes/favorites/', get_favorites, name='get-favorites'),
     path('api/colors/', views.get_all_colors, name='get_all_colors'),
     path('api/mockups/', views.get_mockups_api, name='get_mockups_api'),
+    
+    # Palette-based image recoloring endpoint
+    path('api/process-image-with-jimp/', process_image_with_jimp, name='process_image_with_jimp'),
 
 ]
  

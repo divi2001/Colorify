@@ -1,0 +1,401 @@
+/* Colorify Brand Colors - Exact Logo Colors */
+:root {
+    --colorify-orange: rgb(255, 102, 0);        /* Body */
+    --colorify-yellow: rgb(255, 204, 0);        /* Wing */
+    --colorify-blue: rgb(0, 51, 204);           /* Tail */
+    --colorify-pink: rgb(255, 51, 153);         /* Beak */
+    --colorify-cyan: rgb(102, 255, 255);        /* Feather/Top */
+    --colorify-white: rgb(255, 255, 255);       /* Eye highlight */
+    --colorify-dark: #2c3e50;
+    --colorify-light: #ecf0f1;
+}
+
+/* Enhanced Navbar with Multi-Color Gradient */
+.main-header.navbar {
+    background: linear-gradient(45deg, 
+        var(--colorify-orange) 0%, 
+        var(--colorify-pink) 25%, 
+        var(--colorify-blue) 50%, 
+        var(--colorify-cyan) 75%, 
+        var(--colorify-yellow) 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    animation: gradientShift 10s ease infinite !important;
+    background-size: 400% 400% !important;
+}
+
+/* Gradient Animation */
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Navbar Links with Enhanced Styling */
+.navbar-nav .nav-link {
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 25px !important;
+    margin: 0 0.3rem !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 2px solid transparent !important;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    color: white !important;
+}
+
+/* Brand Area with Enhanced Styling */
+.brand-link {
+    background: linear-gradient(135deg, 
+        rgba(255, 102, 0, 0.9), 
+        rgba(255, 51, 153, 0.9)) !important;
+    border-bottom: none !important;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 0 0 15px 15px !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.brand-link:hover {
+    background: linear-gradient(135deg, 
+        rgba(255, 51, 153, 0.9), 
+        rgba(0, 51, 204, 0.9)) !important;
+    color: white !important;
+    transform: scale(1.02) !important;
+    transition: all 0.3s ease !important;
+}
+
+.brand-image {
+    max-height: 40px !important;
+    width: auto !important;
+    margin-right: 12px !important;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) !important;
+    transition: transform 0.3s ease !important;
+}
+
+.brand-image:hover {
+    transform: rotate(5deg) scale(1.1) !important;
+}
+
+.brand-text {
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 1.2rem !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* Enhanced Sidebar */
+.main-sidebar {
+    background: linear-gradient(180deg, 
+        var(--colorify-dark) 0%, 
+        #34495e 100%) !important;
+    border-right: 3px solid var(--colorify-orange) !important;
+}
+
+/* Sidebar Navigation Items */
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
+    color: #bdc3c7 !important;
+    border-radius: 8px !important;
+    margin: 0.2rem 0.8rem !important;
+    padding: 0.75rem 1rem !important;
+    transition: all 0.3s ease !important;
+    border-left: 4px solid transparent !important;
+}
+
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
+    background: linear-gradient(135deg, var(--colorify-orange), var(--colorify-pink)) !important;
+    color: white !important;
+    border-left-color: var(--colorify-yellow) !important;
+    transform: translateX(5px) !important;
+    box-shadow: 0 2px 8px rgba(255, 102, 0, 0.3) !important;
+}
+
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+    background: linear-gradient(135deg, var(--colorify-blue), var(--colorify-cyan)) !important;
+    color: white !important;
+    border-left-color: var(--colorify-yellow) !important;
+    box-shadow: 0 2px 8px rgba(0, 51, 204, 0.3) !important;
+}
+
+/* Color-coded Menu Items */
+.menu-orange .nav-link:hover { 
+    background: linear-gradient(135deg, var(--colorify-orange), var(--colorify-yellow)) !important; 
+}
+.menu-pink .nav-link:hover { 
+    background: linear-gradient(135deg, var(--colorify-pink), var(--colorify-cyan)) !important; 
+}
+.menu-blue .nav-link:hover { 
+    background: linear-gradient(135deg, var(--colorify-blue), var(--colorify-cyan)) !important; 
+}
+.menu-cyan .nav-link:hover { 
+    background: linear-gradient(135deg, var(--colorify-cyan), var(--colorify-yellow)) !important; 
+}
+.menu-yellow .nav-link:hover { 
+    background: linear-gradient(135deg, var(--colorify-yellow), var(--colorify-orange)) !important; 
+}
+.menu-orange-dark .nav-link:hover { 
+    background: linear-gradient(135deg, var(--colorify-orange), var(--colorify-dark)) !important; 
+}
+
+/* Content Area Enhancement */
+.content-wrapper {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    min-height: 100vh !important;
+}
+
+/* Enhanced Cards with Color Coding */
+.card {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease !important;
+    background: white !important;
+}
+
+.card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.card:nth-child(5n+1) { border-left: 5px solid var(--colorify-orange) !important; }
+.card:nth-child(5n+2) { border-left: 5px solid var(--colorify-pink) !important; }
+.card:nth-child(5n+3) { border-left: 5px solid var(--colorify-blue) !important; }
+.card:nth-child(5n+4) { border-left: 5px solid var(--colorify-cyan) !important; }
+.card:nth-child(5n+5) { border-left: 5px solid var(--colorify-yellow) !important; }
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    color: var(--colorify-dark) !important;
+    font-weight: 700 !important;
+    padding: 1rem 1.5rem !important;
+}
+
+/* Enhanced Buttons */
+.btn-colorify-orange {
+    background: linear-gradient(135deg, var(--colorify-orange), var(--colorify-yellow)) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 25px !important;
+    padding: 0.6rem 1.5rem !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-colorify-orange:hover {
+    background: linear-gradient(135deg, var(--colorify-pink), var(--colorify-orange)) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(255, 102, 0, 0.4) !important;
+    color: white !important;
+}
+
+.btn-colorify-blue {
+    background: linear-gradient(135deg, var(--colorify-blue), var(--colorify-cyan)) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 25px !important;
+    padding: 0.6rem 1.5rem !important;
+    font-weight: 600 !important;
+}
+
+.btn-colorify-blue:hover {
+    background: linear-gradient(135deg, var(--colorify-cyan), var(--colorify-blue)) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 51, 204, 0.4) !important;
+    color: white !important;
+}
+
+.btn-colorify-pink {
+    background: linear-gradient(135deg, var(--colorify-pink), var(--colorify-orange)) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 25px !important;
+}
+
+.btn-colorify-cyan {
+    background: linear-gradient(135deg, var(--colorify-cyan), var(--colorify-blue)) !important;
+    border: none !important;
+    color: var(--colorify-dark) !important;
+    border-radius: 25px !important;
+}
+
+.btn-colorify-yellow {
+    background: linear-gradient(135deg, var(--colorify-yellow), var(--colorify-orange)) !important;
+    border: none !important;
+    color: var(--colorify-dark) !important;
+    border-radius: 25px !important;
+}
+
+/* Enhanced Login Page */
+.login-page {
+    background: linear-gradient(45deg, 
+        var(--colorify-blue) 0%, 
+        var(--colorify-cyan) 25%, 
+        var(--colorify-pink) 50%, 
+        var(--colorify-orange) 75%, 
+        var(--colorify-yellow) 100%) !important;
+    background-size: 400% 400% !important;
+    animation: gradientShift 15s ease infinite !important;
+    min-height: 100vh !important;
+}
+
+.login-box {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.login-logo {
+    background: linear-gradient(135deg, 
+        var(--colorify-orange), 
+        var(--colorify-pink), 
+        var(--colorify-blue)) !important;
+    padding: 2rem !important;
+    border-radius: 20px 20px 0 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.login-logo::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: linear-gradient(45deg, 
+        transparent 30%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        transparent 70%) !important;
+    animation: shimmer 3s infinite !important;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.login-logo a {
+    color: white !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+    position: relative !important;
+    z-index: 2 !important;
+}
+
+.login-logo img {
+    max-width: 140px !important;
+    height: auto !important;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)) !important;
+}
+
+/* Enhanced Form Controls */
+.form-control {
+    border-radius: 10px !important;
+    border: 2px solid #e9ecef !important;
+    padding: 0.8rem 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.form-control:focus {
+    border-color: var(--colorify-orange) !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 102, 0, 0.25) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Dashboard Statistics Cards */
+.info-box {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    transition: all 0.3s ease !important;
+    overflow: hidden !important;
+}
+
+.info-box:hover {
+    transform: translateY(-5px) scale(1.02) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.info-box-icon {
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Color-coded info boxes */
+.info-box:nth-child(4n+1) .info-box-icon { 
+    background: linear-gradient(135deg, var(--colorify-orange), var(--colorify-yellow)) !important; 
+}
+.info-box:nth-child(4n+2) .info-box-icon { 
+    background: linear-gradient(135deg, var(--colorify-pink), var(--colorify-cyan)) !important; 
+}
+.info-box:nth-child(4n+3) .info-box-icon { 
+    background: linear-gradient(135deg, var(--colorify-blue), var(--colorify-cyan)) !important; 
+}
+.info-box:nth-child(4n+4) .info-box-icon { 
+    background: linear-gradient(135deg, var(--colorify-cyan), var(--colorify-yellow)) !important; 
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-header.navbar {
+        background: linear-gradient(135deg, var(--colorify-orange), var(--colorify-pink)) !important;
+    }
+    
+    .navbar-nav .nav-link {
+        margin: 0.1rem !important;
+        padding: 0.5rem 0.8rem !important;
+    }
+    
+    .brand-text {
+        font-size: 1rem !important;
+    }
+}
+
+/* Additional Enhancement - Glowing Effects */
+.card:hover,
+.info-box:hover {
+    box-shadow: 
+        0 8px 25px rgba(0,0,0,0.15),
+        0 0 20px rgba(255, 102, 0, 0.1) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--colorify-orange), var(--colorify-pink)) !important;
+    border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--colorify-pink), var(--colorify-blue)) !important;
+}
+
+/* Remove conflicting styles */
+a {
+    text-decoration: none !important;
+}
+
+a:hover {
+    text-decoration: none !important;
+}

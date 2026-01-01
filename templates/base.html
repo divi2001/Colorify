@@ -1,12 +1,1159 @@
-<!-- templates\base.html -->
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>{% block head_title %}{% endblock %}</title>
-    {% block extra_head %}{% endblock %}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Colorify - Home{% endblock %}</title>
+  <script src="{% static "js/talwind3.14.js" %}"></script>
+  <!-- Google Fonts - Inter (similar to Figma's typography) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  {% block extra_css %}{% endblock %}
+  
+  <!-- Google Translate Script -->
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      // Initialize for desktop (hidden)
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,hi,gu,bn,ta,te,ml,kn,mr,pa,or,as',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element');
+      
+      // Also initialize for mobile (hidden)
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,hi,gu,bn,ta,te,ml,kn,mr,pa,or,as',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element_mobile');
+      
+      // Handle custom dropdown changes - sync with Google Translate
+      function setupLanguageSelector() {
+        const desktopSelect = document.getElementById('language-select');
+        const mobileSelect = document.getElementById('language-select-mobile');
+        
+        function changeLanguage(langCode) {
+          if (!langCode || langCode === '') {
+            // Reset to English - remove cookie and hash
+            document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            if (window.location.hash && window.location.hash.indexOf('googtrans') !== -1) {
+              window.location.hash = '';
+            }
+            window.location.reload();
+            return;
+          }
+          
+          // Set Google Translate cookie with correct format: /en|langCode
+          const langPair = 'en|' + langCode;
+          const cookieValue = '/' + langPair;
+          
+          // Set cookie - this is the format Google Translate expects
+          document.cookie = 'googtrans=' + cookieValue + '; path=/; max-age=63072000';
+          
+          // Set hash to trigger Google Translate on reload
+          window.location.hash = '#googtrans(' + langPair + ')';
+          
+          // Reload page to apply translation
+          window.location.reload();
+        }
+        
+        function setupSelect(selectElement) {
+          if (!selectElement) return;
+          
+          selectElement.addEventListener('change', function() {
+            const selectedValue = this.value;
+            changeLanguage(selectedValue);
+          });
+        }
+        
+        // Setup both dropdowns
+        setupSelect(desktopSelect);
+        setupSelect(mobileSelect);
+        
+        // Set current language in dropdown if already translated
+        const currentLang = document.cookie.match(/googtrans=([^;]+)/);
+        if (currentLang) {
+          const langValue = currentLang[1].replace('/', '');
+          const langPair = langValue.split('|');
+          if (langPair.length > 1 && langPair[1] !== 'en') {
+            const currentLangCode = langPair[1];
+            if (desktopSelect) desktopSelect.value = currentLangCode;
+            if (mobileSelect) mobileSelect.value = currentLangCode;
+          }
+        }
+      }
+      
+      // Wait for Google Translate to initialize, then setup our dropdowns
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(setupLanguageSelector, 1000);
+          setTimeout(setupLanguageSelector, 2000);
+        });
+      } else {
+        setTimeout(setupLanguageSelector, 1000);
+        setTimeout(setupLanguageSelector, 2000);
+      }
+    }
+  </script>
+  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  
+  <style>
+    * {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      align-items: flex-start;
+      overflow-x: hidden;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='26' fill='none' viewBox='0 0 24 26'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M1.69 2.69a2.357 2.357 0 0 1 2.495-.54L21.47 8.632a2.357 2.357 0 0 1-.255 4.494l-7.271 1.818-1.818 7.27a2.357 2.357 0 0 1-4.494.256L1.15 5.185a2.357 2.357 0 0 1 .54-2.495Z' fill='%23fff'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M3.633 3.622A.786.786 0 0 0 2.62 4.633L9.103 21.92a.786.786 0 0 0 1.498-.086l2.047-8.185 8.185-2.046a.785.785 0 0 0 .086-1.498L3.633 3.622Z' fill='%23010101'/%3E%3C/svg%3E"), auto;
+    }
+
+    /* Custom cursor for interactive elements */
+    a, button, .btn-primary, .btn-secondary, [role="button"] {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='26' fill='none' viewBox='0 0 24 26'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M1.69 2.69a2.357 2.357 0 0 1 2.495-.54L21.47 8.632a2.357 2.357 0 0 1-.255 4.494l-7.271 1.818-1.818 7.27a2.357 2.357 0 0 1-4.494.256L1.15 5.185a2.357 2.357 0 0 1 .54-2.495Z' fill='%23fff'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M3.633 3.622A.786.786 0 0 0 2.62 4.633L9.103 21.92a.786.786 0 0 0 1.498-.086l2.047-8.185 8.185-2.046a.785.785 0 0 0 .086-1.498L3.633 3.622Z' fill='%23010101'/%3E%3C/svg%3E"), pointer;
+    }
+
+    .mobile-menu {
+      display: none;
+      transition: all 0.3s ease;
+    }
+
+    .mobile-menu.active {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .animate-fade-in-left {
+      animation: fadeInLeft 0.8s ease forwards;
+    }
+
+    .animate-fade-in-right {
+      animation: fadeInRight 0.8s ease forwards;
+    }
+
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .animate-pulse-slow {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    /* Hover Animations */
+    .hover-scale {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+.hover-scale:hover {
+  transform: scale(1.05);
+  box-shadow: none !important; /* remove shadow */
+  background: transparent !important; /* ensure no background */
+}
+
+
+    .hover-lift:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Button Animations */
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .btn-secondary:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+    }
+
+    /* Card Animations */
+    .feature-card {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+
+    .feature-card:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      border-color: rgba(102, 126, 234, 0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+
+    .feature-card:hover h3,
+    .feature-card:hover p {
+      color: #ffffff !important;
+    }
+
+    .feature-card-primary {
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      color: #1e293b;
+    }
+
+    .feature-card-primary:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      border-color: rgba(102, 126, 234, 0.3);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      transform: translateY(-8px) scale(1.02);
+    }
+
+    .feature-card-primary h3,
+    .feature-card-primary p {
+      color: #1e293b;
+    }
+
+    .feature-card-primary:hover h3,
+    .feature-card-primary:hover p {
+      color: #ffffff !important;
+    }
+
+
+    /* Text Animations */
+    .text-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .text-gradient-orange {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .custom-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.3);
+      outline: none;
+      margin: 20px 0;
+    }
+
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='26' fill='none' viewBox='0 0 24 26'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M1.69 2.69a2.357 2.357 0 0 1 2.495-.54L21.47 8.632a2.357 2.357 0 0 1-.255 4.494l-7.271 1.818-1.818 7.27a2.357 2.357 0 0 1-4.494.256L1.15 5.185a2.357 2.357 0 0 1 .54-2.495Z' fill='%23fff'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M3.633 3.622A.786.786 0 0 0 2.62 4.633L9.103 21.92a.786.786 0 0 0 1.498-.086l2.047-8.185 8.185-2.046a.785.785 0 0 0 .086-1.498L3.633 3.622Z' fill='%23010101'/%3E%3C/svg%3E"), pointer;
+    }
+
+    .custom-slider-dark {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .custom-slider-dark::-webkit-slider-thumb {
+      background: #667eea;
+    }
+
+    #myVideo,
+    #myVideo * {
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+
+    /* Loading animations */
+    .fade-in {
+      opacity: 0;
+      animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .fade-in-delay-1 {
+      animation-delay: 0.1s;
+    }
+
+    .fade-in-delay-2 {
+      animation-delay: 0.2s;
+    }
+
+    .fade-in-delay-3 {
+      animation-delay: 0.3s;
+    }
+
+    .fade-in-delay-4 {
+      animation-delay: 0.4s;
+    }
+
+    /* Scroll reveal */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s ease;
+    }
+
+    .scroll-reveal.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Gradient backgrounds */
+    .bg-gradient-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .bg-gradient-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .bg-gradient-tertiary {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    /* Figma-style font weights and typography - Ultra thin */
+    .figma-text-sm {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.5;
+    }
+
+    .figma-text-base {
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.5;
+    }
+
+    .figma-text-lg {
+      font-size: 18px;
+      font-weight: 300;
+      line-height: 1.4;
+    }
+
+    .figma-text-xl {
+      font-size: 20px;
+      font-weight: 300;
+      line-height: 1.4;
+    }
+
+    .figma-text-2xl {
+      font-size: 24px;
+      font-weight: 300;
+      line-height: 1.33;
+    }
+
+    .figma-text-3xl {
+      font-size: 30px;
+      font-weight: 300;
+      line-height: 1.2;
+    }
+
+    .figma-text-4xl {
+      font-size: 36px;
+      font-weight: 300;
+      line-height: 1.1;
+    }
+
+    .figma-text-5xl {
+      font-size: 48px;
+      font-weight: 300;
+      line-height: 1.1;
+    }
+
+    .figma-text-6xl {
+      font-size: 60px;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    /* Hero text - Figma style massive bold headlines */
+    .figma-hero {
+      font-size: 55px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    @media (max-width: 768px) {
+      .figma-hero {
+        font-size: 48px;
+        line-height: 1;
+      }
+    }
+
+    /* Solid background sections like Figma */
+    .section-solid-light {
+      background: #feffc7;
+      border-top: 1px solid rgba(226, 232, 240, 0.8);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .section-solid-dark {
+      background: #1e293b;
+      color: white;
+    }
+
+    .section-solid-purple {
+      background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+      color: white;
+    }
+
+    .section-solid-blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+    }
+
+    .section-solid-green {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .section-solid-gray {
+      background: #f1f5f9;
+      border-top: 1px solid rgba(203, 213, 225, 0.6);
+      border-bottom: 1px solid rgba(203, 213, 225, 0.6);
+    }
+
+    .section-figma-purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+      color: white;
+    }
+
+    .section-figma-green {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+    }
+
+    /* Testimonial card styles */
+    .testimonial-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Scrollable testimonial container */
+    .testimonial-scroll-container {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* IE and Edge */
+    }
+
+    .testimonial-scroll-container::-webkit-scrollbar {
+      display: none;
+      /* Chrome, Safari, Opera */
+    }
+
+    .testimonial-scroll-wrapper {
+      display: flex;
+      gap: 24px;
+      padding: 20px 0;
+      animation: scrollTestimonials 30s linear infinite;
+      width: max-content;
+    }
+
+    .testimonial-scroll-wrapper:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes scrollTestimonials {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-33.33%);
+      }
+    }
+
+    .testimonial-card-scroll {
+      min-width: 350px;
+      max-width: 350px;
+      flex-shrink: 0;
+    }
+
+    /* Pricing card styles */
+    .pricing-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transition: all 0.4s ease;
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .pricing-card.featured {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .pricing-card.featured:hover {
+      transform: scale(1.08) translateY(-8px);
+    }
+
+    /* Company logo grid */
+    .company-logo {
+      opacity: 0.6;
+      transition: opacity 0.3s ease;
+      filter: grayscale(100%);
+    }
+
+    .company-logo:hover {
+      opacity: 1;
+      filter: grayscale(0%);
+    }
+
+    h2 {
+      font-family: var(--f-font-sans,
+          "__figmaSans_a26a19",
+          "__figmaSans_Fallback_a26a19",
+          SF Pro Display,
+          system-ui,
+          helvetica,
+          sans-serif);
+    }
+
+    /* Palette Animation Styles */
+    .funky-text-landing {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 18px;
+      font-weight: 300;
+      color: #000000;
+      text-align: left;
+      margin-bottom: 20px;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='26' fill='none' viewBox='0 0 24 26'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M1.69 2.69a2.357 2.357 0 0 1 2.495-.54L21.47 8.632a2.357 2.357 0 0 1-.255 4.494l-7.271 1.818-1.818 7.27a2.357 2.357 0 0 1-4.494.256L1.15 5.185a2.357 2.357 0 0 1 .54-2.495Z' fill='%23fff'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M3.633 3.622A.786.786 0 0 0 2.62 4.633L9.103 21.92a.786.786 0 0 0 1.498-.086l2.047-8.185 8.185-2.046a.785.785 0 0 0 .086-1.498L3.633 3.622Z' fill='%23010101'/%3E%3C/svg%3E"), pointer;
+      transition: all 0.3s ease;
+      animation: gentleBounce 3s ease-in-out infinite;
+    }
+
+    .funky-text-landing:hover {
+      transform: scale(1.05) translateY(-2px);
+      color: #333333;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+      animation: hoverBounce 0.6s ease-in-out infinite;
+    }
+
+    .funky-text-landing .line1,
+    .funky-text-landing .line2 {
+      display: block;
+      line-height: 1.2;
+      transition: transform 0.2s ease;
+    }
+
+    .funky-text-landing .line2 {
+      font-size: 18px;
+      margin-top: 1px;
+    }
+
+    .funky-text-landing:hover .line1 {
+      transform: translateX(-2px);
+    }
+
+    .funky-text-landing:hover .line2 {
+      transform: translateX(2px);
+    }
+
+    .main-animation-container-landing {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      flex-wrap: nowrap;
+      width: 100%;
+      max-width: 550px;
+    }
+
+    .image-pair-landing {
+      display: none;
+      align-items: baseline;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    .image-pair-landing.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .animation-left-cnt-landing {
+      border: 8px solid black;
+      border-right: 0;
+      border-top-left-radius: 15px;
+      border-bottom-left-radius: 15px;
+      display: block;
+      max-width: 180px;
+      height: auto;
+    }
+
+    .animation-right-cnt-landing {
+      border: 8px solid black;
+      border-top-right-radius: 15px;
+      border-bottom-right-radius: 15px;
+      border-top-left-radius: 15px;
+      border-bottom-left-radius: 0;
+      display: block;
+      max-width: 270px;
+      height: auto;
+    }
+
+    .navigation-top {
+      font-weight: inherit;
+    }
+
+    /* Language Selector Styling */
+    .language-selector-wrapper {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .language-dropdown {
+      padding: 6px 32px 6px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 300;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      outline: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%231e293b' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px;
+      min-width: 140px;
+    }
+
+    .language-dropdown:hover {
+      border-color: #667eea;
+      box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .language-dropdown:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Hide Google Translate branding and frames */
+    .goog-te-banner-frame,
+    .goog-te-balloon-frame,
+    .goog-te-balloon-frame .goog-te-menu-value span {
+      display: none !important;
+    }
+
+    body {
+      top: 0 !important;
+    }
+
+    /* Hide Google Translate default dropdown */
+    #google_translate_element,
+    #google_translate_element_mobile {
+      display: none !important;
+    }
+
+    @keyframes gentleBounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes hoverBounce {
+
+      0%,
+      20%,
+      50%,
+      80%,
+      100% {
+        transform: scale(1.05) translateY(-2px);
+      }
+
+      40% {
+        transform: scale(1.08) translateY(-6px);
+      }
+
+      60% {
+        transform: scale(1.08) translateY(-4px);
+      }
+    }
+
+    /* Responsive styles for palette animation */
+    @media (max-width: 768px) {
+      .main-animation-container-landing {
+        max-width: 420px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 150px;
+        border-width: 6px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 230px;
+        border-width: 6px;
+      }
+
+      .funky-text-landing {
+        font-size: 16px;
+        margin-bottom: 15px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 16px;
+      }
+
+      /* Adjust container size for tablets */
+      .w-\[500px\].h-96 {
+        width: 420px;
+        height: 320px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .main-animation-container-landing {
+        max-width: 350px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 120px;
+        border-width: 5px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 190px;
+        border-width: 5px;
+      }
+
+      .funky-text-landing {
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 14px;
+      }
+
+      /* Adjust container size for mobile */
+      .w-\[500px\].h-96 {
+        width: 350px;
+        height: 280px;
+      }
+    }
+
+    @media (max-width: 320px) {
+      .main-animation-container-landing {
+        max-width: 300px;
+      }
+
+      .animation-left-cnt-landing {
+        max-width: 100px;
+        border-width: 4px;
+      }
+
+      .animation-right-cnt-landing {
+        max-width: 160px;
+        border-width: 4px;
+      }
+
+      .funky-text-landing {
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+
+      .funky-text-landing .line2 {
+        font-size: 13px;
+      }
+    }
+  </style>
 </head>
-<body>
-    {% block content %}{% endblock %}
-    {% block extra_body %}{% endblock %}
+
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+  <!-- Include Header -->
+  {% include 'includes/header.html' %}
+
+  <!-- Main Content -->
+  {% block content %}
+  {% endblock %}
+
+  <!-- Include Footer -->
+  {% include 'includes/footer.html' %}
+
+  {% block extra_js %}{% endblock %}
+  <script>
+    // Function to create video controls
+    function setupVideoControls(videoId, buttonId, playIconId, pauseIconId) {
+      const video = document.getElementById(videoId);
+      const playPauseButton = document.getElementById(buttonId);
+      const playIcon = document.getElementById(playIconId);
+      const pauseIcon = document.getElementById(pauseIconId);
+
+      if (!video || !playPauseButton || !playIcon || !pauseIcon) return;
+
+      function togglePlayPause() {
+        if (video.paused) {
+          // Pause all other videos first
+          document.querySelectorAll("video").forEach((v) => {
+            if (v !== video) {
+              v.pause();
+              // Reset other video buttons
+              const otherVideoId = v.id;
+              const otherPlayIcon = document.getElementById(
+                `playIcon${otherVideoId.slice(-1)}`
+              );
+              const otherPauseIcon = document.getElementById(
+                `pauseIcon${otherVideoId.slice(-1)}`
+              );
+              if (otherPlayIcon && otherPauseIcon) {
+                otherPlayIcon.classList.remove("hidden");
+                otherPauseIcon.classList.add("hidden");
+              }
+            }
+          });
+
+          video.play();
+          playIcon.classList.add("hidden");
+          pauseIcon.classList.remove("hidden");
+        } else {
+          video.pause();
+          playIcon.classList.remove("hidden");
+          pauseIcon.classList.add("hidden");
+        }
+      }
+
+      playPauseButton.addEventListener("click", togglePlayPause);
+      video.addEventListener("click", togglePlayPause);
+
+      video.addEventListener("ended", function () {
+        playIcon.classList.remove("hidden");
+        pauseIcon.classList.add("hidden");
+      });
+
+      // Hide default video controls
+      video.removeAttribute("controls");
+    }
+
+    function toggleModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal.classList.contains("hidden")) {
+        modal.classList.remove("hidden");
+      } else {
+        modal.classList.add("hidden");
+      }
+    }
+
+    // Setup controls for videos
+    setupVideoControls(
+      "myVideo2",
+      "playPauseButton2",
+      "playIcon2",
+      "pauseIcon2"
+    );
+
+    // Mobile menu functionality
+    const mobileMenuButton = document.getElementById("mobile-menu-button");
+    const mobileMenu = document.getElementById("mobile-menu");
+
+    mobileMenuButton.addEventListener("click", () => {
+      mobileMenu.classList.toggle("active");
+    });
+
+    // Scroll reveal animation
+    function revealOnScroll() {
+      const reveals = document.querySelectorAll(".scroll-reveal");
+
+      for (let i = 0; i < reveals.length; i++) {
+        const windowHeight = window.innerHeight;
+        const elementTop = reveals[i].getBoundingClientRect().top;
+        const elementVisible = 150;
+
+        if (elementTop < windowHeight - elementVisible) {
+          reveals[i].classList.add("revealed");
+        }
+      }
+    }
+
+    // Smooth parallax scrolling for floating elements
+    function updateParallax() {
+      const scrolled = window.pageYOffset;
+      const parallaxElements = document.querySelectorAll(".animate-float");
+
+      parallaxElements.forEach((element, index) => {
+        const speed = 0.1 + index * 0.05;
+        const yPos = -(scrolled * speed);
+        element.style.transform = `translateY(${yPos}px)`;
+      });
+    }
+
+    // Enhanced button hover effects
+    function initButtonEffects() {
+      const buttons = document.querySelectorAll(
+        ".btn-primary, .btn-secondary"
+      );
+
+      buttons.forEach((button) => {
+        button.addEventListener("mouseenter", function () {
+          this.style.transform = "translateY(-2px) scale(1.02)";
+        });
+
+        button.addEventListener("mouseleave", function () {
+          this.style.transform = "translateY(0) scale(1)";
+        });
+      });
+    }
+
+    // Card tilt effect
+    function initCardTilt() {
+      const cards = document.querySelectorAll(
+        ".feature-card, .feature-card-primary"
+      );
+
+      cards.forEach((card) => {
+        card.addEventListener("mousemove", function (e) {
+          const rect = this.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+
+          const rotateX = (y - centerY) / 10;
+          const rotateY = (centerX - x) / 10;
+
+          this.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+        });
+
+        card.addEventListener("mouseleave", function () {
+          this.style.transform =
+            "perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)";
+        });
+      });
+    }
+
+    // Loading animation
+    function initLoadingAnimations() {
+      const fadeElements = document.querySelectorAll(".fade-in");
+
+      fadeElements.forEach((element, index) => {
+        setTimeout(() => {
+          element.style.opacity = "1";
+          element.style.transform = "translateY(0)";
+        }, index * 100);
+      });
+    }
+
+    // Navbar background on scroll
+    function updateNavbar() {
+      const navbar = document.querySelector("nav").parentElement;
+      if (window.scrollY > 50) {
+        navbar.classList.add("bg-white/95");
+        navbar.classList.remove("bg-white/80");
+      } else {
+        navbar.classList.add("bg-white/80");
+        navbar.classList.remove("bg-white/95");
+      }
+    }
+
+    // Palette Animation JavaScript
+    function initPaletteAnimation() {
+      let currentPair = 0;
+      const imagePairs = document.querySelectorAll('.image-pair-landing');
+      const totalPairs = imagePairs.length;
+
+      if (totalPairs === 0) return; // Exit if no image pairs found
+
+      function switchToNextPair() {
+        // Remove active class from current pair
+        imagePairs[currentPair].classList.remove('active');
+        
+        // Move to next pair (loop back to 0 when reaching the end)
+        currentPair = (currentPair + 1) % totalPairs;
+        
+        // Add active class to new current pair
+        imagePairs[currentPair].classList.add('active');
+      }
+
+      // Start animation after page loads
+      setTimeout(() => {
+        setInterval(switchToNextPair, 800); // Change image every 800ms
+      }, 1000); // Start after 1 second
+    }
+
+    // Initialize all functions
+    document.addEventListener("DOMContentLoaded", function () {
+      initLoadingAnimations();
+      initButtonEffects();
+      initCardTilt();
+      initPaletteAnimation(); // Initialize palette animation
+
+      // Set up event listeners
+      window.addEventListener("scroll", () => {
+        revealOnScroll();
+        updateParallax();
+        updateNavbar();
+      });
+
+      // Initial calls
+      revealOnScroll();
+      updateNavbar();
+    });
+
+    // Performance optimization for scroll events
+    let ticking = false;
+
+    function requestTick() {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          updateParallax();
+          revealOnScroll();
+          updateNavbar();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener("scroll", requestTick);
+  </script>
 </body>
+
 </html>

@@ -35,6 +35,54 @@
 https://cdn.jsdelivr.net/npm/jimp@1.6.0/dist/browser/index.min.js
 "></script>
 
+    <!-- Custom CSS for Harmony Tooltip -->
+    <style>
+      .harmony-tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        max-width: 280px;
+        z-index: 999999;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      
+      .sticky-header-custom{
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #fff;
+        padding-top: 8px;
+      }
+      .harmony-tooltip::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: 20px;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-bottom: 5px solid rgba(0, 0, 0, 0.9);
+      }
+      
+      .custom-harmony-dropdown .dropdown-item {
+        position: relative;
+        transition: background-color 0.2s ease;
+      }
+      
+      .custom-harmony-dropdown .dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: #495057;
+      }
+      
+      .harmony-option {
+        cursor: pointer;
+      }
+    </style>
+
         
         <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -229,25 +277,71 @@ document.addEventListener('DOMContentLoaded', function() {
            #harmonyMenu {
             display: none;
         }
-      .loader {
-        width: 120px;
-        height: 22px;
+        
+      /* Colorify Loading Screen Styles */
+      .colorify-loader {
+        text-align: center;
+        padding: 40px;
+        background: white;
         border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        min-width: 300px;
+      }
+      
+      .logo-container {
+        margin-bottom: 20px;
+      }
+      
+      .colorify-logo {
+        height: 60px;
+        width: auto;
+        animation: logoFloat 2s ease-in-out infinite;
+      }
+      
+      @keyframes logoFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+      
+      .loading-text {
+        font-size: 24px;
+        font-weight: bold;
         color: #514b82;
-        border: 2px solid;
-        position: relative;
+        margin-bottom: 30px;
+        letter-spacing: 2px;
       }
-      .loader::before {
-        content: "";
-        position: absolute;
-        margin: 2px;
-        inset: 0 100% 0 0;
-        border-radius: inherit;
-        background: currentColor;
-        animation: l6 2s infinite;
+      
+      .progress-container {
+        margin-bottom: 20px;
       }
-      @keyframes l6 {
-          100% {inset:0}
+      
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+      
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #514b82, #7c6db8);
+        border-radius: 10px;
+        width: 0%;
+        transition: width 0.3s ease;
+        animation: progressShimmer 2s infinite;
+      }
+      
+      @keyframes progressShimmer {
+        0% { background-position: -200px 0; }
+        100% { background-position: 200px 0; }
+      }
+      
+      .loading-message {
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
       }
 
       .fav-count {
@@ -258,8 +352,19 @@ document.addEventListener('DOMContentLoaded', function() {
   </head>
 
   <body>
- <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;">
-    <div class="loader"></div>
+ <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-95 z-50" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;">
+    <div class="colorify-loader">
+      <div class="logo-container">
+        <img src="{% static 'images/logo2.png' %}" alt="Colorify" class="colorify-logo">
+      </div>
+      <div class="loading-text">COLORIFY</div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="main-progress-fill"></div>
+        </div>
+      </div>
+      <div class="loading-message" id="main-loading-message">Initializing...</div>
+    </div>
 </div>
 
     <!-- Main Content Area  -->
@@ -268,47 +373,52 @@ document.addEventListener('DOMContentLoaded', function() {
       <div
         id="leftMostColumn"
         class="sidebar d-flex flex-column"
-        style="flex: 0 0 12%"
+        style="flex: 0 0 12%; position: relative;"
       >
-        <button
-          class="btn btn-sm m-2 d-flex align-items-center"
-          onclick="toggleSidebar('leftMostColumn', this)"
-        >
-          <i class="bi bi-caret-left-fill ms-auto"></i>
-        </button>
-        <div class="header-logo" style="margin:0 auto;" >
-          <a href="{% url 'home' %}">
-            <img src="{% static 'images/logo birds-180px.png' %}" alt="Colorify Logo" style="max-width: 100%; height: auto; max-height: 40px;">
-          </a>
+        <div class="d-flex align-items-center justify-content-between m-2">
+          <div class="flex-grow-1 d-flex justify-content-center">
+            <div class="header-logo">
+              <a href="{% url 'home' %}">
+                <img src="{% static 'images/logo birds-180px.png' %}" alt="Colorify Logo" style="max-width: 100%; height: auto; max-height: 40px;">
+              </a>
+            </div>
+          </div>
+          <button
+            class="btn btn-sm d-flex align-items-center justify-content-center"
+            onclick="toggleSidebar('leftMostColumn', this)"
+            style="border: none; background: #fff; position: absolute; top: 8px; right: 8px;"
+          >
+            <i class="bi bi-caret-left-fill"></i>
+          </button>
         </div>
         <ul class="mostLeftUl">
           <li>
             <a href="#" id="inspirationButton">
-              <i class="bi bi-brightness-alt-high me-2 mx-1"></i>
+              <i class="bi bi-brightness-alt-high me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">Inspiration</span>
             </a>
           </li>
           <li>
             <a href="#" id="trendingButton">
-              <i class="bi bi-graph-up-arrow mx-1"></i>
+              <i class="bi bi-graph-up-arrow me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">Trending</span>
             </a>
           </li>
           <li>
             <a href="#" id="effectsButton">
-              <i class="bi bi-magic mx-1"></i>
+              <i class="bi bi-magic me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">Effects</span>
             </a>
           </li>
          <li>
             <a href="#" id="favoriteButton">
-              <i class="bi bi-star mx-1"></i>
+              <i class="bi bi-star me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">Favourite</span>
             </a>
           </li>  
 <li id="harmonyButtonContainer">
     <a href="#" id="harmonyButton">
-        <i class="bi bi-palette2 mx-1"></i>
+        <i class="bi bi-palette2 me-2" style="width: 16px; display: inline-block;"></i>
         <span class="textSpan">Harmony</span>
     </a>
 </li>
@@ -379,19 +489,19 @@ document.addEventListener('DOMContentLoaded', function() {
           </li> {% endcomment %}
           <li>
             <a href="#" id="ssCollectionButton">
-              <i class="bi bi-collection mx-1"></i>
+              <i class="bi bi-collection me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">SS Collection</span>
             </a>
           </li>
           <li>
             <a href="#" id="awCollectionButton">
-              <i class="bi bi-collection mx-1"></i>
+              <i class="bi bi-collection me-2" style="width: 16px; display: inline-block;"></i>
               <span class="textSpan">AW Collection</span>
             </a>
           </li>
          <li>
           <a href="#" id="mockupsButton">
-            <i class="bi bi-brush-fill mx-1"></i>
+            <i class="bi bi-brush-fill me-2" style="width: 16px; display: inline-block;"></i>
             <span class="textSpan">Mockups</span>
           </a>
         </li>
@@ -400,20 +510,20 @@ document.addEventListener('DOMContentLoaded', function() {
    onclick="window.location=this.href"
    class="block text-sm text-gray-700 hover:bg-gray-100" 
    role="menuitem">
-    <i class="bi bi-person-circle mx-1"></i>
+    <i class="bi bi-person-circle me-2" style="width: 16px; display: inline-block;"></i>
     <span class="textSpan">Your Profile</span>
 </a>
 
 </li>
 {% comment %} <li>
     <a href="#" class="block text-sm text-gray-700 hover:bg-gray-100" role="menuitem" tabindex="-1">
-        <i class="bi bi-gear-fill mx-1"></i>
+        <i class="bi bi-gear-fill me-2" style="width: 16px; display: inline-block;"></i>
         <span class="textSpan">Settings</span>
     </a>
 </li> {% endcomment %}
 <li>
     <a href="{% url 'account_logout' %}" onclick="window.location=this.href" class="block text-sm text-gray-700 hover:bg-gray-100" role="menuitem" >
-        <i class="bi bi-box-arrow-right mx-1"></i>
+        <i class="bi bi-box-arrow-right me-2" style="width: 16px; display: inline-block;"></i>
         <span class="textSpan">Sign out</span>
     </a>
 </li>
@@ -422,19 +532,19 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
 
 
-        <div id="secondaryColumn" class="sidebar d-flex flex-column" style="flex: 0 0 20%;">
+        <div id="secondaryColumn" class="sidebar d-flex flex-column" style="flex: 0 0 16%;">
                     <button 
-  class="btn-sm m-2 d-flex align-items-center nav-btn " 
+  class="btn btn-sm d-flex align-items-center justify-content-center nav-btn" 
   onclick="toggleSidebar('secondaryColumn', this)" 
-  style="border: none; background: #fff">
-    <i class="bi bi-caret-left-fill ms-auto"></i>
+  style="border: none; background: #fff; position: absolute; top: 8px; right: 8px; z-index: 50;">
+    <i class="bi bi-caret-left-fill"></i>
 </button>
 
           
           <!-- Trending Content -->
      
           <div class="sidebar-content" id="trendingContent" style="display: none;">
-            <h2 class="ms-auto me-auto fw-bold text-center fs-4">Trending Palette</h2>
+            <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Trending Palette</h2>
             <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -527,8 +637,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
     
-        <div class="sidebar-content m-4" id="inspirationContent">
-          <h2 class="ms-auto me-auto fw-bold text-center fs-4">Inspirations</h2>
+        <div class="sidebar-content m-4" style="margin:0.75rem !important;" id="inspirationContent">
+          <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Inspirations</h2>
           <div class="inspiration-content">
               <div class="pdf-grid">
 
@@ -536,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
       </div>
       <div class="sidebar-content" id="effectsContent" style="display: none;">
-        <h2 class="ms-auto me-auto fw-bold text-center fs-4">Effects</h2>
+        <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Effects</h2>
         <div class="effects-grid">
             <div class="effect-item" data-effect="grayscale">
                 <div class="effect-preview">
@@ -620,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
 <div class="sidebar-content" id="paletteGeneratorContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Color Picker</h2>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Color Picker</h2>
   <hr />
   
   <!-- Controls -->
@@ -657,13 +767,78 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- Harmony Content -->
 <!-- Harmony Content -->
 <div class="sidebar-content" id="harmonyContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Color Harmony</h2>
+  <div class="d-flex align-items-center justify-content-center mb-3">
+    <h2 class="fw-bold fs-4 mb-0">Color Harmony</h2>
+    <i class="bi bi-info-circle ms-2 text-primary" 
+       style="cursor: pointer; font-size: 1.2rem;" 
+       data-bs-toggle="modal" 
+       data-bs-target="#harmonyInfoModal"
+       title="Learn about color harmony types"></i>
+  </div>
   
   <!-- Harmony Type Selector -->
   <div class="harmony-selector mb-3 px-3">
     <label for="harmonyTypeSelect" class="form-label">Harmony Type:</label>
-    <select class="form-select form-select-sm" id="harmonyTypeSelect">
-      <option value="Monochromatic">Monochromatic</option>
+    
+    <!-- Custom Dropdown with Hover Descriptions -->
+    <div class="custom-harmony-dropdown position-relative">
+      <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="harmonyDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
+        <span id="selectedHarmonyText">Monochromatic</span>
+      </button>
+      <ul class="dropdown-menu w-100" aria-labelledby="harmonyDropdownButton" id="harmonyDropdownMenu">
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Monochromatic" 
+             data-description="Uses variations of a single color by changing saturation and brightness. Perfect for cohesive, calming designs.">
+            Monochromatic
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Analogous"
+             data-description="Uses colors next to each other on the color wheel. Creates serene, comfortable designs often found in nature.">
+            Analogous
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Complementary"
+             data-description="Uses colors directly opposite on the color wheel. Creates high contrast and vibrant, attention-grabbing designs.">
+            Complementary
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Split Complementary"
+             data-description="Uses a base color and two colors adjacent to its complement. Strong contrast but less jarring than complementary.">
+            Split Complementary
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Triadic"
+             data-description="Uses three colors evenly spaced around the color wheel. Creates vibrant, balanced designs with strong visual impact.">
+            Triadic
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Tetradic"
+             data-description="Uses four colors in two complementary pairs. Creates rich, varied color schemes with lots of possibilities.">
+            Tetradic
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item harmony-option" href="#" data-value="Square"
+             data-description="Uses four colors evenly spaced around the color wheel. Creates dynamic, energetic designs with balanced contrast.">
+            Square
+          </a>
+        </li>
+      </ul>
+      
+      <!-- Tooltip for descriptions -->
+      <div id="harmonyTooltip" class="harmony-tooltip" style="display: none;">
+        <div class="tooltip-content"></div>
+      </div>
+    </div>
+    
+    <!-- Hidden select for form compatibility -->
+    <select class="form-select form-select-sm d-none" id="harmonyTypeSelect">
+      <option value="Monochromatic" selected>Monochromatic</option>
       <option value="Analogous">Analogous</option>
       <option value="Complementary">Complementary</option>
       <option value="Split Complementary">Split Complementary</option>
@@ -673,17 +848,22 @@ document.addEventListener('DOMContentLoaded', function() {
     </select>
     
     <!-- Background Variation Selector -->
-    <label for="backgroundVariationSelect" class="form-label mt-2">Background Style:</label>
+    <label for="backgroundVariationSelect" class="form-label mt-2">Tone Variation:</label>
     <select class="form-select form-select-sm" id="backgroundVariationSelect">
-      <option value="regular">Regular</option>
+      <option value="faint">Light</option>
+      <option value="regular">Medium</option>
       <option value="dark">Dark</option>
-      <option value="faint">Faint</option>
       <option value="mixed">Mixed (All Variations)</option>
     </select>
     
     <button class="btn btn-primary btn-sm mt-2 w-100" id="generateHarmonyBtn">
       <i class="bi bi-magic"></i> Generate Harmony
     </button>
+    
+    <!-- Note about clicking again for more options -->
+    <div class="text-center mt-2">
+      <small class="text-muted fst-italic">click again for more options</small>
+    </div>
   </div>
   
   <hr />
@@ -703,7 +883,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
      <!-- SS Collection Content -->
      <div class="sidebar-content" id="ssCollectionContent" style="display: none;">
-      <h2 class="ms-auto me-auto fw-bold text-center fs-4">SS Collection</h2>
+      <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">SS Collection</h2>
       <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -797,27 +977,16 @@ document.addEventListener('DOMContentLoaded', function() {
   
 
 <div class="sidebar-content" id="favCollectionContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Favourite Collection</h2>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Favourite Collection</h2>
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
-      
-    {% for layer in layers %}
-
-    <div class="layer-toggle-item d-flex flex-column gap-2">
-        <div id="fav_colorPalette_{{ forloop.counter }}" class="color-palette d-flex flex-column"></div>
-        <div class="d-flex align-items-center justify-content-between w-100">
-        <button type="button" id="" class="btn">
-          <i class="bi bi-star"></i>
-      </button>
-        </div>
-    </div>
-    {% endfor %}
-</div>
+      <!-- Favorites will be loaded dynamically here -->
+  </div>
 </div> 
 <!-- Base Color Content -->
 <!-- Base Color Content -->
 <div class="sidebar-content" id="baseColorContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">Base Colors</h2>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Base Colors</h2>
   <div class="base-colors-grid">
     <!-- Color blocks will be generated here -->
   </div>
@@ -833,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- AW Collection Content -->
 <div class="sidebar-content" id="awCollectionContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4">AW Collection</h2>
+  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">AW Collection</h2>
   <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -945,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <div class="sidebar-content" id="mockupsContent" style="display: none;">
-    <h2 class="ms-auto me-auto fw-bold text-center fs-4">Mockups</h2>
+    <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Mockups</h2>
     <div class="mockups-grid">
         <!-- Mockups will be loaded here via AJAX -->
         <div class="text-center">
@@ -1015,8 +1184,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   layers.forEach((layer, index) => {
     const layerId = layer.id;
-    const mlLabel = layer.getAttribute('data-ml-label');
-    
+    //const mlLabel = layer.getAttribute('data-ml-label');
+    const mlLabel =1 
     if (mlLabel) {
       mlLabels[layerId] = mlLabel;
     }
@@ -1095,17 +1264,33 @@ function showGlobalLoadingIndicator() {
         return;
     }
     
+    // Initialize main loading screen
+    const mainProgressFill = document.getElementById('main-progress-fill');
+    const mainLoadingMessage = document.getElementById('main-loading-message');
+    
+    if (mainProgressFill) {
+        mainProgressFill.style.width = '0%';
+    }
+    
+    if (mainLoadingMessage) {
+        mainLoadingMessage.textContent = 'Preparing to load images...';
+    }
+    
     const indicator = document.createElement('div');
     indicator.id = 'global-loading-indicator';
     indicator.innerHTML = `
         <div class="loading-backdrop">
-            <div class="loading-content">
-                <div class="spinner"></div>
-                <h3>Loading Images...</h3>
-                <p id="loading-progress">Preparing to load images...</p>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
+            <div class="colorify-loader">
+                <div class="logo-container">
+                    <img src="{% static 'images/logo2.png' %}" alt="Colorify" class="colorify-logo">
                 </div>
+                <div class="loading-text">COLORIFY</div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+                <div class="loading-message" id="loading-progress">Loading Images...</div>
             </div>
         </div>
     `;
@@ -1133,59 +1318,6 @@ function showGlobalLoadingIndicator() {
             align-items: center;
             justify-content: center;
         }
-        
-        .loading-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            text-align: center;
-            max-width: 300px;
-            width: 90%;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 15px;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3498db, #2ecc71);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
-        .loading-content h3 {
-            margin: 0 0 10px 0;
-            color: #333;
-            font-size: 18px;
-        }
-        
-        .loading-content p {
-            margin: 0;
-            color: #666;
-            font-size: 14px;
-        }
     `;
     
     document.head.appendChild(style);
@@ -1197,18 +1329,38 @@ function hideGlobalLoadingIndicator() {
     if (indicator) {
         indicator.style.display = 'none';
     }
+    
+    // Hide main loading screen
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+    }
 }
 
 function updateLoadingProgress(current, total, message) {
     const progressText = document.getElementById('loading-progress');
     const progressFill = document.getElementById('progress-fill');
     
+    // Update main loading screen
+    const mainProgressFill = document.getElementById('main-progress-fill');
+    const mainLoadingMessage = document.getElementById('main-loading-message');
+    
+    const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+    
+    if (mainProgressFill) {
+        mainProgressFill.style.width = percentage + '%';
+    }
+    
+    if (mainLoadingMessage) {
+        mainLoadingMessage.textContent = message || `Loading image ${current} of ${total}...`;
+    }
+    
+    // Update secondary loading indicators if they exist
     if (progressText) {
         progressText.textContent = message || `Loading image ${current} of ${total}...`;
     }
     
     if (progressFill) {
-        const percentage = total > 0 ? (current / total) * 100 : 0;
         progressFill.style.width = `${percentage}%`;
     }
 }
@@ -1700,7 +1852,7 @@ async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex
         
         // **EXTRACT COLORS FROM ORIGINAL IMAGE FIRST**
         const originalImageData = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height);
-        const originalColors = await getDistinctColors(originalImageData, 30, 100, 40);
+        const originalColors = await getDistinctColors(originalImageData, 30, 20, 40,);
         
         if (!originalColors || originalColors.length === 0) {
             console.error('No original colors found for preview');
@@ -1736,8 +1888,8 @@ async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex
         
         // **CREATE 600x600 PROCESSING CANVAS WITH TRANSPARENCY**
         const processingCanvas = document.createElement('canvas');
-        processingCanvas.width = 600;
-        processingCanvas.height = 600;
+        processingCanvas.width = 200;
+        processingCanvas.height = 200;
         const processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
         
         // **DO NOT FILL WITH WHITE - KEEP TRANSPARENT**
@@ -1747,20 +1899,20 @@ async function generateAndShowPreview(previewCanvas, paletteColors, paletteIndex
         let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
         
         if (originalAspect > 1) {
-            drawWidth = 600;
-            drawHeight = 600 / originalAspect;
-            offsetY = (600 - drawHeight) / 2;
+            drawWidth = 200;
+            drawHeight = 200 / originalAspect;
+            offsetY = (200 - drawHeight) / 2;
         } else {
-            drawHeight = 600;
-            drawWidth = 600 * originalAspect;
-            offsetX = (600 - drawWidth) / 2;
+            drawHeight = 200;
+            drawWidth = 200 * originalAspect;
+            offsetX = (200 - drawWidth) / 2;
         }
         
         // Draw the original image to 600x600 (preserving transparency)
         processingCtx.drawImage(originalCanvas, offsetX, offsetY, drawWidth, drawHeight);
         
         // **GET IMAGE DATA FROM 600x600 FOR PROCESSING**
-        const imageData = processingCtx.getImageData(0, 0, 600, 600);
+        const imageData = processingCtx.getImageData(0, 0, 200, 200);
         
         // Apply collection-specific adjustments to palette colors
         let adjustedPaletteColors = applyCollectionAdjustments([...paletteColors], collection);
@@ -1953,6 +2105,154 @@ window.canvasErrorCount = 0;
           </div>
         </div>
       </div>
+
+      <!-- Harmony Info Modal -->
+      <div class="modal fade" id="harmonyInfoModal" tabindex="-1" aria-labelledby="harmonyInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="harmonyInfoModalLabel">
+                <i class="bi bi-palette2 me-2"></i>Color Harmony Types
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row">
+                <div class="col-12">
+                  <p class="text-muted mb-4">Color harmony refers to the pleasing arrangement of colors that creates a sense of order and visual appeal. Here are the different harmony types available:</p>
+                </div>
+              </div>
+              
+              <div class="accordion" id="harmonyAccordion">
+                <!-- Monochromatic -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="monochromaticHeading">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#monochromaticCollapse" aria-expanded="true" aria-controls="monochromaticCollapse">
+                      <strong>Monochromatic</strong>
+                    </button>
+                  </h2>
+                  <div id="monochromaticCollapse" class="accordion-collapse collapse show" aria-labelledby="monochromaticHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses variations of a single color by changing its saturation and brightness.</p>
+                      <p><strong>Best for:</strong> Creating a cohesive, calming, and sophisticated look. Perfect for minimalist designs.</p>
+                      <p><strong>Example:</strong> Different shades and tints of blue - from navy to light sky blue.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Analogous -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="analogousHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#analogousCollapse" aria-expanded="false" aria-controls="analogousCollapse">
+                      <strong>Analogous</strong>
+                    </button>
+                  </h2>
+                  <div id="analogousCollapse" class="accordion-collapse collapse" aria-labelledby="analogousHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses colors that are next to each other on the color wheel.</p>
+                      <p><strong>Best for:</strong> Creating serene and comfortable designs. Often found in nature.</p>
+                      <p><strong>Example:</strong> Blue, blue-green, and green or red, red-orange, and orange.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Complementary -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="complementaryHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#complementaryCollapse" aria-expanded="false" aria-controls="complementaryCollapse">
+                      <strong>Complementary</strong>
+                    </button>
+                  </h2>
+                  <div id="complementaryCollapse" class="accordion-collapse collapse" aria-labelledby="complementaryHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses colors that are directly opposite each other on the color wheel.</p>
+                      <p><strong>Best for:</strong> Creating high contrast and vibrant designs that grab attention.</p>
+                      <p><strong>Example:</strong> Red and green, blue and orange, yellow and purple.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Split Complementary -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="splitComplementaryHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#splitComplementaryCollapse" aria-expanded="false" aria-controls="splitComplementaryCollapse">
+                      <strong>Split Complementary</strong>
+                    </button>
+                  </h2>
+                  <div id="splitComplementaryCollapse" class="accordion-collapse collapse" aria-labelledby="splitComplementaryHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses a base color and the two colors adjacent to its complement.</p>
+                      <p><strong>Best for:</strong> Providing strong visual contrast while being less jarring than complementary colors.</p>
+                      <p><strong>Example:</strong> Red with blue-green and yellow-green instead of just green.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Triadic -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="triadicHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#triadicCollapse" aria-expanded="false" aria-controls="triadicCollapse">
+                      <strong>Triadic</strong>
+                    </button>
+                  </h2>
+                  <div id="triadicCollapse" class="accordion-collapse collapse" aria-labelledby="triadicHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses three colors evenly spaced around the color wheel.</p>
+                      <p><strong>Best for:</strong> Creating vibrant and balanced designs with strong visual impact.</p>
+                      <p><strong>Example:</strong> Red, yellow, and blue or orange, green, and purple.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tetradic -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="tetradicHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tetradicCollapse" aria-expanded="false" aria-controls="tetradicCollapse">
+                      <strong>Tetradic (Rectangle)</strong>
+                    </button>
+                  </h2>
+                  <div id="tetradicCollapse" class="accordion-collapse collapse" aria-labelledby="tetradicHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses four colors arranged into two complementary pairs.</p>
+                      <p><strong>Best for:</strong> Creating rich and varied color schemes with lots of possibilities.</p>
+                      <p><strong>Example:</strong> Red and green paired with blue and orange.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Square -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="squareHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#squareCollapse" aria-expanded="false" aria-controls="squareCollapse">
+                      <strong>Square</strong>
+                    </button>
+                  </h2>
+                  <div id="squareCollapse" class="accordion-collapse collapse" aria-labelledby="squareHeading" data-bs-parent="#harmonyAccordion">
+                    <div class="accordion-body">
+                      <p><strong>Description:</strong> Uses four colors evenly spaced around the color wheel, forming a square.</p>
+                      <p><strong>Best for:</strong> Creating dynamic and energetic designs with balanced contrast.</p>
+                      <p><strong>Example:</strong> Red, yellow-green, cyan, and blue-violet.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 p-3 bg-light rounded">
+                <h6><i class="bi bi-lightbulb me-2"></i>Pro Tips:</h6>
+                <ul class="mb-0 small">
+                  <li>Start with monochromatic or analogous schemes for a safe, pleasing result</li>
+                  <li>Use complementary colors sparingly for accent and emphasis</li>
+                  <li>Consider the mood you want to create - warm colors energize, cool colors calm</li>
+                  <li>Test your harmony on different background variations to see what works best</li>
+                </ul>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
 
   <!-- Footer -->
@@ -1987,16 +2287,15 @@ window.canvasErrorCount = 0;
                  0V5.707L5.354 7.854a.5.5 0 
                  1 1-.708-.708z"/>
     </svg>
-    Upload
+    Upload files
 </a>
-
             </form>
         </div>
     </div>
 </div>
 
     
-    <div class="image-adjustments">
+    <div class="image-adjustments" style="position: relative;">
       <button type="button" class="btn shadow-lg " id="adjustmentToggle">
         <svg width="19" height="19" viewBox="0 0 34 33" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clip-path="url(#clip0_384_2340)">
@@ -2017,7 +2316,7 @@ window.canvasErrorCount = 0;
           </defs>
         </svg>
       </button>
-      <div id="adjustmentPanel" class="adjustment-panel" style="display: none;">
+      <div id="adjustmentPanel" class="adjustment-panel" style="display: none; position: absolute; bottom: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 300px; margin-bottom: 5px;">
           <div class="sliders-container"></div>
       </div>
     </div>
@@ -2079,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .scroll-container,
 .palette-selector,
 #image-color-pickers {
-    overflow-x: auto !important;
+    overflow-x: hidden !important;
     scroll-behavior: smooth !important;
 }
 
@@ -2476,6 +2775,12 @@ document.getElementById('fileInput').onchange = function() {
                 if (this.id === 'harmonyButton') {
                     // Initialize harmony functionality if needed
                     console.log('Harmony section opened');
+                }
+                
+                // Special handling for favorites
+                if (this.id === 'favoriteButton') {
+                    console.log('🌟 Favorites section opened - loading favorites...');
+                    loadFavorites();
                 }
                 
             } else {
@@ -3109,7 +3414,7 @@ function loadInspirationContent() {
         .then(response => response.json())
         .then(data => {
             let htmlContent = `
-                <h2 class="ms-auto me-auto fw-bold text-center fs-4">Inspirations</h2>
+                <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Inspirations</h2>
                 <div class="inspiration-content">
                     <div class="pdf-grid">
             `;
@@ -3147,42 +3452,16 @@ function loadInspirationContent() {
 }
 
 function downloadPDF(pdfId, title) {
-    // Create a proper download URL
-    const downloadUrl = `inspiration-pdfs/download/${pdfId}/`;
+    console.log('🔍 downloadPDF called with:', { pdfId, title });
     
-    fetch(downloadUrl, {
-        method: 'GET',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Download failed');
-        }
-        return response.blob();
-    })
-    .then(blob => {
-        // Create a temporary URL for the blob
-        const url = window.URL.createObjectURL(blob);
-        
-        // Create a temporary anchor element and trigger download
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `${title}.pdf`;
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        // Clean up
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-    })
-    .catch(error => {
-        console.error('Download error:', error);
-        alert('Failed to download PDF. Please try again.');
-    });
+    // Create a proper PDF URL to open in new tab (absolute path)
+    const pdfUrl = `/tif-editor/inspiration-pdfs/download/${pdfId}/`;
+    console.log('📄 PDF URL constructed:', pdfUrl);
+    
+    // Open PDF in new tab
+    console.log('🚀 Opening PDF in new tab...');
+    window.open(pdfUrl, '_blank');
+    console.log('✅ window.open() called successfully');
 }
 
 function toggleLike(pdfId, element) {
@@ -3216,25 +3495,6 @@ function getCookie(name) {
       }
   }
   return cookieValue;
-}
-
-function downloadPDF(pdfUrl, title) {
-  fetch(pdfUrl)
-      .then(response => response.blob())
-      .then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = title;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-      })
-      .catch(error => {
-          console.error('Error downloading PDF:', error);
-          alert('Error downloading the PDF');
-      });
 }
 
 function initializePDFEvents() {
@@ -4467,7 +4727,7 @@ async function generatePreview(previewCanvas, paletteColors, paletteIndex) {
             const imageData = tempCtx.getImageData(0, 0, previewWidth, previewHeight);
             
             // Find original colors from the image
-            const originalColors = await getDistinctColors(imageData, 30, 100);
+            const originalColors = await getDistinctColors(imageData, 30, 20);
             
             if (!originalColors || originalColors.length === 0) {
               console.error('No original colors found for preview');
@@ -4525,7 +4785,8 @@ async function generatePreview(previewCanvas, paletteColors, paletteIndex) {
             // Process the preview
             const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
                 imageUrl,
-                colorMappings
+                colorMappings,
+                
             );
             
             // Load the processed image back to the preview canvas
@@ -6200,7 +6461,7 @@ async function selectBaseColor(color) {
             const imageData = tempCtx.getImageData(0, 0, previewWidth, previewHeight);
             
             // Find original colors from the image
-            const originalColors = await getDistinctColors(imageData, 30, 100);
+            const originalColors = await getDistinctColors(imageData, 30, 20);
             
             if (!originalColors || originalColors.length === 0) {
               console.error('No original colors found for preview');
@@ -6789,7 +7050,6 @@ async function selectBaseColor(color) {
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
-            width: 200px;
             margin-bottom: 15px;
         }
         
@@ -8713,7 +8973,6 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     // Create the same structure as trending palettes with STAR BUTTON
     const clickableContainer = document.createElement('div');
     clickableContainer.classList.add('palette-clickable-container');
-    clickableContainer.style.border = '2px solid #ffd700'; // Gold border for favorites
     paletteContainer.appendChild(clickableContainer);
     
     // Add data attributes
@@ -8795,7 +9054,6 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
     // Display color swatches underneath
     const swatchContainer = document.createElement('div');
     swatchContainer.classList.add('swatch-container');
-    swatchContainer.style.backgroundColor = '#fff8dc'; // Light gold background
     clickableContainer.appendChild(swatchContainer);
     
     // Show first 8 colors as swatches
@@ -8805,7 +9063,6 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
         const swatch = document.createElement('div');
         swatch.classList.add('color-swatch');
         swatch.style.backgroundColor = `rgb(${color.join(',')})`;
-        swatch.style.border = '1px solid #ffd700'; // Gold border
         
         const hexValue = rgbToHex(color[0], color[1], color[2]);
         swatch.title = `Color ${idx + 1}: ${hexValue}`;
@@ -8899,222 +9156,11 @@ async function displayFavoritePalette(layerIndex, colors, collection = 'fav', ma
 }
 
 
-// Modal function for showing all palette colors
-function showFullPaletteModal(palette, collection, paletteIndex) {
-  // Create and append modal elements if they don't exist
-  let modal = document.getElementById('full-palette-modal');
-  
-  if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'full-palette-modal';
-      modal.classList.add('full-palette-modal');
-      
-      const modalContent = document.createElement('div');
-      modalContent.classList.add('full-palette-modal-content');
-      
-      const closeBtn = document.createElement('span');
-      closeBtn.classList.add('close-palette-modal');
-      closeBtn.innerHTML = '&times;';
-      
-      const modalTitle = document.createElement('h3');
-      modalTitle.classList.add('palette-modal-title');
-      
-      const colorsContainer = document.createElement('div');
-      colorsContainer.classList.add('all-colors-container');
-      
-      modalContent.appendChild(closeBtn);
-      modalContent.appendChild(modalTitle);
-      modalContent.appendChild(colorsContainer);
-      modal.appendChild(modalContent);
-      
-      document.body.appendChild(modal);
-      
-      // Add event listener to close button
-      closeBtn.addEventListener('click', function() {
-          modal.style.display = 'none';
-      });
-      
-      // Close modal when clicking outside content
-      window.addEventListener('click', function(event) {
-          if (event.target === modal) {
-              modal.style.display = 'none';
-          }
-      });
-  }
-  
-  // Update modal content with current palette
-  const modalTitle = modal.querySelector('.palette-modal-title');
-  const colorsContainer = modal.querySelector('.all-colors-container');
-  
-  modalTitle.textContent = `Full Palette (${collection.toUpperCase()} #${paletteIndex+1})`;
-  colorsContainer.innerHTML = '';
-  
-  // Add all colors to the modal
-  palette.forEach((color, index) => {
-      const colorBox = document.createElement('div');
-      colorBox.classList.add('full-palette-color');
-      colorBox.style.backgroundColor = `rgb(${color.join(',')})`;
-      
-      // Add color information
-      const colorInfo = document.createElement('div');
-      colorInfo.classList.add('color-info');
-      colorInfo.textContent = `#${index+1}: RGB(${color.join(',')})`;
-      colorBox.appendChild(colorInfo);
-      
-      colorsContainer.appendChild(colorBox);
-  });
-  
-  // Show the modal
-  modal.style.display = 'block';
-}
 
 
 
-async function processPreviewQueue() {
-  // Check if queue exists
-  if (typeof window.previewQueue === 'undefined') {
-    window.isProcessingPreviewQueue = false;
-    return;
-  }
-  
-  // Check if queue is empty
-  if (window.previewQueue.length === 0) {
-    window.isProcessingPreviewQueue = false;
-    return;
-  }
-  
-  window.isProcessingPreviewQueue = true;
-  
-  // Take the next preview from the queue
-  const nextPreview = window.previewQueue.shift();
-  
-  try {
-    // Generate this preview
-    await generatePreview(
-      nextPreview.previewCanvas, 
-      nextPreview.paletteColors, 
-      nextPreview.paletteIndex, 
-      nextPreview.collection
-    );
-  } catch (error) {
-    console.error("Error processing preview in queue:", error);
-  }
-  
-  // Small delay to prevent UI freezing
-  await new Promise(resolve => setTimeout(resolve, 50));
-  
-  // Process the next preview in the queue
-  processPreviewQueue();
-}
 
 
-// Modal function for showing all palette colors
-function showFullPaletteModal(palette, collection, paletteIndex) {
-  // Create and append modal elements if they don't exist
-  let modal = document.getElementById('full-palette-modal');
-  
-  if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'full-palette-modal';
-      modal.classList.add('full-palette-modal');
-      
-      const modalContent = document.createElement('div');
-      modalContent.classList.add('full-palette-modal-content');
-      
-      const closeBtn = document.createElement('span');
-      closeBtn.classList.add('close-palette-modal');
-      closeBtn.innerHTML = '&times;';
-      
-      const modalTitle = document.createElement('h3');
-      modalTitle.classList.add('palette-modal-title');
-      
-      const colorsContainer = document.createElement('div');
-      colorsContainer.classList.add('all-colors-container');
-      
-      modalContent.appendChild(closeBtn);
-      modalContent.appendChild(modalTitle);
-      modalContent.appendChild(colorsContainer);
-      modal.appendChild(modalContent);
-      
-      document.body.appendChild(modal);
-      
-      // Add event listener to close button
-      closeBtn.addEventListener('click', function() {
-          modal.style.display = 'none';
-      });
-      
-      // Close modal when clicking outside content
-      window.addEventListener('click', function(event) {
-          if (event.target === modal) {
-              modal.style.display = 'none';
-          }
-      });
-  }
-  
-  // Update modal content with current palette
-  const modalTitle = modal.querySelector('.palette-modal-title');
-  const colorsContainer = modal.querySelector('.all-colors-container');
-  
-  modalTitle.textContent = `Full Palette (${collection.toUpperCase()} #${paletteIndex+1})`;
-  colorsContainer.innerHTML = '';
-  
-  // Add all colors to the modal
-  palette.forEach((color, index) => {
-      const colorBox = document.createElement('div');
-      colorBox.classList.add('full-palette-color');
-      colorBox.style.backgroundColor = `rgb(${color.join(',')})`;
-      
-      // Add color information
-      const colorInfo = document.createElement('div');
-      colorInfo.classList.add('color-info');
-      colorInfo.textContent = `#${index+1}: RGB(${color.join(',')})`;
-      colorBox.appendChild(colorInfo);
-      
-      colorsContainer.appendChild(colorBox);
-  });
-  
-  // Show the modal
-  modal.style.display = 'block';
-}
-
-
-
-async function processPreviewQueue() {
-  // Check if queue exists
-  if (typeof window.previewQueue === 'undefined') {
-    window.isProcessingPreviewQueue = false;
-    return;
-  }
-  
-  // Check if queue is empty
-  if (window.previewQueue.length === 0) {
-    window.isProcessingPreviewQueue = false;
-    return;
-  }
-  
-  window.isProcessingPreviewQueue = true;
-  
-  // Take the next preview from the queue
-  const nextPreview = window.previewQueue.shift();
-  
-  try {
-    // Generate this preview
-    await generatePreview(
-      nextPreview.previewCanvas, 
-      nextPreview.paletteColors, 
-      nextPreview.paletteIndex, 
-      nextPreview.collection
-    );
-  } catch (error) {
-    console.error("Error processing preview in queue:", error);
-  }
-  
-  // Small delay to prevent UI freezing
-  await new Promise(resolve => setTimeout(resolve, 50));
-  
-  // Process the next preview in the queue
-  processPreviewQueue();
-}
 async function displayColorPalette(layerIndex, colors, collection = 'trending', maxVisibleColors = 6, totalLayers = 1) {
     const prefix = collection + '_';
     const MAX_DISPLAY_COUNT = 8; // Maximum number of colors to display
@@ -9179,7 +9225,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             // Extract distinct colors
             const imageData = tempCtx.getImageData(0, 0, 200, 200);
             const imageDataUrl = tempCanvas.toDataURL();
-            const originalColors = await getDistinctColors(imageData, 30, 100, 40);
+            const originalColors = await getDistinctColors(imageData, 30, 20, 40);
             
             // Cache the colors globally
             window.cachedOriginalColors = originalColors || [];
@@ -9508,7 +9554,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             'red': [345, 15],
             'orange': [15, 45],
             'yellow': [45, 75],
-            'green': [85, 150], // NARROWED range to avoid yellow-green and blue-green
+            'green': [85, 180], // NARROWED range to avoid yellow-green and blue-green
             'cyan': [165, 195],
             'blue': [195, 255],
             'purple': [255, 285],
@@ -9560,7 +9606,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
         const availableFamilyNames = Object.keys(baseFamilies);
         
         // All possible target families - REDUCED GREEN PRESENCE
-        const warmFamilies = ['red', 'orange', 'yellow', 'pink'];
+        const warmFamilies = ['red', 'orange', 'yellow', 'pink','green'];
         const coolFamilies = ['cyan', 'blue', 'purple','green','yellow']; // REMOVED GREEN from cool families
         const allFamilies = [...warmFamilies, ...coolFamilies];
         
@@ -9573,7 +9619,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 maxSaturation: 100,
                 minLightness: 55,          // Increased from 50
                 maxLightness: 95,
-                preferredFamilies: ['cyan', 'yellow', 'pink', 'orange', 'red', 'blue', 'purple'] // NO GREEN
+                preferredFamilies: ['cyan', 'yellow', 'pink', 'orange', 'red', 'blue', 'purple', 'green']
             },
             'aw': {
                 saturationMultiplier: 0.6, // Decreased from 0.7
@@ -9582,7 +9628,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 maxSaturation: 65,         // Decreased from 70
                 minLightness: 15,          // Decreased from 20
                 maxLightness: 65,          // Decreased from 70
-                preferredFamilies: ['purple', 'blue', 'red', 'orange', 'pink', 'cyan'] // NO GREEN
+                preferredFamilies: ['purple', 'blue', 'red', 'orange', 'pink', 'cyan', 'green']
             },
             'trending': {
                 saturationMultiplier: 1.0,
@@ -9607,25 +9653,8 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             availableFamilyNames.forEach((originalFamily, index) => {
                 let targetFamily;
                 
-                // SPECIAL HANDLING FOR GREEN - REPLACE IT MORE AGGRESSIVELY
-                if (originalFamily === 'green') {
-                    // Only allow green in 20% of cases for trending, 10% for others
-                    const greenChance = collection === 'trending' ? 0.2 : 0.1;
-                    if (Math.random() < greenChance) {
-                        targetFamily = 'green';
-                    } else {
-                        // Replace green with other colors
-                        const greenReplacements = collection === 'ss' 
-                            ? ['cyan', 'blue', 'yellow'] 
-                            : collection === 'aw' 
-                                ? ['purple', 'blue', 'red'] 
-                                : ['cyan', 'blue', 'purple'];
-                        targetFamily = greenReplacements[Math.floor(Math.random() * greenReplacements.length)];
-                    }
-                } else {
-                    // Normal replacement for other colors
-                    targetFamily = getCollectionSpecificFamily(collection, i, index, settings.preferredFamilies, usedTargetFamilies, originalFamily);
-                }
+                // No special handling for green - treat it like any other color
+                targetFamily = getCollectionSpecificFamily(collection, i, index, settings.preferredFamilies, usedTargetFamilies, originalFamily);
                 
                 familyMapping[originalFamily] = targetFamily;
                 usedTargetFamilies.add(targetFamily);
@@ -9639,15 +9668,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 let newColor = generateMatchingColor(originalColor, targetFamily);
                 let [h, s, l] = rgbToHsl(...newColor);
                 
-                // PREVENT OLIVE GREEN (low saturation yellow-green)
-                if (targetFamily === 'green') {
-                    // Force green to be more vibrant, less olive-like
-                    s = Math.max(60, s); // Minimum saturation for green
-                    // Shift hue away from olive range (75-85 is olive territory)
-                    if (h >= 75 && h < 85) {
-                        h = h < 80 ? 70 : 90; // Push to brighter green or yellow-green
-                    }
-                }
+                // REMOVED: All green-specific restrictions and hue adjustments
                 
                 const variations = getCollectionVariations(collection, i, colorIndex);
                 
@@ -10121,7 +10142,7 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
             
             // **EXTRACT COLORS FROM ORIGINAL IMAGE FIRST**
             const originalImageData = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height);
-            const originalColors = await getDistinctColors(originalImageData, 30, 100, 40);
+            const originalColors = await getDistinctColors(originalImageData, 30, 20, 40);
             
             if (!originalColors || originalColors.length === 0) {
                 console.error('No original colors found for preview');
@@ -10402,7 +10423,6 @@ async function displayColorPalette(layerIndex, colors, collection = 'trending', 
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                 transition: transform 0.2s, box-shadow 0.2s;
                 position: relative;
-                width: 200px;
                 margin-bottom: 15px;
             }
             
@@ -11382,7 +11402,7 @@ function hslToRgbforsingle(h, s, l) {
 
          return maxHue - minHue;
        }
-       function getDistinctColors(imageData, threshold = 30, maxColors = 100, minDistance = 40) {
+       function getDistinctColors(imageData, threshold = 30, maxColors = 20, minDistance = 40) {
         const totalLayers = {{ layers|length }};
         const uniqueColors = new Map(); // Changed to Map to track counts
         const data = imageData.data;
@@ -11590,7 +11610,7 @@ function updateLayersWithNewColorCount(layerIndex) {
 
       latestImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const distinctColors = getDistinctColors(imageData, 30, 100);
+      const distinctColors = getDistinctColors(imageData, 30, 20);
 
       //console.log('Processing colors for layer:', layerIndex);
 
@@ -12755,20 +12775,36 @@ function groupColorsByFamily(colors) {
 
 // UPDATED loadFavorites function (WITHOUT the sync call)
 async function loadFavorites() {
+    console.log('🔄 loadFavorites called');
     try {
+        console.log('📡 Making fetch request to /tif-editor/api/palettes/favorites/');
         const response = await fetch('/tif-editor/api/palettes/favorites/');
-        if (!response.ok) throw new Error(`Failed to load favorites`);
+        console.log('📡 Response received:', response.status, response.statusText);
+        
+        if (!response.ok) throw new Error(`Failed to load favorites: ${response.status}`);
         
         const favorites = await response.json();
-        //console.log("🟢 FRONTEND RECEIVED from API:", favorites.length, "favorites");
+        console.log("🟢 FRONTEND RECEIVED from API:", favorites.length, "favorites");
+        console.log("🟢 First favorite sample:", favorites[0]);
         
         const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+        console.log('🎯 Favorites container found:', !!favContainer);
+        
+        if (!favContainer) {
+            console.error('❌ Favorites container not found!');
+            return;
+        }
+        
+        console.log('🧹 Clearing container...');
         favContainer.innerHTML = '';
 
         if (favorites.length === 0) {
+            console.log('📭 No favorites found');
             showNoFavoritesMessage(0, "You haven't saved any favorite palettes yet.");
             return;
         }
+
+        console.log('🎨 Processing', favorites.length, 'favorites');
 
         // Get current image colors
         let currentImageColors = null;
@@ -12783,32 +12819,25 @@ async function loadFavorites() {
                 );
             }
         } catch (e) {
-            //console.log('Error reading localStorage colors:', e);
+            console.log('Error reading localStorage colors:', e);
         }
 
+        console.log('🖼️ Current image colors:', currentImageColors ? currentImageColors.length : 'none');
+
+        // If no current image colors, show all favorites anyway
         if (!currentImageColors || currentImageColors.length < 4) {
-            favContainer.innerHTML = `
-                <div class="alert alert-warning text-center w-100">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>No Image Colors Available</strong>
-                    <div class="mt-2 small">
-                        Please load an image first to see compatible favorite palettes.
-                    </div>
-                    <button class="btn btn-sm btn-primary mt-2" onclick="loadFavorites()">
-                        <i class="bi bi-arrow-clockwise"></i> Retry
-                    </button>
-                </div>
-            `;
+            console.log('🎨 No current image colors - showing all favorites');
+            displayAllFavorites(favorites);
             return;
         }
 
-        //console.log(`🎨 Filtering favorites based on current image colors`);
+        console.log(`🎨 Filtering favorites based on current image colors`);
 
         const matchingFavorites = [];
         const nonMatchingFavorites = [];
         
         favorites.forEach((favorite, originalIndex) => {
-            //console.log(`\n--- Checking palette "${favorite.name}" (ID: ${favorite.id}) ---`);
+            console.log(`\n--- Checking palette "${favorite.name}" (ID: ${favorite.id}) ---`);
             
             if (favorite.source_image_colors && Array.isArray(favorite.source_image_colors) && favorite.source_image_colors.length > 0) {
                 const colorsMatch = areColorsEqual(currentImageColors, favorite.source_image_colors);
@@ -12821,94 +12850,175 @@ async function loadFavorites() {
                         originalIndex 
                     };
                     matchingFavorites.push(processedFavorite);
-                    //console.log(`✅ "${favorite.name}" matches current image - added to matching list`);
+                    console.log(`✅ "${favorite.name}" matches current image - added to matching list`);
                 } else {
                     nonMatchingFavorites.push({ ...favorite, originalIndex });
-                    //console.log(`❌ "${favorite.name}" doesn't match current image`);
+                    console.log(`❌ "${favorite.name}" doesn't match current image`);
                 }
             } else {
                 nonMatchingFavorites.push({ ...favorite, originalIndex });
-                //console.log(`❌ "${favorite.name}" has no source colors stored`);
+                console.log(`❌ "${favorite.name}" has no source colors stored`);
             }
         });
 
-        //console.log(`\n🎨 Final Results: ${matchingFavorites.length} matching, ${nonMatchingFavorites.length} non-matching`);
+        console.log(`\n🎨 Final Results: ${matchingFavorites.length} matching, ${nonMatchingFavorites.length} non-matching`);
 
-        if (matchingFavorites.length === 0) {
+        // Show matching favorites first, then non-matching ones
+        if (matchingFavorites.length > 0) {
+            console.log('🎯 Displaying matching favorites...');
+            displayFavoritesSection(matchingFavorites, 'Matching Current Image', true);
+        }
+        
+        if (nonMatchingFavorites.length > 0) {
+            console.log('🎯 Displaying non-matching favorites...');
+            displayFavoritesSection(nonMatchingFavorites, 'Other Favorites', false);
+        }
+
+        console.log('✅ loadFavorites completed successfully');
+
+    } catch (error) {
+        console.error('❌ Error loading favorites:', error);
+        const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+        if (favContainer) {
             favContainer.innerHTML = `
-                <div class="alert alert-warning text-center w-100">
+                <div class="alert alert-danger text-center w-100">
                     <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>No Matching Palettes Found</strong>
+                    <strong>Error Loading Favorites</strong>
                     <div class="mt-2 small">
-                        No saved palettes match your current image colors.
+                        ${error.message}
                     </div>
-                    <button class="btn btn-sm btn-warning mt-2" onclick="showAllFavoritesOverride()">
-                        <i class="bi bi-eye"></i> Show All Anyway
+                    <button class="btn btn-sm btn-primary mt-2" onclick="loadFavorites()">
+                        <i class="bi bi-arrow-clockwise"></i> Retry
                     </button>
                 </div>
             `;
-            return;
         }
-
-        // Clear and initialize the favorite palette colors storage
-        window.favPaletteColors = {};
-        
-        // Display matching favorites with appropriate icons
-        matchingFavorites.forEach((favorite, displayIndex) => {
-            //console.log(`\n--- Displaying palette ${displayIndex}: "${favorite.name}" (ID: ${favorite.id}) ---`);
-            const colors = favorite.colors;
-            //console.log('Colors being displayed (first 5):', colors.slice(0, 5));
-            
-            // Store the colors
-            window.favPaletteColors[displayIndex] = colors;
-            
-            // Determine if this is a harmony palette
-            const isHarmony = favorite.type === 'HR' || favorite.type === 'HARMONY';
-            const iconClass = isHarmony ? 'bi-star-fill' : 'bi-star-fill';
-            
-            // Create palette HTML with appropriate icon
-            const paletteHtml = `
-                <div class="layer-toggle-item d-flex flex-column gap-2" data-favorite-id="${favorite.id}" data-favorite-name="${favorite.name}">
-                    <div id="fav_colorPalette_${displayIndex}" class="color-palette d-flex flex-column"></div>
-                    <div class="d-flex align-items-center justify-content-center w-100">
-                        <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}" data-palette-type="${favorite.type}">
-                            <i class="${iconClass}"></i>
-                            <span class="fav-count">${favorite.favorites_count}</span>
-                        </button>
-                    </div>
-                    <div class="text-center small mt-1">
-                        <strong>${favorite.name}</strong>
-
-                    </div>
-                </div>
-            `;
-            
-            favContainer.insertAdjacentHTML('beforeend', paletteHtml);
-            
-            //console.log(`🎨 CALLING displayFavoritePalette for index ${displayIndex}`);
-            //console.log(`   Input colors (first 5):`, colors.slice(0, 5));
-            
-            // Call displayFavoritePalette to create the preview interface
-            displayFavoritePalette(displayIndex, colors, 'fav', 6, 1);
-            
-            // Add click event listener for the favorite button to remove from favorites
-            const favoriteBtn = document.querySelector(`[data-palette-id="${favorite.id}"]`);
-            if (favoriteBtn) {
-                favoriteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent triggering the palette click
-                    removeFavorite(favoriteBtn, displayIndex);
-                });
-            }
-        });
-
-        //console.log('\n🔍 Final verification of stored palettes:');
-        Object.keys(window.favPaletteColors).forEach(key => {
-            //console.log(`Palette ${key} (first 3):`, window.favPaletteColors[key].slice(0, 3), '...');
-        });
-
-    } catch (error) {
-        console.error('Error loading favorites:', error);
     }
+}
+
+// Helper function to display all favorites when no image colors are available
+function displayAllFavorites(favorites) {
+    console.log('📋 displayAllFavorites called with', favorites.length, 'favorites');
+    const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+    
+    if (!favContainer) {
+        console.error('❌ Favorites container not found in displayAllFavorites!');
+        return;
+    }
+    
+    // Add info message
+    favContainer.innerHTML = `
+        <div class="alert alert-info text-center w-100 mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>All Your Favorites (${favorites.length})</strong>
+            <div class="mt-1 small">
+                Load an image to see which palettes match your current colors
+            </div>
+        </div>
+    `;
+    
+    console.log('🎨 Calling displayFavoritesSection with all favorites');
+    displayFavoritesSection(favorites, null, false);
+}
+
+// Helper function to display a section of favorites
+function displayFavoritesSection(favorites, sectionTitle, isMatching) {
+    console.log('🎯 displayFavoritesSection called with', favorites.length, 'favorites, title:', sectionTitle);
+    const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+    
+    if (!favContainer) {
+        console.error('❌ Favorites container not found in displayFavoritesSection!');
+        return;
+    }
+    
+    // Add section title if provided
+    if (sectionTitle) {
+        const titleHtml = `
+            <div class="w-100 text-center mb-2">
+                <h6 class="text-muted mb-0">
+                    <i class="bi ${isMatching ? 'bi-check-circle text-success' : 'bi-star text-warning'} me-1"></i>
+                    ${sectionTitle}
+                </h6>
+            </div>
+        `;
+        favContainer.insertAdjacentHTML('beforeend', titleHtml);
+    }
+    
+    // Clear and initialize the favorite palette colors storage
+    if (!window.favPaletteColors) {
+        window.favPaletteColors = {};
+    }
+    
+    // Display favorites
+    favorites.forEach((favorite, displayIndex) => {
+        // Use a unique index that accounts for existing favorites
+        const uniqueIndex = Object.keys(window.favPaletteColors).length;
+        
+        console.log(`\n--- Displaying palette ${uniqueIndex}: "${favorite.name}" (ID: ${favorite.id}) ---`);
+        
+        // Process colors
+        let colors;
+        if (favorite.colors && Array.isArray(favorite.colors)) {
+            if (favorite.colors.length > 0 && typeof favorite.colors[0] === 'object' && favorite.colors[0].red !== undefined) {
+                // Colors are in {red, green, blue} format
+                colors = favorite.colors.map(color => [color.red, color.green, color.blue]);
+            } else {
+                // Colors are already in [r, g, b] format
+                colors = favorite.colors;
+            }
+        } else {
+            colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]; // Fallback colors
+        }
+        
+        console.log('Colors being displayed (first 3):', colors.slice(0, 3));
+        
+        // Store the colors
+        window.favPaletteColors[uniqueIndex] = colors;
+        
+        // Determine if this is a harmony palette
+        const isHarmony = favorite.type === 'HR' || favorite.type === 'HARMONY';
+        const iconClass = 'bi-star-fill';
+        
+        // Create palette HTML with appropriate icon
+        const paletteHtml = `
+            <div class="layer-toggle-item d-flex flex-column gap-2" data-favorite-id="${favorite.id}" data-favorite-name="${favorite.name}">
+                <div id="fav_colorPalette_${uniqueIndex}" class="color-palette d-flex flex-column"></div>
+                <div class="d-flex align-items-center justify-content-center w-100">
+                    <button type="button" class="btn favorite-btn active" data-palette-id="${favorite.id}" data-palette-type="${favorite.type}">
+                        <i class="${iconClass}"></i>
+                        <span class="fav-count">${favorite.favorites_count || 0}</span>
+                    </button>
+                </div>
+                <div class="text-center small mt-1">
+                    <strong>${favorite.name}</strong>
+                </div>
+            </div>
+        `;
+        
+        favContainer.insertAdjacentHTML('beforeend', paletteHtml);
+        
+        console.log(`🎨 CALLING displayFavoritePalette for index ${uniqueIndex}`);
+        console.log(`   Input colors (first 3):`, colors.slice(0, 3));
+        
+        // Call displayFavoritePalette to create the preview interface
+        try {
+            displayFavoritePalette(uniqueIndex, colors, 'fav', 6, 1);
+            console.log(`✅ Successfully displayed palette ${uniqueIndex}`);
+        } catch (error) {
+            console.error(`❌ Error displaying palette ${uniqueIndex}:`, error);
+        }
+        
+        // Add click event listener for the favorite button to remove from favorites
+        const favoriteBtn = document.querySelector(`[data-palette-id="${favorite.id}"]`);
+        if (favoriteBtn) {
+            favoriteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering the palette click
+                removeFavorite(favoriteBtn, uniqueIndex);
+            });
+        }
+    });
+    
+    console.log('✅ displayFavoritesSection completed');
 }
 
 // NEW: Function to update stars in trending/SS/AW/harmony sections based on current image colors
@@ -13480,10 +13590,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const targetId = this.getAttribute('href').substring(1);
             
             if (targetId === 'favCollectionContent') {
-                // Delay loading to give time for colors to be available
-                setTimeout(() => {
-                    loadFavorites();
-                }, 4000); // Wait 1 second
+                // Load favorites immediately when tab is clicked
+                loadFavorites();
             }
         });
     });
@@ -14037,7 +14145,7 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
             
             const displayCtx = displayCanvas.getContext('2d', { willReadFrequently: true });
             const imageData = displayCtx.getImageData(0, 0, displayCanvas.width, displayCanvas.height);
-            const colors = await getDistinctColors(imageData, 30, 100);
+            const colors = await getDistinctColors(imageData, 30, 20);
             
             console.log(`Extracted ${colors.length} colors from display canvas (${displayCanvas.width}x${displayCanvas.height})`);
             return colors;
@@ -14598,7 +14706,7 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
                 } else {
                     // In normal mode, analyze current canvas
                     const imageData = ctx.getImageData(0, 0, targetCanvas.width, targetCanvas.height);
-                    originalColors = await getDistinctColors(imageData, 30, 100);
+                    originalColors = await getDistinctColors(imageData, 30, 20);
                     console.log(`Display mode: Analyzed current canvas (${originalColors.length} colors)`);
                 }
                 
@@ -14671,7 +14779,9 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
                 // Process all colors in one go
                 const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
                     imageDataUrl,
-                    colorMappings
+                    colorMappings,
+                    useJimp=true
+                    
                 );
                 
                 // Yield after color processing (skip in export mode)
@@ -14826,11 +14936,12 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
                     await yieldToMain();
                     
                     // Now process with the original color and target color
-                    const processedImageUrl = await colorProcessor.applyColorMapping(
+                    const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
                         imageDataUrl,
                         await colorProcessor.getColorMapping(imageDataUrl),
                         mapping.targetColor,
-                        mapping.originalColor
+                        mapping.originalColor,
+                      
                     );
                     
                     // Yield after processing
@@ -15684,1112 +15795,326 @@ async getColorMapping(imageData) {
 
 
 
-  async applyMultipleColorMappingsextra(imageData, colorMappings) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            console.time('colorMapping');
-            const canvasElement = document.createElement('canvas');
-            const ctx = canvasElement.getContext('2d');
-            canvasElement.width = img.width;
-            canvasElement.height = img.height;
+  
 
-            ctx.drawImage(img, 0, 0);
-            const imageDataObj = ctx.getImageData(0, 0, img.width, img.height);
-            const data = imageDataObj.data;
-            const width = img.width;
-            const height = img.height;
 
-            // Color conversion utilities
-            function rgbToHsv(r, g, b) {
-                r /= 255; g /= 255; b /= 255;
-                const max = Math.max(r, g, b);
-                const min = Math.min(r, g, b);
-                const d = max - min;
-                let h, s = max === 0 ? 0 : d / max, v = max;
-
-                if (max === min) {
-                    h = 0;
-                } else {
-                    switch (max) {
-                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                        case g: h = (b - r) / d + 2; break;
-                        case b: h = (r - g) / d + 4; break;
-                    }
-                    h /= 6;
+async applyMultipleColorMappings(imageData, colorMappings, useJimp = false, retryCount = 0) {
+    // Backend processing with Jimp
+    if (useJimp) {
+        console.log("Using Jimp for backend processing");
+        try {
+            const formData = new FormData();
+            if (typeof imageData === 'string' && imageData.startsWith('data:image')) {
+                try {
+                    const fetchResponse = await fetch(imageData);
+                    if (!fetchResponse.ok) throw new Error("Failed to fetch image data");
+                    const blob = await fetchResponse.blob();
+                    formData.append('image', blob, 'image.png');
+                } catch (blobError) {
+                    formData.append('imageData', imageData);
                 }
-                return [h * 360, s * 100, v * 100];
+            } else {
+                formData.append('imageData', imageData);
             }
-
-            function hsvToRgb(h, s, v) {
-                h /= 360; s /= 100; v /= 100;
-                let r, g, b;
-                const i = Math.floor(h * 6);
-                const f = h * 6 - i;
-                const p = v * (1 - s);
-                const q = v * (1 - f * s);
-                const t = v * (1 - (1 - f) * s);
-
-                switch (i % 6) {
-                    case 0: r = v; g = t; b = p; break;
-                    case 1: r = q; g = v; b = p; break;
-                    case 2: r = p; g = v; b = t; break;
-                    case 3: r = p; g = q; b = v; break;
-                    case 4: r = t; g = p; b = v; break;
-                    case 5: r = v; g = p; b = q; break;
-                }
-
-                return [
-                    Math.round(r * 255),
-                    Math.round(g * 255),
-                    Math.round(b * 255)
-                ];
-            }
+            formData.append('colorMappings', JSON.stringify(colorMappings));
             
-            // IMPROVED: More flexible color family detection for blurry images
-            function sameColorFamily(color1, color2) {
-                const [r1, g1, b1] = color1;
-                const [r2, g2, b2] = color2;
-                
-                // Convert to HSV for better comparison
-                const hsv1 = rgbToHsv(r1, g1, b1);
-                const hsv2 = rgbToHsv(r2, g2, b2);
-                
-                // Check if both are achromatic (black, white, gray)
-                const isAchromatic1 = hsv1[1] < 20; // More lenient threshold
-                const isAchromatic2 = hsv2[1] < 20; 
-                
-                // If both are achromatic, compare by value (brightness)
-                if (isAchromatic1 && isAchromatic2) {
-                    // Allow more variance in brightness for achromatic colors
-                    return Math.abs(hsv1[2] - hsv2[2]) < 40; // More lenient
-                }
-                
-                // If one is achromatic and the other not, they're different families
-                if (isAchromatic1 !== isAchromatic2) {
-                    return false;
-                }
-                
-                // For chromatic colors, check hue similarity with adaptive threshold
-                // Calculate hue difference with wrap-around
-                let hueDiff = Math.abs(hsv1[0] - hsv2[0]);
-                if (hueDiff > 180) hueDiff = 360 - hueDiff;
-                
-                // For very dark or low saturation colors, hue is less reliable
-                const areBothDark = hsv1[2] < 35 && hsv2[2] < 35;
-                const lowSaturation = hsv1[1] < 40 || hsv2[1] < 40;
-                
-                // Adapt thresholds based on color properties
-                // CHANGE: Tighter hue threshold (40 → 30) for better handling of many colors
-                const hueThreshold = areBothDark || lowSaturation ? 45 : 30;
-                const satThreshold = areBothDark ? 50 : 40;
-                
-                // Colors in the same family should have similar hue and not too different saturation
-                return hueDiff < hueThreshold && 
-                       Math.abs(hsv1[1] - hsv2[1]) < satThreshold;
-            }
-            
-            // IMPROVED: Better gradient detection for blurry images
-            function detectGradients() {
-                // Store gradient information
-                const gradientMap = new Array(width * height).fill(false);
-                const gradientStrengthMap = new Array(width * height).fill(0);
-                
-                // First pass: detect gradient pixels with more sensitivity
-                for (let y = 1; y < height - 1; y++) {
-                    for (let x = 1; x < width - 1; x++) {
-                        const centerIdx = (y * width + x) * 4;
-                        if (data[centerIdx + 3] < 128) continue; // Skip transparent
-                        
-                        const centerColor = [data[centerIdx], data[centerIdx + 1], data[centerIdx + 2]];
-                        const centerHsv = rgbToHsv(...centerColor);
-                        
-                        // Adaptive thresholds - more sensitive for blurry images
-                        const minDiffThreshold = Math.max(2, 5 - centerHsv[1] * 0.05);
-                        const maxDiffThreshold = 60 + (1 - centerHsv[1]/100) * 20;
-                        
-                        // Check neighbors
-                        let maxDiff = 0;
-                        let hasGradient = false;
-                        
-                        // Check in all directions for better detection
-                        const directions = [
-                            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
-                            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
-                            { dx: -1, dy: -1 }, { dx: 1, dy: -1 },
-                            { dx: -1, dy: 1 }, { dx: 1, dy: 1 }
-                        ];
-                        
-                        for (const { dx, dy } of directions) {
-                            const nx = x + dx;
-                            const ny = y + dy;
-                            
-                            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-                            
-                            const neighborIdx = (ny * width + nx) * 4;
-                            if (data[neighborIdx + 3] < 128) continue;
-                            
-                            const neighborColor = [data[neighborIdx], data[neighborIdx + 1], data[neighborIdx + 2]];
-                            
-                            // Calculate color difference
-                            const diff = Math.sqrt(
-                                Math.pow(centerColor[0] - neighborColor[0], 2) +
-                                Math.pow(centerColor[1] - neighborColor[1], 2) +
-                                Math.pow(centerColor[2] - neighborColor[2], 2)
-                            );
-                            
-                            // More relaxed condition for gradients
-                            if (diff > minDiffThreshold && diff < maxDiffThreshold) {
-                                // For very subtle gradients, don't strictly require same family
-                                if (diff < 15 || sameColorFamily(centerColor, neighborColor)) {
-                                    hasGradient = true;
-                                    maxDiff = Math.max(maxDiff, diff);
-                                }
-                            }
-                        }
-                        
-                        if (hasGradient) {
-                            gradientMap[y * width + x] = true;
-                            gradientStrengthMap[y * width + x] = Math.min(1, maxDiff / maxDiffThreshold);
-                        }
-                    }
-                }
-                
-                // Second pass: expand gradient regions more aggressively
-                const expandedGradientMap = [...gradientMap];
-                
-                // Multiple expansion passes for better coverage
-                for (let pass = 0; pass < 2; pass++) {
-                    for (let y = 1; y < height - 1; y++) {
-                        for (let x = 1; x < width - 1; x++) {
-                            const pixelIndex = y * width + x;
-                            if (expandedGradientMap[pixelIndex] || data[(pixelIndex * 4) + 3] < 128) continue;
-                            
-                            // Check if surrounded by gradient pixels
-                            let gradientNeighbors = 0;
-                            
-                            for (let dy = -2; dy <= 2; dy++) {
-                                for (let dx = -2; dx <= 2; dx++) {
-                                    if (dx === 0 && dy === 0) continue;
-                                    
-                                    const nx = x + dx;
-                                    const ny = y + dy;
-                                    
-                                    if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-                                    
-                                    const nIndex = ny * width + nx;
-                                    
-                                    if (expandedGradientMap[nIndex]) {
-                                        // Weight by distance
-                                        gradientNeighbors += (Math.abs(dx) + Math.abs(dy) <= 2) ? 1 : 0.5;
-                                    }
-                                }
-                            }
-                            
-                            // More aggressive expansion for blurry images
-                            if (gradientNeighbors >= 1.5) {
-                                expandedGradientMap[pixelIndex] = true;
-                                gradientStrengthMap[pixelIndex] = 0.6;
-                            }
-                        }
-                    }
-                }
-                
-                return { gradientMap: expandedGradientMap, gradientStrengthMap };
-            }
-            
-            // Identify color families with improved logic
-            function identifyColorFamilies() {
-                const colorFamilies = [];
-                const pixelFamilyMap = new Array(width * height).fill(-1);
-                
-                // Process pixels to form initial color families
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        const pixelIndex = y * width + x;
-                        const colorIdx = pixelIndex * 4;
-                        
-                        if (data[colorIdx + 3] < 128) continue; // Skip transparent
-                        
-                        // Skip if already assigned to a family
-                        if (pixelFamilyMap[pixelIndex] !== -1) continue;
-                        
-                        const pixelColor = [data[colorIdx], data[colorIdx + 1], data[colorIdx + 2]];
-                        
-                        // Only skip pure black (almost zero in all channels)
-                        if (pixelColor[0] <= 3 && pixelColor[1] <= 3 && pixelColor[2] <= 3) continue;
-                        
-                        // CHANGE: For many colors, be more selective about family membership
-                        // Check if this color fits into an existing family with stricter thresholds
-                        let foundFamily = false;
-                        
-                        // CHANGE: Only check recent families first to improve performance with many colors
-                        const startIdx = Math.max(0, colorFamilies.length - 50);
-                        for (let i = startIdx; i < colorFamilies.length; i++) {
-                            const family = colorFamilies[i];
-                            
-                            // Check if color belongs to this family with improved detection
-                            if (sameColorFamily(pixelColor, family.referenceColor)) {
-                                // Add to family
-                                family.pixels.push(pixelIndex);
-                                family.sumR += pixelColor[0];
-                                family.sumG += pixelColor[1];
-                                family.sumB += pixelColor[2];
-                                family.count++;
-                                
-                                pixelFamilyMap[pixelIndex] = i;
-                                foundFamily = true;
-                                break;
-                            }
-                        }
-                        
-                        // If no matching family in recent ones, check older ones
-                        if (!foundFamily && startIdx > 0) {
-                            for (let i = 0; i < startIdx; i++) {
-                                const family = colorFamilies[i];
-                                
-                                if (sameColorFamily(pixelColor, family.referenceColor)) {
-                                    // Add to family
-                                    family.pixels.push(pixelIndex);
-                                    family.sumR += pixelColor[0];
-                                    family.sumG += pixelColor[1];
-                                    family.sumB += pixelColor[2];
-                                    family.count++;
-                                    
-                                    pixelFamilyMap[pixelIndex] = i;
-                                    foundFamily = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // If no matching family, create a new one
-                        if (!foundFamily) {
-                            const familyIndex = colorFamilies.length;
-                            colorFamilies.push({
-                                referenceColor: pixelColor,
-                                pixels: [pixelIndex],
-                                sumR: pixelColor[0],
-                                sumG: pixelColor[1],
-                                sumB: pixelColor[2],
-                                count: 1,
-                                mappingIndex: -1 // Will be set later
-                            });
-                            
-                            pixelFamilyMap[pixelIndex] = familyIndex;
-                        }
-                    }
-                }
-                
-                // Calculate average color for each family
-                colorFamilies.forEach(family => {
-                    family.avgColor = [
-                        Math.round(family.sumR / family.count),
-                        Math.round(family.sumG / family.count),
-                        Math.round(family.sumB / family.count)
-                    ];
-                    
-                    // Also calculate HSV for easier comparisons
-                    family.hsv = rgbToHsv(...family.avgColor);
-                });
-                
-                console.log(`Identified ${colorFamilies.length} color families`);
-                return { colorFamilies, pixelFamilyMap };
-            }
-            
-            // Process color mappings
-            function prepareColorMappings() {
-                return colorMappings.map((mapping, index) => {
-                    const { originalColor, targetColor } = mapping;
-                    
-                    // Convert to HSV for easier transformations
-                    const originalHsv = rgbToHsv(...originalColor);
-                    const targetHsv = rgbToHsv(...targetColor);
-                    
-                    // Calculate transformation parameters more explicitly
-                    let hueShift = targetHsv[0] - originalHsv[0];
-                    if (hueShift > 180) hueShift -= 360;
-                    else if (hueShift < -180) hueShift += 360;
-                    
-                    // Calculate more precise ratios to maintain the exact relationship
-                    const satRatio = originalHsv[1] > 5 ? targetHsv[1] / originalHsv[1] : 1;
-                    const valRatio = originalHsv[2] > 5 ? targetHsv[2] / originalHsv[2] : 1;
-                    
-                    // Include the original button reference to maintain the exact mapping relationship
-                    return {
-                        originalColor,
-                        targetColor,
-                        originalHsv,
-                        targetHsv,
-                        hueShift,
-                        satRatio,
-                        valRatio,
-                        index,
-                        buttonReference: mapping.button // Store the button reference
-                    };
-                });
-            }
-            
-            // IMPROVED: Better mapping for more colors
-            function mapFamiliesToMappings(colorFamilies, processedMappings) {
-                // CHANGE: For each color family, find the best matching source color
-                // When dealing with many colors, we need more precise mapping
-                colorFamilies.forEach(family => {
-                    let bestMappingIndex = -1;
-                    let bestScore = Infinity;
-                    
-                    for (let i = 0; i < processedMappings.length; i++) {
-                        const mapping = processedMappings[i];
-                        
-                        // Calculate weighted distance in both RGB and HSV space
-                        // RGB distance for precise matching
-                        const rgbDistance = Math.sqrt(
-                            Math.pow(family.avgColor[0] - mapping.originalColor[0], 2) +
-                            Math.pow(family.avgColor[1] - mapping.originalColor[1], 2) +
-                            Math.pow(family.avgColor[2] - mapping.originalColor[2], 2)
-                        );
-                        
-                        // HSV comparison for perceptual matching
-                        const familyHsv = family.hsv;
-                        const mappingHsv = mapping.originalHsv;
-                        
-                        // Calculate hue difference with wrap-around
-                        let hueDiff = Math.abs(familyHsv[0] - mappingHsv[0]);
-                        if (hueDiff > 180) hueDiff = 360 - hueDiff;
-                        
-                        // Weight the components differently
-                        const isAchromatic = familyHsv[1] < 15 || mappingHsv[1] < 15;
-                        
-                        let score;
-                        if (isAchromatic) {
-                            // For achromatic colors, focus on brightness
-                            score = (rgbDistance * 0.3) + (Math.abs(familyHsv[2] - mappingHsv[2]) * 2);
-                        } else {
-                            // For chromatic colors, prioritize hue match
-                            score = (rgbDistance * 0.3) + (hueDiff * 0.5) + 
-                                    (Math.abs(familyHsv[1] - mappingHsv[1]) * 0.3) + 
-                                    (Math.abs(familyHsv[2] - mappingHsv[2]) * 0.2);
-                        }
-                        
-                        if (score < bestScore) {
-                            bestScore = score;
-                            bestMappingIndex = i;
-                        }
-                    }
-                    
-                    // CHANGE: Use a threshold that scales with the number of color mappings
-                    // More colors need more relaxed threshold to ensure proper mapping
-                    const threshold = 60 + Math.min(40, processedMappings.length * 2);
-                    
-                    if (bestScore < threshold) {
-                        family.mappingIndex = bestMappingIndex;
-                    } else {
-                        // For families without a good match, leave unmapped
-                        family.mappingIndex = -1;
-                    }
-                });
-            }
-            
-            // IMPROVED: Better color transformation logic
-            function transformColor(r, g, b, mappingIndex, isGradient = false, gradientStrength = 0) {
-                // Get the mapping
-                const mapping = processedMappings[mappingIndex];
-                
-                // Get color in HSV space
-                const pixelHsv = rgbToHsv(r, g, b);
-                
-                // Check if colors are very close to the original mapping color
-                const originalRGB = mapping.originalColor;
-                const rgbDistance = Math.sqrt(
-                    Math.pow(r - originalRGB[0], 2) +
-                    Math.pow(g - originalRGB[1], 2) +
-                    Math.pow(b - originalRGB[2], 2)
-                );
-                
-                // If very close to original color, use target color directly
-                if (rgbDistance < 10) {
-                    return mapping.targetColor;
-                }
-                
-                // Check if color is achromatic (low saturation)
-                const isAchromatic = pixelHsv[1] < 15;
-                const isDark = pixelHsv[2] < 30;
-                
-                // Calculate relative brightness compared to the original mapping color
-                // This is crucial for preserving shading and transparency effects
-                const relativeBrightness = mapping.originalHsv[2] > 0 ? 
-                    pixelHsv[2] / mapping.originalHsv[2] : 1;
-                
-                // Calculate hue difference with wrap-around handling
-                let hueDiff = ((pixelHsv[0] - mapping.originalHsv[0] + 360) % 360);
-                hueDiff = hueDiff > 180 ? hueDiff - 360 : hueDiff;
-                
-                // For saturation, calculate the relative value
-                const relativeSaturation = mapping.originalHsv[1] > 0 ? 
-                    pixelHsv[1] / mapping.originalHsv[1] : 1;
-                
-                // Different transformation strategy based on pixel characteristics
-                let newHue, newSat, newVal;
-                
-                if (isAchromatic) {
-                    // For grayscale, adopt target hue but preserve relative brightness
-                    newHue = mapping.targetHsv[0];
-                    
-                    // Keep very low saturation for achromatic colors
-                    newSat = Math.min(10, pixelHsv[1]);
-                    
-                    // Crucial: Preserve relative brightness for shading effects
-                    newVal = Math.max(0, Math.min(100, mapping.targetHsv[2] * relativeBrightness));
-                } 
-                else if (isGradient) {
-                    // For gradients, preserve the relative brightness even more carefully
-                    
-                    // Use target hue but adjust based on original variations for natural gradients
-                    newHue = (mapping.targetHsv[0] + hueDiff * 0.3) % 360;
-                    if (newHue < 0) newHue += 360;
-                    
-                    // Blend saturation but respect original variations
-                    newSat = Math.max(5, Math.min(100, mapping.targetHsv[1] * relativeSaturation));
-                    
-                    // Most important: accurately preserve relative brightness
-                    newVal = Math.max(0, Math.min(100, mapping.targetHsv[2] * relativeBrightness));
-                } 
-                else {
-                    // For regular pixels, carefully preserve shading
-                    if (isDark) {
-                        // For dark areas, maintain darkness but use target hue
-                        newHue = mapping.targetHsv[0];
-                        newSat = Math.min(100, mapping.targetHsv[1] * 0.7);
-                        
-                        // Preserve darkness but map to target's darkness range
-                        // This ensures dark areas remain distinguishable but adopt target color
-                        newVal = Math.max(0, Math.min(40, mapping.targetHsv[2] * relativeBrightness));
-                    } 
-                    else {
-                        // For normal colors, preserve shading variations
-                        newHue = mapping.targetHsv[0];
-                        
-                        // Maintain saturation relationship to preserve texture
-                        newSat = Math.max(0, Math.min(100, mapping.targetHsv[1] * relativeSaturation));
-                        
-                        // Crucial: accurately preserve brightness relationships
-                        newVal = Math.max(0, Math.min(100, mapping.targetHsv[2] * relativeBrightness));
-                    }
-                }
-                
-                // Convert back to RGB
-                return hsvToRgb(newHue, newSat, newVal);
-            }
-            
-            // Main processing pipeline
-            
-            // Step 1: Detect gradients
-            console.log("Detecting gradients...");
-            const { gradientMap, gradientStrengthMap } = detectGradients();
-            
-            // Step 2: Identify color families
-            console.log("Identifying color families...");
-            const { colorFamilies, pixelFamilyMap } = identifyColorFamilies();
-            
-            // Step 3: Process mappings
-            console.log("Processing color mappings...");
-            const processedMappings = prepareColorMappings();
-            
-            // Step 4: Map families to mappings - IMPROVED for more colors
-            console.log("Mapping color families to target colors...");
-            mapFamiliesToMappings(colorFamilies, processedMappings);
-            
-            // CHANGE: Set a better default mapping for unmatched pixels
-            // Find the most dominant mapping by counting pixels
-            let mappingCounts = new Array(processedMappings.length).fill(0);
-            colorFamilies.forEach(family => {
-                if (family.mappingIndex !== -1) {
-                    mappingCounts[family.mappingIndex] += family.count;
-                }
+            // Updated URL to use Django endpoint
+            const response = await fetch('/tif-editor/api/process-image-with-jimp/', {
+                method: 'POST',
+                body: formData,
             });
             
-            let defaultMappingIndex = 0;
-            let maxCount = mappingCounts[0];
-            for (let i = 1; i < mappingCounts.length; i++) {
-                if (mappingCounts[i] > maxCount) {
-                    maxCount = mappingCounts[i];
-                    defaultMappingIndex = i;
+            // Handle server busy (503) with automatic retry
+            if (response.status === 503) {
+                const result = await response.json();
+                
+                if (result.busy && retryCount < 5) {
+                    // Exponential backoff: 500ms, 1s, 2s, 4s, 5s
+                    const waitTime = Math.min(500 * Math.pow(2, retryCount), 5000);
+                    console.log(`⏳ Server busy, retrying in ${waitTime}ms... (attempt ${retryCount + 1}/5)`);
+                    
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    return this.applyMultipleColorMappings(imageData, colorMappings, useJimp, retryCount + 1);
+                } else {
+                    throw new Error("Server is busy processing another image. Please try again later.");
                 }
             }
             
-            console.log("Transforming colors...");
-
-            // Use a cache for processed colors
-            const transformCache = new Map();
-
-            // Apply transformations
-            for (let i = 0; i < data.length; i += 4) {
-                if (data[i + 3] < 128) continue; // Skip transparent
-                
-                const r = data[i], g = data[i + 1], b = data[i + 2];
-                
-                // Only skip absolute black
-                if (r <= 3 && g <= 3 && b <= 3) continue;
-                
-                const pixelIndex = Math.floor(i / 4);
-                const familyIndex = pixelFamilyMap[pixelIndex];
-                
-                // Determine which mapping to use, with fallback for unassigned pixels
-                let mappingToUse = defaultMappingIndex;
-                
-                if (familyIndex !== -1 && familyIndex < colorFamilies.length) {
-                    const family = colorFamilies[familyIndex];
-                    if (family.mappingIndex !== -1) {
-                        mappingToUse = family.mappingIndex;
-                    } else {
-                        // CHANGE: For families with no mapping, find closest mapping directly
-                        // This helps with more accurate color matching for many colors
-                        const pixelHsv = rgbToHsv(r, g, b);
-                        let bestDistance = Infinity;
-                        
-                        for (let j = 0; j < processedMappings.length; j++) {
-                            const mappingHsv = processedMappings[j].originalHsv;
-                            
-                            // Weighted distance calculation for perceptual matching
-                            let hueDiff = Math.abs(pixelHsv[0] - mappingHsv[0]);
-                            if (hueDiff > 180) hueDiff = 360 - hueDiff;
-                            
-                            // For low saturation, focus on brightness
-                            const distance = (pixelHsv[1] < 15 || mappingHsv[1] < 15) ? 
-                                Math.abs(pixelHsv[2] - mappingHsv[2]) / 100 :
-                                (hueDiff / 180) * 0.6 + 
-                                Math.abs(pixelHsv[1] - mappingHsv[1]) / 100 * 0.2 + 
-                                Math.abs(pixelHsv[2] - mappingHsv[2]) / 100 * 0.2;
-                            
-                            if (distance < bestDistance) {
-                                bestDistance = distance;
-                                mappingToUse = j;
-                            }
-                        }
-                    }
-                }
-                
-                // Check cache for this color and mapping combination
-                const colorKey = `${r},${g},${b},${mappingToUse}`;
-                if (transformCache.has(colorKey)) {
-                    const cachedColor = transformCache.get(colorKey);
-                    data[i] = cachedColor[0];
-                    data[i + 1] = cachedColor[1];
-                    data[i + 2] = cachedColor[2];
-                    continue;
-                }
-                
-                // Check if this pixel is part of a gradient
-                const isGradient = gradientMap[pixelIndex];
-                const gradientStrength = gradientStrengthMap[pixelIndex];
-                
-                // Transform the color
-                const newColor = transformColor(r, g, b, mappingToUse, isGradient, gradientStrength);
-                
-                // Apply the transformed color
-                data[i] = newColor[0];
-                data[i + 1] = newColor[1];
-                data[i + 2] = newColor[2];
-                
-                // Cache this transformation
-                // CHANGE: Limit cache size to prevent memory issues with many colors
-                if (transformCache.size < 100000) {
-                    transformCache.set(colorKey, newColor);
-                }
+            if (!response.ok) {
+                throw new Error(`Backend processing failed: ${response.status}`);
             }
-
-            console.log("Finished color mapping!");
-
-            // Apply the changes to the canvas
-            ctx.putImageData(imageDataObj, 0, 0);
-            const dataUrl = canvasElement.toDataURL('image/png');
-            console.timeEnd('colorMapping');
-            resolve(dataUrl);
-        };
-        img.src = imageData;
-    });
-}
-
-
-async applyMultipleColorMappings(imageData, colorMappings, useJimp = false) {
-  
-
-  // If useJimp is true, send to the backend for Jimp processing
-  if (useJimp) {
-    console.log("Using Jimp for backend processing");
-    try {
-      // Create form data for sending to backend
-      const formData = new FormData();
-      
-      // Handle image data based on format
-      if (typeof imageData === 'string' && imageData.startsWith('data:image')) {
-        // If it's a data URL, convert to blob
-        try {
-          const fetchResponse = await fetch(imageData);
-          if (!fetchResponse.ok) throw new Error("Failed to fetch image data");
-          const blob = await fetchResponse.blob();
-          formData.append('image', blob, 'image.png');
-          console.log("Added image as blob to form data");
-        } catch (blobError) {
-          console.error("Error converting data URL to blob:", blobError);
-          // Fallback: send as base64 string
-          formData.append('imageData', imageData);
-          console.log("Added image as base64 string (fallback)");
+            
+            const result = await response.json();
+            if (!result.success || !result.processedImage) {
+                throw new Error("Backend returned invalid response");
+            }
+            
+            return result.processedImage;
+        } catch (error) {
+            console.error('Error with Jimp processing:', error);
+            // Fallback to client-side processing
+            return this.applyMultipleColorMappings(imageData, colorMappings, false);
         }
-      } else {
-        // For other formats (already blob, etc.)
-        formData.append('imageData', imageData);
-        console.log("Added image data to form data");
-      }
-      
-      // Add color mappings as JSON string
-      formData.append('colorMappings', JSON.stringify(colorMappings));
-      
-      
-      // Send to backend endpoint with proper CORS settings
-      console.log("Sending request to Jimp backend...");
-      const response = await fetch('http://13.203.1.189:8000/api/process-image-with-jimp', {
-        method: 'POST',
-        body: formData,
-        // No need to set Content-Type with FormData
-        // Let the browser handle it with the correct multipart boundary
-      });
-      
-      // Handle non-200 responses
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Backend response error:", response.status, errorText);
-        throw new Error(`Backend processing failed: ${response.status} ${response.statusText}`);
-      }
-      
-      // Parse the JSON response
-      const result = await response.json();
-      
-      if (!result.success || !result.processedImage) {
-        console.error("Invalid response from backend:", result);
-        throw new Error("Backend returned an invalid response format");
-      }
-      
-      console.log("Successfully processed image with Jimp backend");
-      return result.processedImage; // Base64 image data
-    } catch (error) {
-      console.error('Error with Jimp processing:', error);
-      // Fall back to frontend processing if backend fails
-     
-      // Recursively call with useJimp=false to use frontend processing
-      return this.applyMultipleColorMappings(imageData, colorMappings, false);
     }
-  }
   
-  // Otherwise, use the original frontend Canvas implementation
+  // WATERCOLOR-AWARE SMOOTH COLOR REPLACEMENT
   return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-          console.time('colorMapping');
-          const canvasElement = document.createElement('canvas');
-          const ctx = canvasElement.getContext('2d');
-          canvasElement.width = img.width;
-          canvasElement.height = img.height;
+    const img = new Image();
+    img.onload = () => {
+      console.time('smoothColorMapping');
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      canvas.width = img.width;
+      canvas.height = img.height;
 
-          ctx.drawImage(img, 0, 0);
-          const imageDataObj = ctx.getImageData(0, 0, img.width, img.height);
-          const data = imageDataObj.data;
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+      const width = canvas.width;
+      const height = canvas.height;
 
-          // Color conversion utilities
-          function rgbToLab(r, g, b) {
-              r /= 255; g /= 255; b /= 255;
+      // Color conversion utilities
+      const rgbToHsl = (r, g, b) => {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
 
-              r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
-              g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
-              b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
-
-              let x = (r * 0.4124564 + g * 0.3575761 + b * 0.1804375) * 100;
-              let y = (r * 0.2126729 + g * 0.7151522 + b * 0.0721750) * 100;
-              let z = (r * 0.0193339 + g * 0.1191920 + b * 0.9503041) * 100;
-
-              x /= 95.047; y /= 100; z /= 108.883;
-
-              x = x > 0.008856 ? Math.pow(x, 1/3) : (7.787 * x) + 16/116;
-              y = y > 0.008856 ? Math.pow(y, 1/3) : (7.787 * y) + 16/116;
-              z = z > 0.008856 ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
-
-              return [
-                  116 * y - 16,   // L
-                  500 * (x - y),   // a
-                  200 * (y - z)    // b
-              ];
+        if (max === min) {
+          h = s = 0;
+        } else {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch (max) {
+            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+            case g: h = ((b - r) / d + 2) / 6; break;
+            case b: h = ((r - g) / d + 4) / 6; break;
           }
-
-          function rgbToHsv(r, g, b) {
-              r /= 255; g /= 255; b /= 255;
-              const max = Math.max(r, g, b);
-              const min = Math.min(r, g, b);
-              const d = max - min;
-              let h, s = max === 0 ? 0 : d / max, v = max;
-
-              if (max === min) {
-                  h = 0;
-              } else {
-                  switch (max) {
-                      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                      case g: h = (b - r) / d + 2; break;
-                      case b: h = (r - g) / d + 4; break;
-                  }
-                  h /= 6;
-              }
-              return [h * 360, s * 100, v * 100];
-          }
-
-          function hsvToRgb(h, s, v) {
-              h /= 360; s /= 100; v /= 100;
-              let r, g, b;
-              const i = Math.floor(h * 6);
-              const f = h * 6 - i;
-              const p = v * (1 - s);
-              const q = v * (1 - f * s);
-              const t = v * (1 - (1 - f) * s);
-
-              switch (i % 6) {
-                  case 0: r = v; g = t; b = p; break;
-                  case 1: r = q; g = v; b = p; break;
-                  case 2: r = p; g = v; b = t; break;
-                  case 3: r = p; g = q; b = v; break;
-                  case 4: r = t; g = p; b = v; break;
-                  case 5: r = v; g = p; b = q; break;
-              }
-
-              return [
-                  Math.round(r * 255),
-                  Math.round(g * 255),
-                  Math.round(b * 255)
-              ];
-          }
-
-          // Calculate direct RGB distance
-          function rgbDistance(r1, g1, b1, r2, g2, b2) {
-              return Math.sqrt(
-                  Math.pow(r1 - r2, 2) +
-                  Math.pow(g1 - g2, 2) +
-                  Math.pow(b1 - b2, 2)
-              );
-          }
-
-          // LAB to RGB conversion
-          function labToRgb(L, A, B) {
-              let y = (L + 16) / 116;
-              let x = A / 500 + y;
-              let z = y - B / 200;
-              
-              x = 0.95047 * ((x * x * x > 0.008856) ? x * x * x : (x - 16/116) / 7.787);
-              y = 1.00000 * ((y * y * y > 0.008856) ? y * y * y : (y - 16/116) / 7.787);
-              z = 1.08883 * ((z * z * z > 0.008856) ? z * z * z : (z - 16/116) / 7.787);
-              
-              let rr = x *  3.2406 + y * -1.5372 + z * -0.4986;
-              let gg = x * -0.9689 + y *  1.8758 + z *  0.0415;
-              let bb = x *  0.0557 + y * -0.2040 + z *  1.0570;
-              
-              rr = (rr > 0.0031308) ? (1.055 * Math.pow(rr, 1/2.4) - 0.055) : 12.92 * rr;
-              gg = (gg > 0.0031308) ? (1.055 * Math.pow(gg, 1/2.4) - 0.055) : 12.92 * gg;
-              bb = (bb > 0.0031308) ? (1.055 * Math.pow(bb, 1/2.4) - 0.055) : 12.92 * bb;
-              
-              return [
-                  Math.max(0, Math.min(255, Math.round(rr * 255))),
-                  Math.max(0, Math.min(255, Math.round(gg * 255))),
-                  Math.max(0, Math.min(255, Math.round(bb * 255)))
-              ];
-          }
-
-          // Prepare all color mappings with their properties
-          const processedMappings = colorMappings.map(mapping => {
-              const originalColor = mapping.originalColor;
-              const replacementColor = mapping.targetColor;
-
-              
-              // Get color properties
-              const originalHsv = rgbToHsv(...originalColor);
-              const replacementHsv = rgbToHsv(...replacementColor);
-              const originalLab = rgbToLab(...originalColor);
-              const replacementLab = rgbToLab(...replacementColor);
-              
-              // Only check if this is a black color (3,3,3 or less)
-              const isBlack = originalColor[0] <= 3 && originalColor[1] <= 3 && originalColor[2] <= 3;
-              
-              return {
-                  originalColor,
-                  replacementColor,
-                  originalHsv,
-                  replacementHsv,
-                  originalLab,
-                  replacementLab,
-                  isBlack
-              };
-          });
-
-          // Create a cache for color transformations
-          const transformCache = new Map();
-
-          // Define tolerances - improved for better gradient handling
-          const RGB_TOLERANCE = 80;       // Increased for better gradient detection
-          const HUE_TOLERANCE = 20;       // Slightly increased
-          const SAT_TOLERANCE = 25;       // Increased for better pattern handling
-          const VAL_TOLERANCE = 30;       // Increased for better shade detection
-          const LAB_TOLERANCE = 30;       // Increased for better perceptual matching
-          
-          // Maintain a gradient map - colors that are part of gradients
-          const gradientColors = new Set();
-          
-          // First pass - identify gradient colors by analyzing local neighborhoods
-          // This is simplified for performance, but could be more sophisticated
-          if (img.width > 10 && img.height > 10) {  // Only for reasonably sized images
-              for (let y = 1; y < img.height - 1; y++) {
-                  for (let x = 1; x < img.width - 1; x++) {
-                      const idx = (y * img.width + x) * 4;
-                      if (data[idx + 3] < 128) continue; // Skip transparent
-                      
-                      // Get this pixel's color
-                      const r = data[idx];
-                      const g = data[idx + 1];
-                      const b = data[idx + 2];
-                      
-                      // Skip true black
-                      if (r <= 3 && g <= 3 && b <= 3) continue;
-                      
-                      // Check neighbors for gradient patterns
-                      let isGradient = false;
-                      
-                      // Check horizontal neighbors
-                      const leftIdx = (y * img.width + (x-1)) * 4;
-                      const rightIdx = (y * img.width + (x+1)) * 4;
-                      
-                      if (data[leftIdx + 3] >= 128 && data[rightIdx + 3] >= 128) {
-                          const leftDist = rgbDistance(r, g, b, data[leftIdx], data[leftIdx + 1], data[leftIdx + 2]);
-                          const rightDist = rgbDistance(r, g, b, data[rightIdx], data[rightIdx + 1], data[rightIdx + 2]);
-                          
-                          // If colors change gradually, likely a gradient
-                          if (leftDist < 15 && rightDist < 15 && leftDist + rightDist > 5) {
-                              isGradient = true;
-                          }
-                      }
-                      
-                      // Check vertical neighbors if not already identified
-                      if (!isGradient) {
-                          const topIdx = ((y-1) * img.width + x) * 4;
-                          const bottomIdx = ((y+1) * img.width + x) * 4;
-                          
-                          if (data[topIdx + 3] >= 128 && data[bottomIdx + 3] >= 128) {
-                              const topDist = rgbDistance(r, g, b, data[topIdx], data[topIdx + 1], data[topIdx + 2]);
-                              const bottomDist = rgbDistance(r, g, b, data[bottomIdx], data[bottomIdx + 1], data[bottomIdx + 2]);
-                              
-                              if (topDist < 15 && bottomDist < 15 && topDist + bottomDist > 5) {
-                                  isGradient = true;
-                              }
-                          }
-                      }
-                      
-                      // Mark as gradient for special handling
-                      if (isGradient) {
-                          gradientColors.add(`${r},${g},${b}`);
-                      }
-                  }
-              }
-          }
-
-          // Process each pixel
-          for (let i = 0; i < data.length; i += 4) {
-              if (data[i + 3] < 128) continue; // Skip transparent pixels
-
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-              
-              // Skip pure black for efficiency (and we won't modify it)
-              if (r <= 3 && g <= 3 && b <= 3) continue;
-              
-              // Create a key for the cache
-              const colorKey = `${r},${g},${b}`;
-              if (transformCache.has(colorKey)) {
-                  const cachedColor = transformCache.get(colorKey);
-                  data[i] = cachedColor[0];
-                  data[i + 1] = cachedColor[1];
-                  data[i + 2] = cachedColor[2];
-                  continue;
-              }
-              
-              // Check if this is a gradient color
-              const isGradientColor = gradientColors.has(colorKey);
-              
-              // Find all matching mappings for this color with their scores
-              const matchedMappings = [];
-              
-              for (const mapping of processedMappings) {
-                  // Skip black mappings for non-black pixels
-                  if (mapping.isBlack && !(r <= 3 && g <= 3 && b <= 3)) continue;
-                  
-                  // Direct RGB distance - fastest check
-                  const rgbDist = rgbDistance(r, g, b, 
-                      mapping.originalColor[0], 
-                      mapping.originalColor[1], 
-                      mapping.originalColor[2]);
-                  
-                  // Skip if too far in RGB space for efficiency
-                  if (rgbDist > RGB_TOLERANCE * 1.5) continue;
-                  
-                  // Calculate pixel color in HSV space
-                  const pixelHsv = rgbToHsv(r, g, b);
-                  
-                  // Calculate hue distance (accounting for circularity)
-                  let hueDist = Math.abs(pixelHsv[0] - mapping.originalHsv[0]);
-                  if (hueDist > 180) hueDist = 360 - hueDist;
-                  
-                  // Set a uniform matching criteria for all colors
-                  const hueMultiplier = isGradientColor ? 1.3 : 1.0;
-                  const satMultiplier = isGradientColor ? 1.4 : 1.0;
-                  const valMultiplier = isGradientColor ? 1.3 : 1.0;
-                  
-                  const isColorMatch = 
-                      hueDist < HUE_TOLERANCE * hueMultiplier && 
-                      Math.abs(pixelHsv[1] - mapping.originalHsv[1]) < SAT_TOLERANCE * satMultiplier &&
-                      Math.abs(pixelHsv[2] - mapping.originalHsv[2]) < VAL_TOLERANCE * valMultiplier;
-                  
-                  // If HSV check passes or RGB is close, do a more expensive Lab check
-                  if (isColorMatch || rgbDist < RGB_TOLERANCE * (isGradientColor ? 0.7 : 0.5)) {
-                      const pixelLab = rgbToLab(r, g, b);
-                      
-                      const labDistance = Math.sqrt(
-                          Math.pow(pixelLab[0] - mapping.originalLab[0], 2) +
-                          Math.pow(pixelLab[1] - mapping.originalLab[1], 2) +
-                          Math.pow(pixelLab[2] - mapping.originalLab[2], 2)
-                      );
-                      
-                      // For gradients and patterns, be more generous with matching
-                      const labToleranceAdjusted = isGradientColor ? LAB_TOLERANCE * 1.3 : LAB_TOLERANCE;
-                      
-                      // Calculate match score - lower is better
-                      // Combine different metrics with appropriate weights
-                      const rgbScore = rgbDist / (isGradientColor ? RGB_TOLERANCE * 1.2 : RGB_TOLERANCE);
-                      const labScore = labDistance / labToleranceAdjusted;
-                      
-                      // Emphasize LAB distance more for gradients (better perceptual matching)
-                      const matchScore = isGradientColor ? 
-                          (rgbScore * 0.2 + labScore * 0.8) : 
-                          (rgbScore * 0.3 + labScore * 0.7);
-                      
-                      // If this is a reasonable match, save it with its score
-                      if (matchScore < 1.2) {  // Slightly more permissive threshold
-                          matchedMappings.push({
-                              mapping,
-                              matchScore
-                          });
-                      }
-                  }
-              }
-              
-              // Sort matched mappings by score (best matches first)
-              matchedMappings.sort((a, b) => a.matchScore - b.matchScore);
-              
-              let newColor;
-              
-              // If we found at least one mapping
-              if (matchedMappings.length > 0) {
-                  // For gradient colors, blend between closest matches if we have multiple matches
-                  if (isGradientColor && matchedMappings.length > 1) {
-                      // Get the best two matches
-                      const bestMapping = matchedMappings[0].mapping;
-                      const secondBestMapping = matchedMappings[1].mapping;
-                      const bestScore = matchedMappings[0].matchScore;
-                      const secondBestScore = matchedMappings[1].matchScore;
-                      
-                      // Calculate weights for blending based on scores
-                      // Lower score gets higher weight
-                      const totalWeight = (1 - bestScore) + (1 - secondBestScore);
-                      const bestWeight = (1 - bestScore) / totalWeight;
-                      const secondWeight = (1 - secondBestScore) / totalWeight;
-                      
-                      // Calculate pixel in LAB space for smooth blending
-                      const pixelLab = rgbToLab(r, g, b);
-                      
-                      // Calculate LAB deltas for both mappings
-                      const labDelta1 = [
-                          bestMapping.replacementLab[0] - bestMapping.originalLab[0],
-                          bestMapping.replacementLab[1] - bestMapping.originalLab[1],
-                          bestMapping.replacementLab[2] - bestMapping.originalLab[2]
-                      ];
-                      
-                      const labDelta2 = [
-                          secondBestMapping.replacementLab[0] - secondBestMapping.originalLab[0],
-                          secondBestMapping.replacementLab[1] - secondBestMapping.originalLab[1],
-                          secondBestMapping.replacementLab[2] - secondBestMapping.originalLab[2]
-                      ];
-                      
-                      // Blend the two transformations
-                      const blendedLab = [
-                          pixelLab[0] + (labDelta1[0] * bestWeight + labDelta2[0] * secondWeight),
-                          pixelLab[1] + (labDelta1[1] * bestWeight + labDelta2[1] * secondWeight),
-                          pixelLab[2] + (labDelta1[2] * bestWeight + labDelta2[2] * secondWeight)
-                      ];
-                      
-                      // Convert back to RGB
-                      newColor = labToRgb(...blendedLab);
-                  } 
-                  else {
-                      // Use the best match
-                      const bestMapping = matchedMappings[0].mapping;
-                      const matchScore = matchedMappings[0].matchScore;
-                      
-                      // Calculate pixel in HSV space for transformation
-                      const pixelHsv = rgbToHsv(r, g, b);
-                      
-                      // Determine how close the match is (fuzzy threshold based on gradient status)
-                      const exactMatchThreshold = isGradientColor ? 0.4 : 0.3;
-                      const exactMatch = matchScore < exactMatchThreshold;
-                      
-                      if (exactMatch) {
-                          // Direct replacement for very close matches
-                          newColor = bestMapping.replacementColor;
-                      } else {
-                          // Calculate relative shifts
-                          const hueDiff = bestMapping.replacementHsv[0] - bestMapping.originalHsv[0];
-                          const satRatio = bestMapping.originalHsv[1] > 5 ? 
-                                           bestMapping.replacementHsv[1] / bestMapping.originalHsv[1] : 1;
-                          const valRatio = bestMapping.originalHsv[2] > 5 ? 
-                                           bestMapping.replacementHsv[2] / bestMapping.originalHsv[2] : 1;
-                          
-                          // Apply transformations with gradient-aware adjustments
-                          let newHue = (pixelHsv[0] + hueDiff) % 360;
-                          if (newHue < 0) newHue += 360;
-                          
-                          // Preserve more of the original variation for gradients
-                          const preservationFactor = isGradientColor ? 0.3 : 0.15;
-                          
-                          let newSat = Math.max(0, Math.min(100, 
-                              (pixelHsv[1] * satRatio * (1 - preservationFactor)) + 
-                              (pixelHsv[1] * preservationFactor)));
-                              
-                          let newVal = Math.max(0, Math.min(100, 
-                              (pixelHsv[2] * valRatio * (1 - preservationFactor)) + 
-                              (pixelHsv[2] * preservationFactor)));
-                          
-                          // Convert back to RGB
-                          newColor = hsvToRgb(newHue, newSat, newVal);
-                      }
-                  }
-                  
-                  // Apply new color
-                  data[i] = newColor[0];
-                  data[i + 1] = newColor[1];
-                  data[i + 2] = newColor[2];
-                  
-                  // Cache this transformation
-                  transformCache.set(colorKey, newColor);
-              }
-          }
-
-          ctx.putImageData(imageDataObj, 0, 0);
-          const dataUrl = canvasElement.toDataURL('image/png');
-          console.timeEnd('colorMapping');
-          resolve(dataUrl);
+        }
+        return { h: h * 360, s: s * 100, l: l * 100 };
       };
-      img.src = imageData;
+
+      const hslToRgb = (h, s, l) => {
+        h /= 360; s /= 100; l /= 100;
+        let r, g, b;
+
+        if (s === 0) {
+          r = g = b = l;
+        } else {
+          const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+          };
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          r = hue2rgb(p, q, h + 1/3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1/3);
+        }
+        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+      };
+
+      // Prepare color mappings
+      const mappings = colorMappings.map(m => {
+        const srcHsl = rgbToHsl(...m.originalColor);
+        const tgtHsl = rgbToHsl(...m.targetColor);
+        
+        return {
+          srcRgb: m.originalColor,
+          tgtRgb: m.targetColor,
+          srcHsl: srcHsl,
+          tgtHsl: tgtHsl
+        };
+      });
+
+      // Helper to get pixel at position
+      const getPixel = (x, y) => {
+        if (x < 0 || x >= width || y < 0 || y >= height) return null;
+        const i = (y * width + x) * 4;
+        return {
+          r: pixels[i],
+          g: pixels[i + 1],
+          b: pixels[i + 2],
+          a: pixels[i + 3]
+        };
+      };
+
+      // Helper to check if pixel might be a mixed/transition color
+      const isMixedColor = (x, y) => {
+        const center = getPixel(x, y);
+        if (!center || center.a < 128) return false;
+        
+        // Check immediate neighbors for color variation
+        const neighbors = [
+          getPixel(x-1, y), getPixel(x+1, y),
+          getPixel(x, y-1), getPixel(x, y+1)
+        ].filter(p => p && p.a >= 128);
+        
+        if (neighbors.length < 2) return false;
+        
+        // Calculate average color difference with neighbors
+        let totalDiff = 0;
+        for (const n of neighbors) {
+          const diff = Math.abs(center.r - n.r) + 
+                      Math.abs(center.g - n.g) + 
+                      Math.abs(center.b - n.b);
+          totalDiff += diff;
+        }
+        
+        const avgDiff = totalDiff / neighbors.length;
+        // If average difference is 10-80, it's likely a transition/mixed area
+        return avgDiff > 10 && avgDiff < 80;
+      };
+
+      // Find best mapping with multi-color support
+      const findBestMappings = (r, g, b) => {
+        const pixelHsl = rgbToHsl(r, g, b);
+        const results = [];
+        
+        for (let mi = 0; mi < mappings.length; mi++) {
+          const mapping = mappings[mi];
+          
+          // Hue distance (circular)
+          let hueDiff = Math.abs(pixelHsl.h - mapping.srcHsl.h);
+          if (hueDiff > 180) hueDiff = 360 - hueDiff;
+          
+          // More permissive for watercolor effects
+          if (hueDiff > 50) continue;
+          
+          const satDiff = Math.abs(pixelHsl.s - mapping.srcHsl.s);
+          const lightDiff = Math.abs(pixelHsl.l - mapping.srcHsl.l);
+          
+          // Calculate match score
+          const score = (hueDiff * 2.5) + (satDiff * 0.6) + (lightDiff * 1.0);
+          
+          if (score < 180) {
+            results.push({
+              mapping: mapping,
+              mappingIndex: mi,
+              score: score,
+              weight: Math.max(0, 1 - (score / 180))
+            });
+          }
+        }
+        
+        // Sort by score (best first)
+        results.sort((a, b) => a.score - b.score);
+        return results;
+      };
+
+      // Transform color with gradient preservation
+      const transformColor = (r, g, b, mapping, strength = 1.0) => {
+        const pixelHsl = rgbToHsl(r, g, b);
+        
+        // Calculate relative factors
+        const lightFactor = mapping.srcHsl.l > 5 ? pixelHsl.l / mapping.srcHsl.l : 1;
+        const satFactor = mapping.srcHsl.s > 5 ? pixelHsl.s / mapping.srcHsl.s : 1;
+        
+        // Apply transformation
+        let newHue = mapping.tgtHsl.h;
+        let newSat = mapping.tgtHsl.s * satFactor;
+        let newLight = mapping.tgtHsl.l * lightFactor;
+        
+        // Clamp
+        newSat = Math.max(0, Math.min(100, newSat));
+        newLight = Math.max(0, Math.min(100, newLight));
+        
+        // Blend based on strength
+        if (strength < 1.0) {
+          newHue = pixelHsl.h + (newHue - pixelHsl.h) * strength;
+          newSat = pixelHsl.s + (newSat - pixelHsl.s) * strength;
+          newLight = pixelHsl.l + (newLight - pixelHsl.l) * strength;
+        }
+        
+        while (newHue < 0) newHue += 360;
+        while (newHue >= 360) newHue -= 360;
+        
+        return hslToRgb(newHue, newSat, newLight);
+      };
+
+      // PROCESS ALL PIXELS
+      const colorCache = new Map();
+      
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = (y * width + x) * 4;
+          const a = pixels[i + 3];
+          
+          if (a < 128) continue;
+          
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          
+          if (r < 5 && g < 5 && b < 5) continue;
+          
+          const key = `${r},${g},${b}`;
+          
+          // Check cache
+          if (colorCache.has(key)) {
+            const [nr, ng, nb] = colorCache.get(key);
+            pixels[i] = nr;
+            pixels[i + 1] = ng;
+            pixels[i + 2] = nb;
+            continue;
+          }
+          
+          // Check if this is a mixed/transition pixel
+          const isMixed = isMixedColor(x, y);
+          
+          // Find matching color mappings
+          const matches = findBestMappings(r, g, b);
+          
+          let newR = r, newG = g, newB = b;
+          
+          if (matches.length > 0) {
+            if (isMixed && matches.length > 1) {
+              // HANDLE MIXED COLORS: Blend multiple mappings
+              const top2 = matches.slice(0, 2);
+              const totalWeight = top2.reduce((sum, m) => sum + m.weight, 0);
+              
+              if (totalWeight > 0) {
+                // Transform with each mapping and blend
+                const colors = top2.map(m => {
+                  const [tr, tg, tb] = transformColor(r, g, b, m.mapping, m.weight);
+                  return { r: tr, g: tg, b: tb, weight: m.weight / totalWeight };
+                });
+                
+                newR = Math.round(colors.reduce((sum, c) => sum + c.r * c.weight, 0));
+                newG = Math.round(colors.reduce((sum, c) => sum + c.g * c.weight, 0));
+                newB = Math.round(colors.reduce((sum, c) => sum + c.b * c.weight, 0));
+              }
+            } else {
+              // SINGLE COLOR: Use best match
+              const best = matches[0];
+              [newR, newG, newB] = transformColor(r, g, b, best.mapping, best.weight);
+            }
+          }
+          
+          // Apply and cache
+          pixels[i] = newR;
+          pixels[i + 1] = newG;
+          pixels[i + 2] = newB;
+          colorCache.set(key, [newR, newG, newB]);
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      console.timeEnd('smoothColorMapping');
+      resolve(canvas.toDataURL('image/png'));
+    };
+    
+    img.onerror = () => {
+      console.error('Failed to load image');
+      resolve(null);
+    };
+    
+    img.src = imageData;
   });
 }
   // Helper methods
@@ -17202,7 +16527,7 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
         if (validColors.length === 0 && layerCtx && layerCanvas) {
           try {
             const imageData = layerCtx.getImageData(0, 0, layerCanvas.width, layerCanvas.height);
-            const extractedColors = await analyzer.getDistinctColors(imageData, 30, 100);
+            const extractedColors = await analyzer.getDistinctColors(imageData, 30, 20);
             
             if (Array.isArray(extractedColors) && extractedColors.length > 0) {
               validColors = extractedColors.filter(color =>
@@ -17464,35 +16789,37 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
     }
 
     // NEW: Generate split complementary palette from specific hue
-    function generateSplitComplementaryFromHue(baseHue, imageColors, splitAngles) {
-      try {
-        // FIXED: Split complementary should use complement ± offset, not base + offset
-        const complementHue = (baseHue + 180) % 360;
-        const split1H = (complementHue + splitAngles[0] - 180) % 360; // First split from complement
-        const split2H = (complementHue + splitAngles[1] - 180) % 360; // Second split from complement
-        
-        // Ensure positive values
-        const normalizedSplit1 = split1H < 0 ? split1H + 360 : split1H;
-        const normalizedSplit2 = split2H < 0 ? split2H + 360 : split2H;
-        
-        const palette = [];
-        const targetHues = [baseHue, normalizedSplit1, normalizedSplit2];
-        
-        console.log(`Generating split complementary from ${baseHue}°: complement ${complementHue}°, splits: ${Math.round(normalizedSplit1)}°, ${Math.round(normalizedSplit2)}°`);
-        
-        imageColors.forEach((color, index) => {
-          const [originalH, originalS, originalL] = rgbToHsl(...color);
-          const targetHue = targetHues[index % targetHues.length];
-          const splitComplementaryColor = hslToRgb(targetHue, originalS, originalL);
-          palette.push(splitComplementaryColor);
-        });
-        
-        return palette;
-      } catch (error) {
-        console.error("Error generating split complementary from hue:", error);
-        return [];
-      }
-    }
+function generateSplitComplementaryFromHue(baseHue, imageColors, splitAngles) {
+  try {
+    const complementHue = (baseHue + 180) % 360;
+    
+    // Split angles should be relative offsets from complement (e.g., [-30, 30])
+    const split1H = (complementHue + splitAngles[0]) % 360;
+    const split2H = (complementHue + splitAngles[1]) % 360;
+    
+    // Ensure positive values
+    const normalizedSplit1 = split1H < 0 ? split1H + 360 : split1H;
+    const normalizedSplit2 = split2H < 0 ? split2H + 360 : split2H;
+    
+    const palette = [];
+    const targetHues = [baseHue, normalizedSplit1, normalizedSplit2];
+    
+    console.log(`Generating split complementary from ${baseHue}°: base ${baseHue}°, splits: ${Math.round(normalizedSplit1)}°, ${Math.round(normalizedSplit2)}°`);
+    
+    imageColors.forEach((color, index) => {
+      const [originalH, originalS, originalL] = rgbToHsl(...color);
+      const targetHue = targetHues[index % targetHues.length];
+      const splitComplementaryColor = hslToRgb(targetHue, originalS, originalL);
+      palette.push(splitComplementaryColor);
+    });
+    
+    return palette;
+  } catch (error) {
+    console.error("Error generating split complementary from hue:", error);
+    return [];
+  }
+}
+
 
     // NEW: Generate triadic palette from specific hue
     function generateTriadicFromHue(baseHue, imageColors, spacing) {
@@ -17635,19 +16962,19 @@ async function processHarmony(layerCtx, totalLayers, layerCanvas, currentLayerIn
             strategies.push({
               name: `${base.name}_Classic`,
               generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [150, 210]) // ±30° from complement
+                generateSplitComplementaryFromHue(base.hue, imageColors, [-30, 30]) // ±30° from complement
             });
             
             strategies.push({
               name: `${base.name}_Wide`,
               generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [135, 225]) // ±45° from complement  
+                generateSplitComplementaryFromHue(base.hue, imageColors, [-45, 45]) // ±45° from complement  
             });
             
             strategies.push({
               name: `${base.name}_Narrow`,
               generatePalette: (imageColors, paletteIndex) => 
-                generateSplitComplementaryFromHue(base.hue, imageColors, [165, 195]) // ±15° from complement
+                generateSplitComplementaryFromHue(base.hue, imageColors, [-15, 15]) // ±15° from complement
             });
           });
           break;
@@ -18376,7 +17703,7 @@ async function generateHarmonyPreview(previewCanvas, paletteColors, paletteIndex
     try {
       // Use the same reliable method as the normal function
       const originalImageData = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height);
-      originalColors = await getDistinctColors(originalImageData, 30, 100, 40);
+      originalColors = await getDistinctColors(originalImageData, 30, 20, 40);
     } catch (e) {
       console.warn('Error getting original colors for harmony preview:', e);
       // Use a simple fallback - take colors from the first few pixels
@@ -18469,7 +17796,8 @@ async function generateHarmonyPreview(previewCanvas, paletteColors, paletteIndex
       const processingImageUrl = processingCanvas.toDataURL('image/png'); // PNG preserves transparency
       processedImageData = await colorProcessor.applyMultipleColorMappings(
         processingImageUrl,
-        colorMappings
+        colorMappings,
+  
       );
     } else {
       // Fallback: Simple color replacement on 600x600 image
@@ -19033,6 +18361,64 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const ctx = canvas.getContext('2d');
       await processHarmony(ctx, 1, canvas, 0, selectedHarmonyType, true, selectedBackgroundVariation);
+    });
+  }
+
+  // Custom Harmony Dropdown with Hover Tooltips
+  const harmonyDropdownButton = document.getElementById('harmonyDropdownButton');
+  const harmonyDropdownMenu = document.getElementById('harmonyDropdownMenu');
+  const harmonyTooltip = document.getElementById('harmonyTooltip');
+  const selectedHarmonyText = document.getElementById('selectedHarmonyText');
+  
+  if (harmonyDropdownMenu && harmonyTooltip) {
+    // Handle dropdown option clicks
+    harmonyDropdownMenu.addEventListener('click', function(e) {
+      if (e.target.classList.contains('harmony-option')) {
+        e.preventDefault();
+        const selectedValue = e.target.getAttribute('data-value');
+        const selectedText = e.target.textContent;
+        
+        // Update button text
+        selectedHarmonyText.textContent = selectedText;
+        
+        // Update hidden select for form compatibility
+        harmonyTypeSelect.value = selectedValue;
+        
+        // Hide dropdown
+        const dropdown = bootstrap.Dropdown.getInstance(harmonyDropdownButton);
+        if (dropdown) {
+          dropdown.hide();
+        }
+      }
+    });
+    
+    // Handle hover tooltips
+    harmonyDropdownMenu.addEventListener('mouseenter', function(e) {
+      if (e.target.classList.contains('harmony-option')) {
+        const description = e.target.getAttribute('data-description');
+        if (description) {
+          const tooltipContent = harmonyTooltip.querySelector('.tooltip-content');
+          tooltipContent.textContent = description;
+          
+          // Position tooltip relative to viewport
+          const rect = e.target.getBoundingClientRect();
+          
+          harmonyTooltip.style.left = (rect.right + 10) + 'px';
+          harmonyTooltip.style.top = rect.top + 'px';
+          harmonyTooltip.style.display = 'block';
+        }
+      }
+    }, true);
+    
+    harmonyDropdownMenu.addEventListener('mouseleave', function(e) {
+      if (e.target.classList.contains('harmony-option')) {
+        harmonyTooltip.style.display = 'none';
+      }
+    }, true);
+    
+    // Hide tooltip when dropdown closes
+    harmonyDropdownButton.addEventListener('hidden.bs.dropdown', function() {
+      harmonyTooltip.style.display = 'none';
     });
   }
 });
@@ -19881,7 +19267,7 @@ document.addEventListener('DOMContentLoaded', function() {
     hueTolerance = hueTolerance*100;
     if(lightnessTolerance<0.5) lightnessTolerance=0.7;
     
-    let distinctColors{{ forloop.counter }} = getDistinctColors(imageData{{ forloop.counter }}, 30, 100);
+    let distinctColors{{ forloop.counter }} = getDistinctColors(imageData{{ forloop.counter }}, 30, 20);
     console.log(distinctColors{{ forloop.counter }})
 
     distinctColors{{ forloop.counter }}.forEach((color, index) => {
@@ -20771,7 +20157,7 @@ function createColorButtons() {
       const canvas = canvasElements[0];
       const ctx = canvas.getContext('2d');
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const distinctColors = getDistinctColors(imageData, 30, 100); // Lower tolerance, more colors
+      const distinctColors = getDistinctColors(imageData, 30, 20); // Lower tolerance, more colors
 
       distinctColors.forEach((color, index) => {
           // Create wrapper div for button and lock
@@ -20903,6 +20289,35 @@ lockOverlay.style.pointerEvents = "none";
 // Add event listener for shuffle button
 document.querySelector('.btn-success2').addEventListener('click', handleShuffleColors);
 document.addEventListener('DOMContentLoaded', loadFavorites);
+
+// Load favorites immediately on page load (without delays)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOMContentLoaded - Loading favorites immediately');
+    console.log('🔍 Testing if this code runs at all');
+    
+    // Test if the favorites container exists
+    const favContainer = document.querySelector('#favCollectionContent .layer-toggles');
+    console.log('🎯 Favorites container found:', !!favContainer);
+    
+    if (favContainer) {
+        console.log('✅ Container exists, calling loadFavorites in 1 second...');
+        // Load favorites immediately
+        setTimeout(() => {
+            console.log('⏰ Timeout triggered - calling loadFavorites');
+            loadFavorites();
+        }, 1000); // Increased delay to 1 second
+    } else {
+        console.error('❌ Favorites container not found! Cannot load favorites.');
+    }
+});
+
+// Add a global function for manual testing
+window.testLoadFavorites = function() {
+    console.log('🧪 Manual test: Loading favorites...');
+    loadFavorites();
+};
+
+console.log('🔧 Favorites loading script loaded. You can test manually with: testLoadFavorites()');
 // Add this to your existing DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', function() {
     const layerColors = {};
@@ -21398,7 +20813,8 @@ async function exportWithPalette(originalImageData, canvas) {
                         
                         const processedImageUrl = await colorProcessor.applyMultipleColorMappings(
                             imageDataUrl,
-                            lastColorMappings
+                            lastColorMappings,
+                            useJimp=true
                         );
                         
                         // Load the processed image back

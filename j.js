@@ -171,7 +171,7 @@
         border: none;
       }
       .bg-linear-blue{
-        background: linear-gradient(to right, #7a85eb , #3C4CD1);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       }
     </style>
 

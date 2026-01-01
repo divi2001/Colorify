@@ -279,6 +279,19 @@
       background: transparent !important;
     }
 
+    /* Mobile viewport fix */
+    @media (max-width: 768px) {
+      .min-h-screen {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+      }
+      
+      .hero-container {
+        min-height: calc(100vh - 80px);
+        min-height: calc(-webkit-fill-available - 80px);
+      }
+    }
+
     /* Loading animations */
     .fade-in {
       opacity: 0;
@@ -758,7 +771,7 @@
   </style>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+<body class="min-h-screen">
   <!-- Navigation -->
   <div class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/60">
     <nav class="backdrop-blur-sm">
@@ -783,7 +796,7 @@
             <a href="/contact/"
               class=" navigation-top hover:text-slate-900 font-light transition-all duration-300 hover:scale-105">Contact
               us</a>
-            <a href="/accounts/login/" class="btn-primary text-white px-6 py-2.5 rounded-xl font-light shadow-lg">
+            <a href="/accounts/login/" class="bg-white text-slate-700 border-2 border-slate-200 px-6 py-2.5 rounded-xl font-light shadow-lg hover:bg-slate-50 transition-all duration-300">
               Get Started
             </a>
           </div>
@@ -810,7 +823,7 @@
           <a href="/contact/"
             class="block py-3 text-slate-600 hover:text-slate-900 font-light transition-all duration-300">Contact us</a>
           <a href="/accounts/login/"
-            class="block w-full mt-2 btn-primary text-white px-4 py-2.5 rounded-xl font-light text-center shadow-lg">
+            class="block w-full mt-2 bg-white text-slate-700 border-2 border-slate-200 px-4 py-2.5 rounded-xl font-light text-center shadow-lg hover:bg-slate-50 transition-all duration-300">
             Get Started
           </a>
         </div>
@@ -818,8 +831,8 @@
     </nav>
   </div>
 
-  <div class="bg-gradient-to-br from-slate-50 via-white to-blue-50">
-    <div class="mx-auto px-4 pt-6 relative overflow-hidden">
+  <div class="bg-gradient-to-br from-slate-50 via-white to-blue-50 min-h-screen">
+    <div class="mx-auto px-4 pt-6 relative overflow-hidden min-h-screen">
       <!-- Animated Background Elements -->
       <div class="absolute top-80 left-0 right-0 z-0 animate-pulse-slow">
         <img src="./static/images/Vector%2049.png" alt="wave background" class="w-full object-cover opacity-30" />
@@ -834,7 +847,7 @@
       <!-- Main Content -->
       <div class="relative z-10">
         <!-- Hero Section -->
-        <div class="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto min-h-[80vh]">
+        <div class="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto hero-container py-8 md:py-12">
           <!-- Left Side: Content -->
           <div class="w-full md:w-1/2 text-center md:text-left fade-in">
             <h1 class="figma-hero mb-8">
@@ -1075,9 +1088,9 @@
       </div>
 
       <!-- Enhanced Features Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
         <!-- Generation Card -->
-        <div class="feature-card rounded-3xl p-8 group">
+        <div class="feature-card rounded-3xl p-8 group flex flex-col h-full">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
             <img src="./static/images/d226f3da73926f53fa4e123d7268b40b.jpg" alt="Generation"
               class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -1092,21 +1105,23 @@
         </div>
 
 
-        <!-- Customization Card -->
-        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+        <!-- AI-Powered Accuracy Card -->
+        <div class="feature-card rounded-3xl p-8 group flex flex-col h-full">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/girlwithbook_c.jpg" alt="Customization"
+            <img src="./static/images/girlwithbook_c.jpg" alt="AI Accuracy"
               class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
-            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+            <div
+              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
           </div>
-          <h3 class="figma-text-2xl mb-4">AI-Powered Accuracy</h3>
-          <p class="figma-text-base text-white/90">
+          <h3 class="figma-text-2xl text-slate-800 mb-4">AI-Powered Accuracy</h3>
+          <p class="figma-text-base text-slate-600">
             Our advanced AI ensures consistent, print-ready colors every time.
           </p>
         </div>
 
         <!-- Export Options Card -->
-        <div class="feature-card rounded-3xl p-8 group">
+        <div class="feature-card rounded-3xl p-8 group flex flex-col h-full">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
             <img src="./static/images/d226f3da73926f53fa4e123d7268b40b.jpg" alt="Export"
               class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -1120,7 +1135,7 @@
           </p>
         </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8" style="padding-top: 30px;">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch" style="padding-top: 30px;">
         <!-- Generation Card -->
         <div class="feature-card rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
@@ -1137,15 +1152,17 @@
         </div>
 
 
-        <!-- Customization Card -->
-        <div class="feature-card-primary text-white rounded-3xl p-8 group">
+        <!-- Built for Professionals Card -->
+        <div class="feature-card rounded-3xl p-8 group">
           <div class="mb-6 relative overflow-hidden rounded-2xl">
-            <img src="./static/images/girlwithbook_c.jpg" alt="Customization"
+            <img src="./static/images/girlwithbook_c.jpg" alt="Professionals"
               class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
-            <div class="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition-all duration-300"></div>
+            <div
+              class="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+            </div>
           </div>
-          <h3 class="figma-text-2xl mb-4">Built for Professionals</h3>
-          <p class="figma-text-base text-white/90">
+          <h3 class="figma-text-2xl text-slate-800 mb-4">Built for Professionals</h3>
+          <p class="figma-text-base text-slate-600">
             Tailored for digital print units, mills, and design studios—optimized for high-volume production.
           </p>
         </div>
@@ -1265,7 +1282,15 @@
                   </div>
                   <span class="text-sm md:text-base">Works Seamlessly with Complex Print Files</span>
                 </div>
-               
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm md:text-base">Professional Quality Results</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1746,109 +1771,8 @@
     </div>
   </section>
 
-<footer class="py-16 mt-20 pl-10 pr-10"
-  style="background-color:#222831; color: white !important;">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
-      <!-- Brand -->
-      <div class="space-y-6">
-      <div class="flex items-center gap-3">
-        <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
-          <img src="{% static 'images/logo.png' %}" alt="Colorify Logo" width="70px" height="70px" />
-          <span class="font-light text-2xl text-white">COLORIFY</span>
-        </a>
-      </div>
-        <p class="text-white/90 leading-relaxed">
-          Revolutionizing design with AI-powered color intelligence. <br />
-          <span class="font-light text-white">Helping you paint better!</span>
-        </p>
-      </div>
-
-      <!-- Links -->
-      <div>
-        <h3 class="font-light text-white mb-6 text-lg">QUICK LINKS</h3>
-        <ul class="space-y-3">
-          <li>
-            <a href="/" class="text-white/80 hover:text-white transition-colors duration-300 font-light">Home</a>
-          </li>
-          <li>
-            <a href="/privacy-policy/"
-              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Privacy Policy</a>
-          </li>
-          <li>
-            <a href="/terms-of-service/"
-              class="text-white/80 hover:text-white transition-colors duration-300 font-light">Terms of
-              Service</a>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Affiliate -->
-      <div>
-        <h3 class="font-light text-white mb-6 text-lg">PARTNERSHIPS</h3>
-        <p class="text-white/90 mb-6 leading-relaxed">
-          Join us and start getting paid<br />
-          for all the products you sell
-        </p>
-        <button onclick="window.location.href='/affiliate/'"
-          class="btn-secondary bg-white/20 text-white py-3 px-6 rounded-xl font-light hover:bg-white/30 transition-all duration-300 shadow-md border border-white/30">
-          Become an Affiliate
-        </button>
-      </div>
-
-      <!-- Newsletter -->
-      <div>
-        <h3 class="font-light text-white mb-6 text-lg">STAY UPDATED</h3>
-        <p class="text-white/90 mb-6 leading-relaxed">
-          Get the latest design trends and color innovations
-        </p>
-        <div
-          class="flex bg-white/10 rounded-xl border border-white/30 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-          <input type="email" placeholder="Enter your email"
-            class="flex-1 py-3 px-4 text-sm focus:outline-none bg-transparent text-white placeholder-white/70" />
-          <button>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 pr-10" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Bottom Footer -->
-    <div class="mt-16 pt-8 border-t border-white/30 flex flex-col md:flex-row items-center justify-between">
-      <p class="text-white/80 font-light">
-        © 2025 Colorify Studio | All Rights Reserved
-      </p>
-      <div>
-        <h4 class="text-white/90 font-light">Recognised By</h4>
-        <div class="flex justify-center">
-          <img src={% static 'images/startup_india.png' %} alt="Startup India"
-            class="h-16 w-auto opacity-80 hover:opacity-100 transition-opacity duration-300" />
-        </div>
-      </div>
-      <div class="flex gap-3 mt-6 md:mt-0">
-      </div>
-    </div>
-  </div>
-  <!-- Horizontal Divider and Credits -->
-  <div class="mt-8 pt-6">
-    <div class="flex items-center justify-between">
-      <div class="flex-1 border-t border-white/30"></div>
-      <div class="flex items-center gap-3 px-6">
-        <span class="text-white/70 font-light text-sm">Crafted with elegance by</span>
-        <div class="flex items-center gap-2">
-          <div class="w-6 h-6 bg-gradient-to-r from-blue-400 to-purple-500 rounded-sm flex items-center justify-center">
-            <span class="text-white text-xs font-bold">3M</span>
-          </div>
-          <span class="text-white font-light text-sm">3 Minds Digital</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</footer>
+{% load static %}
+{% include 'includes/footer.html' %}
   <script>
     // Function to create video controls
     function setupVideoControls(videoId, buttonId, playIconId, pauseIconId) {
