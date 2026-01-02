@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    
+    <!-- Header -->
+    <div style="text-align: center; padding: 20px 0; border-bottom: 3px solid #4F46E5;">
+        <img src="http://colorify.3mindstech.com/static/images/logo%20birds-180px.png" 
+             alt="Colorify Logo" 
+             style="height: 60px; width: auto; margin-bottom: 10px;">
+        <p style="color: #666; margin: 5px 0;">Thank you for your purchase!</p>
+    </div>
+    
+    <!-- Greeting -->
+    <div style="padding: 30px 0;">
+        <p style="font-size: 16px; margin-bottom: 10px;">Dear {{ user.get_full_name|default:user.username }},</p>
+        
+        <p style="font-size: 14px; color: #555;">
+            Thank you for subscribing to <strong>{{ invoice.get_plan_name }}</strong> plan. 
+            Your payment has been received successfully.
+        </p>
+        
+        <p style="font-size: 14px; color: #555;">
+            Please find your invoice attached to this email. You can also download it anytime from your dashboard.
+        </p>
+    </div>
+    
+    <!-- Invoice Summary Box -->
+    <div style="background-color: #F3F4F6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h2 style="color: #333; font-size: 18px; margin-top: 0; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+            Invoice Summary
+        </h2>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #666;">Invoice Number:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">{{ invoice.invoice_number }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;">Date:</td>
+                <td style="padding: 8px 0; text-align: right;">{{ invoice.issue_date|date:"F d, Y" }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;">Subscription Plan:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">{{ invoice.get_plan_name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;">Duration:</td>
+                <td style="padding: 8px 0; text-align: right;">{{ invoice.get_plan_duration }}</td>
+            </tr>
+            <tr style="border-top: 2px solid #ddd;">
+                <td style="padding: 12px 0 8px 0; color: #666;">Base Amount:</td>
+                <td style="padding: 12px 0 8px 0; text-align: right;">₹{{ invoice.subtotal|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 4px 0; color: #666;">GST ({{ invoice.tax_percentage }}%):</td>
+                <td style="padding: 4px 0; text-align: right;">₹{{ invoice.tax_amount|floatformat:2 }}</td>
+            </tr>
+            {% if invoice.discount_amount > 0 %}
+            <tr>
+                <td style="padding: 4px 0; color: #059669;">Discount:</td>
+                <td style="padding: 4px 0; text-align: right; color: #059669;">-₹{{ invoice.discount_amount|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+            <tr style="border-top: 2px solid #333;">
+                <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #333;">Total Amount Paid:</td>
+                <td style="padding: 12px 0 0 0; text-align: right; font-size: 18px; font-weight: bold; color: #4F46E5;">
+                    ₹{{ invoice.total_amount|floatformat:2 }}
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- Payment Status -->
+    <div style="background-color: #D1FAE5; border-left: 4px solid #059669; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #065F46; font-weight: bold;">
+            ✓ Payment Status: <span style="color: #059669;">PAID</span>
+        </p>
+        <p style="margin: 5px 0 0 0; font-size: 12px; color: #065F46;">
+            Transaction ID: {{ invoice.transaction.razorpay_payment_id|default:invoice.transaction.transaction_id }}
+        </p>
+    </div>
+    
+    <!-- Action Button -->
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="http://colorify.3mindstech.com/subscription/invoice/{{ invoice.id }}/" 
+           style="display: inline-block; background-color: #4F46E5; color: white; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: bold;">
+            View Invoice Online
+        </a>
+    </div>
+    
+    <!-- Support Info -->
+    <div style="background-color: #FEF3C7; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; font-size: 14px; color: #92400E;">
+            <strong>Need Help?</strong>
+        </p>
+        <p style="margin: 5px 0 0 0; font-size: 13px; color: #92400E;">
+            If you have any questions about your invoice or subscription, please contact us at 
+            <a href="mailto:support@colorify.com" style="color: #4F46E5;">support@colorify.com</a>
+        </p>
+    </div>
+    
+    <!-- Footer -->
+    <div style="border-top: 2px solid #E5E7EB; padding-top: 20px; margin-top: 30px; text-align: center; color: #666; font-size: 12px;">
+        <img src="http://colorify.3mindstech.com/static/images/logo%20birds-180px.png" 
+             alt="Colorify Logo" 
+             style="height: 40px; width: auto; margin-bottom: 10px; opacity: 0.7;">
+        <p style="margin: 5px 0;">
+            Your Company Address, City, State, PIN<br>
+            Email: support@colorify.com | Phone: +91-XXXXXXXXXX<br>
+            GST No: GST-IN-XXXXXXXXXX
+        </p>
+        <p style="margin: 15px 0 5px 0; color: #999;">
+            This is an automated email. Please do not reply to this message.
+        </p>
+        <p style="margin: 5px 0; color: #999;">
+            © {{ invoice.issue_date.year }} Colorify Studio. All rights reserved.
+        </p>
+    </div>
+    
+</body>
+</html>
+

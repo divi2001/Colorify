@@ -16,6 +16,11 @@ urlpatterns = [
     path('initiate-payment/<int:plan_id>/', views.initiate_payment, name='initiate_payment'),
     path('payment-callback/', views.payment_callback, name='payment_callback'),
     path('payment-success/', views.payment_success, name='payment_success'),
-    path('validate-referral-code/', views.validate_referral_code, name='validate_referral_code')
+    path('validate-referral-code/', views.validate_referral_code, name='validate_referral_code'),
+    
+    # Invoice URLs
+    path('invoices/', views.user_invoices, name='user_invoices'),
+    path('invoice/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),
+    path('invoice/<int:invoice_id>/download/', views.download_invoice_pdf, name='download_invoice_pdf'),
 ]
 
