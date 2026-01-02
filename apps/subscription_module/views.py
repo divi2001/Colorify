@@ -27,7 +27,7 @@ from rest_framework.response import Response
 
 from .models import (
     SubscriptionPlan, UserSubscription, PaymentTransaction,
-    ReferralCode, Color, Palette, PaletteFavorite
+    ReferralCode, Color, Palette, PaletteFavorite, Invoice
 )
 from .razorpay_utils import RazorpayConfig
 
@@ -509,6 +509,41 @@ def payment_callback(request):
                         active=True
                     )
             
+            # Generate invoice after successful payment
+            from .models import Invoice
+            try:
+                # The amount paid is GST-INCLUSIVE (18% GST already included)
+                total_amount_paid = float(transaction.amount)
+                discount_amount = 0.00
+                
+                # If referral code was used, calculate discount
+                if transaction.referral_code:
+                    original_price = float(transaction.subscription_plan.current_price)
+                    discount_amount = original_price - total_amount_paid
+                
+                # Create invoice - the model will calculate subtotal and tax from total
+                invoice = Invoice.objects.create(
+                    user=transaction.user,
+                    transaction=transaction,
+                    total_amount=total_amount_paid,  # GST-inclusive amount
+                    discount_amount=discount_amount,
+                    tax_percentage=18.00,  # GST 18% (included in total)
+                    status='paid'
+                )
+                logger.info(f"Invoice {invoice.invoice_number} generated for transaction {transaction.transaction_id}")
+                
+                # Send invoice email to user
+                try:
+                    invoice.send_invoice_email()
+                    logger.info(f"Invoice email sent to {transaction.user.email}")
+                except Exception as email_error:
+                    logger.error(f"Error sending invoice email: {email_error}")
+                    # Continue even if email fails
+                    
+            except Exception as e:
+                logger.error(f"Error generating invoice: {e}")
+                # Don't fail the payment if invoice generation fails
+            
             return JsonResponse({
                 'status': 'success',
                 'redirect_url': reverse('subscription_module:payment_success')
@@ -593,3 +628,56 @@ def validate_referral_code(request):
     except Exception as e:
         logger.error(f"Error validating referral code: {e}")
         return JsonResponse({'success': False, 'message': 'Error processing referral code'})
+
+
+# Invoice Views
+@login_required
+def user_invoices(request):
+    """Display all invoices for the logged-in user"""
+    invoices = Invoice.objects.filter(user=request.user).select_related('transaction', 'transaction__subscription_plan')
+    
+    context = {
+        'invoices': invoices
+    }
+    return render(request, 'subscription_module/user_invoices.html', context)
+
+
+@login_required
+def invoice_detail(request, invoice_id):
+    """Display detailed view of a specific invoice"""
+    invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
+    
+    context = {
+        'invoice': invoice
+    }
+    return render(request, 'subscription_module/invoice_detail.html', context)
+
+
+@login_required
+def download_invoice_pdf(request, invoice_id):
+    """Generate and download invoice as PDF"""
+    from django.template.loader import render_to_string
+    from weasyprint import HTML
+    import tempfile
+    
+    invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
+    
+    # Render HTML template
+    html_string = render_to_string('subscription_module/invoice_pdf_template.html', {
+        'invoice': invoice,
+        'user': request.user,
+        'company_name': 'Colorify Studio',
+        'company_address': 'Your Company Address',
+        'company_email': 'support@colorify.com',
+        'company_phone': '+91-XXXXXXXXXX',
+    })
+    
+    # Generate PDF
+    html = HTML(string=html_string)
+    result = html.write_pdf()
+    
+    # Create response
+    response = HttpResponse(result, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_number}.pdf"'
+    
+    return response

@@ -57,11 +57,15 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',  # Make sure this is here
+    'django.contrib.messages.middleware.MessageMiddleware',
     'apps.core.middleware.PreventConcurrentLoginsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Django Messages Configuration
+# Use session-based storage to prevent message persistence across different users
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 JAZZMIN_SETTINGS = {
     # Basic Site Info
@@ -263,10 +267,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        # 'NAME': 'colorify3',
-        'NAME': 'colorify3',
+        'NAME': 'colorify',
         'USER': 'root',
-        'PASSWORD': 'tanuj1221',
+        'PASSWORD': 'Root@123',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
@@ -289,7 +292,11 @@ ACCOUNT_TEMPLATE_EXTENSION = 'html'
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+# Options: 'mandatory', 'optional', 'none'
+# 'mandatory' = Users must verify email before login (RECOMMENDED for production)
+# 'optional' = Verification email sent but not required
+# 'none' = No email verification (ONLY for development)
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Change to 'optional' or 'none' for testing
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 LOGIN_REDIRECT_URL = '/tif-editor'
 LOGOUT_REDIRECT_URL = '/'

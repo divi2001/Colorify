@@ -13,7 +13,7 @@ from django.contrib import messages
 from django.urls import reverse
 from .models import (
     SubscriptionPlan, UserSubscription, PaymentTransaction, Device,
-    InspirationPDF, PDFLike, Palette, Color
+    InspirationPDF, PDFLike, Palette, Color, Invoice
 )
 from .utils import AutoPaletteGenerationForm
 from .models import ReferralCode
@@ -56,10 +56,19 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):
-    list_display = ('transaction_id', 'user', 'amount', 'status', 'transaction_type', 'created_at')
+    list_display = ('transaction_id', 'user', 'amount', 'status', 'transaction_type', 'created_at', 'view_invoice_link')
     list_filter = ('status', 'transaction_type')
     search_fields = ('user__username', 'transaction_id')
     readonly_fields = ('transaction_id', 'created_at', 'updated_at')
+    
+    def view_invoice_link(self, obj):
+        try:
+            invoice = obj.invoice
+            url = reverse('admin:subscription_module_invoice_change', args=[invoice.id])
+            return format_html('<a href="{}" class="button">View Invoice</a>', url)
+        except Invoice.DoesNotExist:
+            return format_html('<span style="color: #999;">No Invoice</span>')
+    view_invoice_link.short_description = 'Invoice'
 
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
@@ -347,3 +356,56 @@ class ReferralCodeAdmin(admin.ModelAdmin):
         if 'code' in request.GET:
             initial['code'] = request.GET['code']
         return initial
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ('invoice_number', 'user', 'get_plan_name', 'total_amount', 'status', 'issue_date', 'download_pdf_link')
+    list_filter = ('status', 'issue_date', 'transaction__transaction_type')
+    search_fields = ('invoice_number', 'user__username', 'user__email', 'transaction__transaction_id')
+    readonly_fields = ('invoice_number', 'issue_date', 'created_at', 'updated_at', 'view_transaction_link', 'download_invoice_button')
+    raw_id_fields = ('user', 'transaction')
+    date_hierarchy = 'issue_date'
+    
+    fieldsets = (
+        ('Invoice Information', {
+            'fields': ('invoice_number', 'user', 'transaction', 'view_transaction_link', 'status')
+        }),
+        ('Dates', {
+            'fields': ('issue_date', 'due_date', 'created_at', 'updated_at')
+        }),
+        ('Amounts', {
+            'fields': ('subtotal', 'tax_percentage', 'tax_amount', 'discount_amount', 'total_amount')
+        }),
+        ('Additional Information', {
+            'fields': ('notes', 'download_invoice_button'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def get_plan_name(self, obj):
+        return obj.get_plan_name()
+    get_plan_name.short_description = 'Plan'
+    
+    def view_transaction_link(self, obj):
+        url = reverse('admin:subscription_module_paymenttransaction_change', args=[obj.transaction.id])
+        return format_html('<a href="{}" target="_blank">View Transaction: {}</a>', url, obj.transaction.transaction_id)
+    view_transaction_link.short_description = 'Transaction'
+    
+    def download_pdf_link(self, obj):
+        from django.urls import reverse as url_reverse
+        url = url_reverse('subscription_module:download_invoice_pdf', args=[obj.id])
+        return format_html('<a href="{}" class="button" target="_blank">Download PDF</a>', url)
+    download_pdf_link.short_description = 'PDF'
+    
+    def download_invoice_button(self, obj):
+        if obj.pk:
+            from django.urls import reverse as url_reverse
+            url = url_reverse('subscription_module:download_invoice_pdf', args=[obj.id])
+            return format_html('<a href="{}" class="button" target="_blank">Download Invoice PDF</a>', url)
+        return "Save invoice first to download PDF"
+    download_invoice_button.short_description = 'Download PDF'
+    
+    def has_add_permission(self, request):
+        # Prevent manual creation of invoices
+        return False

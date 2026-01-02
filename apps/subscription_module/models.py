@@ -565,3 +565,192 @@ class PaletteFavorite(models.Model):
         super().delete(*args, **kwargs)
         palette.update_favorites_count()
 
+
+# This model represents an invoice generated for a payment transaction.
+# It includes fields for invoice number, user, transaction, amounts, tax details, and status.
+# It also includes methods for generating invoice numbers and calculating totals.
+class Invoice(models.Model):
+    INVOICE_STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('issued', 'Issued'),
+        ('paid', 'Paid'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    invoice_number = models.CharField(max_length=50, unique=True, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='invoices'
+    )
+    transaction = models.OneToOneField(
+        PaymentTransaction,
+        on_delete=models.CASCADE,
+        related_name='invoice'
+    )
+    
+    # Invoice details
+    issue_date = models.DateTimeField(auto_now_add=True)
+    due_date = models.DateTimeField(null=True, blank=True)
+    
+    # Amounts
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=18.00)  # GST 18%
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Status
+    status = models.CharField(
+        max_length=20,
+        choices=INVOICE_STATUS_CHOICES,
+        default='issued'
+    )
+    
+    # Additional info
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Invoice {self.invoice_number} - {self.user.username}"
+    
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            self.invoice_number = self.generate_invoice_number()
+        
+        # GST is INCLUSIVE in the total_amount
+        # So we need to extract GST from the total, not add it
+        if not self.tax_amount or not self.subtotal:
+            # Calculate base amount (excluding GST) from total
+            # Formula: base = total / (1 + tax_rate/100)
+            gross_amount = self.total_amount if self.total_amount else 0
+            tax_multiplier = 1 + (self.tax_percentage / 100)
+            self.subtotal = gross_amount / tax_multiplier
+            self.tax_amount = gross_amount - self.subtotal
+        
+        super().save(*args, **kwargs)
+    
+    @staticmethod
+    def generate_invoice_number():
+        """Generate a unique invoice number in format: INV-YYYYMMDD-XXXX"""
+        from django.db.models import Max
+        today = timezone.now()
+        date_str = today.strftime('%Y%m%d')
+        prefix = f"INV-{date_str}"
+        
+        # Get the last invoice number for today
+        last_invoice = Invoice.objects.filter(
+            invoice_number__startswith=prefix
+        ).aggregate(Max('invoice_number'))
+        
+        if last_invoice['invoice_number__max']:
+            last_number = int(last_invoice['invoice_number__max'].split('-')[-1])
+            new_number = last_number + 1
+        else:
+            new_number = 1
+        
+        return f"{prefix}-{new_number:04d}"
+    
+    def get_plan_name(self):
+        """Get the subscription plan name"""
+        return self.transaction.subscription_plan.name if self.transaction.subscription_plan else "N/A"
+    
+    def get_plan_duration(self):
+        """Get the subscription plan duration"""
+        if self.transaction.subscription_plan:
+            days = self.transaction.subscription_plan.duration_in_days
+            if days == 30:
+                return "1 Month"
+            elif days == 90:
+                return "3 Months"
+            elif days == 365:
+                return "1 Year"
+            else:
+                return f"{days} Days"
+        return "N/A"
+    
+    def get_user_company(self):
+        """Get user's company name if available"""
+        return getattr(self.user, 'company_name', '') or ''
+    
+    def get_user_address(self):
+        """Get user's full address if available"""
+        address_parts = []
+        if hasattr(self.user, 'address_line') and self.user.address_line:
+            address_parts.append(self.user.address_line)
+        if hasattr(self.user, 'city') and self.user.city:
+            address_parts.append(self.user.city)
+        if hasattr(self.user, 'state') and self.user.state:
+            address_parts.append(self.user.state)
+        if hasattr(self.user, 'zip_code') and self.user.zip_code:
+            address_parts.append(self.user.zip_code)
+        if hasattr(self.user, 'country') and self.user.country:
+            address_parts.append(self.user.country)
+        return ', '.join(address_parts) if address_parts else ''
+    
+    def send_invoice_email(self):
+        """Send invoice email to user with PDF attachment"""
+        from django.core.mail import EmailMessage
+        from django.template.loader import render_to_string
+        from django.conf import settings
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Generate PDF
+            from weasyprint import HTML
+            import tempfile
+            
+            html_string = render_to_string('subscription_module/invoice_pdf_template.html', {
+                'invoice': self,
+                'user': self.user,
+                'company_name': 'Colorify Studio',
+                'company_address': 'Your Company Address, City, State, PIN',
+                'company_email': 'support@colorify.com',
+                'company_phone': '+91-XXXXXXXXXX',
+                'company_gst': 'GST-IN-XXXXXXXXXX',  # Add your GST number
+            })
+            
+            # Generate PDF in memory
+            pdf_file = HTML(string=html_string).write_pdf()
+            
+            # Prepare email
+            subject = f'Invoice {self.invoice_number} - Colorify Studio'
+            message = render_to_string('subscription_module/invoice_email.html', {
+                'invoice': self,
+                'user': self.user,
+            })
+            
+            email = EmailMessage(
+                subject=subject,
+                body=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[self.user.email],
+            )
+            
+            # Attach PDF
+            email.attach(
+                f'invoice_{self.invoice_number}.pdf',
+                pdf_file,
+                'application/pdf'
+            )
+            
+            email.content_subtype = 'html'
+            email.send()
+            
+            logger.info(f"Invoice {self.invoice_number} sent to {self.user.email}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error sending invoice email: {e}")
+            return False
+

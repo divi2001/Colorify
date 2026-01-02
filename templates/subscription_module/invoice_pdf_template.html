@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #4F46E5;
+            padding-bottom: 20px;
+        }
+        
+        .company-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4F46E5;
+            margin-bottom: 10px;
+        }
+        
+        .company-details {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .invoice-info {
+            text-align: right;
+            margin-top: -80px;
+        }
+        
+        .invoice-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .bill-to {
+            margin: 30px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        thead {
+            background-color: #F3F4F6;
+        }
+        
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 2px solid #E5E7EB;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .totals-table {
+            width: 300px;
+            margin-left: auto;
+            margin-top: 20px;
+        }
+        
+        .totals-table td {
+            border: none;
+            padding: 8px 12px;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            font-size: 14px;
+            border-top: 2px solid #333 !important;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .status-paid {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+        
+        .status-issued {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .payment-info {
+            background-color: #F9FAFB;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .discount {
+            color: #059669;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div style="margin-bottom: 15px;">
+            <img src="file:///home/user/Desktop/Projects/Sawaria/colorify_dec_25/Colorify/static/images/logo birds-180px.png" 
+                 alt="Colorify Logo" 
+                 style="height: 60px; width: auto;">
+        </div>
+        <div class="company-details">
+            {{ company_address }}<br>
+            Email: {{ company_email }}<br>
+            Phone: {{ company_phone }}<br>
+            {% if company_gst %}GSTIN: {{ company_gst }}{% endif %}
+        </div>
+    </div>
+    
+    <!-- Invoice Info -->
+    <div class="invoice-info">
+        <div style="font-size: 11px; color: #666;">INVOICE NUMBER</div>
+        <div class="invoice-number">{{ invoice.invoice_number }}</div>
+        <div style="font-size: 11px; color: #666; margin-top: 10px;">ISSUE DATE</div>
+        <div style="font-weight: bold;">{{ invoice.issue_date|date:"F d, Y" }}</div>
+    </div>
+    
+    <!-- Bill To -->
+    <div class="bill-to">
+        <div class="section-title">Bill To:</div>
+        <div style="font-weight: bold;">{{ user.get_full_name|default:user.username }}</div>
+        {% if invoice.get_user_company %}
+        <div style="color: #333; font-size: 11px;">{{ invoice.get_user_company }}</div>
+        {% endif %}
+        <div style="color: #666;">{{ user.email }}</div>
+        {% if invoice.get_user_address %}
+        <div style="color: #666; font-size: 10px; margin-top: 5px;">{{ invoice.get_user_address }}</div>
+        {% endif %}
+    </div>
+    
+    <!-- Invoice Items -->
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="text-right">Duration</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <strong>{{ invoice.get_plan_name }} Subscription</strong><br>
+                    <span style="font-size: 11px; color: #666;">{{ invoice.transaction.get_transaction_type_display }}</span>
+                </td>
+                <td class="text-right">{{ invoice.get_plan_duration }}</td>
+                <td class="text-right">₹{{ invoice.subtotal|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <!-- Totals -->
+    <table class="totals-table">
+        <tr>
+            <td>Base Amount (Excluding GST):</td>
+            <td class="text-right">₹{{ invoice.subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td>GST ({{ invoice.tax_percentage }}%):</td>
+            <td class="text-right">₹{{ invoice.tax_amount|floatformat:2 }}</td>
+        </tr>
+        {% if invoice.discount_amount > 0 %}
+        <tr>
+            <td>Discount Applied:</td>
+            <td class="text-right discount">-₹{{ invoice.discount_amount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        <tr class="total-row">
+            <td>TOTAL (GST Inclusive):</td>
+            <td class="text-right">₹{{ invoice.total_amount|floatformat:2 }}</td>
+        </tr>
+    </table>
+    
+    <!-- GST Note -->
+    <div style="margin-top: 10px; font-size: 10px; color: #666; font-style: italic;">
+        * All prices are inclusive of {{ invoice.tax_percentage }}% GST
+    </div>
+    
+    <!-- Payment Info -->
+    <div class="payment-info">
+        <strong>Payment Status:</strong>
+        {% if invoice.status == 'paid' %}
+        <span class="status-badge status-paid">PAID</span>
+        {% elif invoice.status == 'issued' %}
+        <span class="status-badge status-issued">ISSUED</span>
+        {% else %}
+        <span class="status-badge">{{ invoice.status|upper }}</span>
+        {% endif %}
+        <br>
+        <strong>Payment Method:</strong> {{ invoice.transaction.payment_method }}
+        {% if invoice.transaction.razorpay_payment_id %}
+        <br>
+        <span style="font-size: 10px; color: #666;">Transaction ID: {{ invoice.transaction.razorpay_payment_id }}</span>
+        {% endif %}
+    </div>
+    
+    <!-- Notes -->
+    {% if invoice.notes %}
+    <div style="margin-top: 20px;">
+        <div class="section-title">Notes:</div>
+        <div style="color: #666;">{{ invoice.notes }}</div>
+    </div>
+    {% endif %}
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>Thank you for your business!</strong></p>
+        <p>For any questions regarding this invoice, please contact {{ company_email }}</p>
+    </div>
+</body>
+</html>
+

@@ -1527,89 +1527,100 @@ def is_color_fill_layer(layer):
     return any(hasattr(item, 'key') and item.key == PsdKey.SOLID_COLOR_SHEET_SETTING 
               for item in layer.info)
 import os
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+    import torchvision.transforms as transforms
+    from torchvision import models
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 from PIL import Image
-import torchvision.transforms as transforms
-from torchvision import models
 
 # Original Lightweight CNN Model (for backward compatibility)
-class LightweightCNN(nn.Module):
-    def __init__(self, num_classes=2):
-        super(LightweightCNN, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(32),
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(64),
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(128),
-            nn.Conv2d(128, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(64),
-            nn.AdaptiveAvgPool2d((1, 1))
-        )
-        self.classifier = nn.Sequential(
-            nn.Dropout(0.5),
-            nn.Linear(64, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(128, 64),
-            nn.ReLU(inplace=True),
-            nn.Linear(64, num_classes)
-        )
-    
-    def forward(self, x):
-        x = self.features(x)
-        x = x.view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
+if TORCH_AVAILABLE:
+    class LightweightCNN(nn.Module):
+        def __init__(self, num_classes=2):
+            super(LightweightCNN, self).__init__()
+            self.features = nn.Sequential(
+                nn.Conv2d(3, 32, kernel_size=3, padding=1),
+                nn.ReLU(inplace=True),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.BatchNorm2d(32),
+                nn.Conv2d(32, 64, kernel_size=3, padding=1),
+                nn.ReLU(inplace=True),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.BatchNorm2d(64),
+                nn.Conv2d(64, 128, kernel_size=3, padding=1),
+                nn.ReLU(inplace=True),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.BatchNorm2d(128),
+                nn.Conv2d(128, 64, kernel_size=3, padding=1),
+                nn.ReLU(inplace=True),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.BatchNorm2d(64),
+                nn.AdaptiveAvgPool2d((1, 1))
+            )
+            self.classifier = nn.Sequential(
+                nn.Dropout(0.5),
+                nn.Linear(64, 128),
+                nn.ReLU(inplace=True),
+                nn.Dropout(0.3),
+                nn.Linear(128, 64),
+                nn.ReLU(inplace=True),
+                nn.Linear(64, num_classes)
+            )
+        
+        def forward(self, x):
+            x = self.features(x)
+            x = x.view(x.size(0), -1)
+            x = self.classifier(x)
+            return x
 
-# New ResNet-based Model
-class ResNetClassifier(nn.Module):
-    def __init__(self, num_classes=2, pretrained=True, resnet_type='resnet50'):
-        super(ResNetClassifier, self).__init__()
+    # New ResNet-based Model
+    class ResNetClassifier(nn.Module):
+        def __init__(self, num_classes=2, pretrained=True, resnet_type='resnet50'):
+            super(ResNetClassifier, self).__init__()
+            
+            # Choose ResNet architecture
+            if resnet_type == 'resnet18':
+                self.backbone = models.resnet18(pretrained=pretrained)
+                num_features = 512
+            elif resnet_type == 'resnet34':
+                self.backbone = models.resnet34(pretrained=pretrained)
+                num_features = 512
+            elif resnet_type == 'resnet50':
+                self.backbone = models.resnet50(pretrained=pretrained)
+                num_features = 2048
+            elif resnet_type == 'resnet101':
+                self.backbone = models.resnet101(pretrained=pretrained)
+                num_features = 2048
+            elif resnet_type == 'resnet152':
+                self.backbone = models.resnet152(pretrained=pretrained)
+                num_features = 2048
+            else:
+                raise ValueError(f"Unsupported ResNet type: {resnet_type}")
+            
+            # Replace the final fully connected layer
+            self.backbone.fc = nn.Sequential(
+                nn.Dropout(0.5),
+                nn.Linear(num_features, 512),
+                nn.ReLU(inplace=True),
+                nn.Dropout(0.3),
+                nn.Linear(512, 256),
+                nn.ReLU(inplace=True),
+                nn.Dropout(0.2),
+                nn.Linear(256, num_classes)
+            )
         
-        # Choose ResNet architecture
-        if resnet_type == 'resnet18':
-            self.backbone = models.resnet18(pretrained=pretrained)
-            num_features = 512
-        elif resnet_type == 'resnet34':
-            self.backbone = models.resnet34(pretrained=pretrained)
-            num_features = 512
-        elif resnet_type == 'resnet50':
-            self.backbone = models.resnet50(pretrained=pretrained)
-            num_features = 2048
-        elif resnet_type == 'resnet101':
-            self.backbone = models.resnet101(pretrained=pretrained)
-            num_features = 2048
-        elif resnet_type == 'resnet152':
-            self.backbone = models.resnet152(pretrained=pretrained)
-            num_features = 2048
-        else:
-            raise ValueError(f"Unsupported ResNet type: {resnet_type}")
-        
-        # Replace the final fully connected layer
-        self.backbone.fc = nn.Sequential(
-            nn.Dropout(0.5),
-            nn.Linear(num_features, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(512, 256),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.2),
-            nn.Linear(256, num_classes)
-        )
-    
-    def forward(self, x):
-        return self.backbone(x)
+        def forward(self, x):
+            return self.backbone(x)
+else:
+    # Dummy classes when torch is not available
+    class LightweightCNN:
+        pass
+    class ResNetClassifier:
+        pass
 
 # Global ML predictor
 ml_model = None
@@ -1622,6 +1633,9 @@ def load_ml_model():
     global ml_model, ml_transform, device, model_type
     if ml_model is not None:
         return True
+    
+    if not TORCH_AVAILABLE:
+        return False
     
     try:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
