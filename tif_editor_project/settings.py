@@ -427,9 +427,15 @@ CACHES = {
     }
 }
 
-# Razorpay settings (if used)
-RAZORPAY_KEY_ID = 'rzp_test_R7UT8EDLENC0vm'
-RAZORPAY_KEY_SECRET = 'cgjQxW9NmrNaXf4yK2dn0oVs'
+if IS_PRODUCTION:
+    # Production Razorpay credentials (Live keys)
+    RAZORPAY_KEY_ID = config('RAZORPAY_LIVE_KEY_ID', default='rzp_live_RzJRp9NtdK7nD1')
+    RAZORPAY_KEY_SECRET = config('RAZORPAY_LIVE_KEY_SECRET', default='tnEJgfQVCvTVyAj4mmin2fuQ')
+else:
+    # Development Razorpay credentials (Test keys)
+    RAZORPAY_KEY_ID = config('RAZORPAY_TEST_KEY_ID', default='rzp_test_R7UT8EDLENC0vm')
+    RAZORPAY_KEY_SECRET = config('RAZORPAY_TEST_KEY_SECRET', default='cgjQxW9NmrNaXf4yK2dn0oVs')
+
 RAZORPAY_CURRENCY = 'INR'
 
 # settings.py for Redis (optional)
@@ -443,23 +449,6 @@ RAZORPAY_CURRENCY = 'INR'
 #     }
 # }
 
-# Social Accounts
-# SOCIALACCOUNT_PROVIDERS = {
-#     'google': {
-#         'APP': {
-#             'client_id': 'your-client-id',
-#             'secret': 'your-secret-key',
-#             'key': ''
-#         },
-#         'SCOPE': [
-#             'profile',
-#             'email',
-#         ],
-#         'AUTH_PARAMS': {
-#             'access_type': 'online',
-#         }
-#     }
-# }
 
 # Password validation
 
