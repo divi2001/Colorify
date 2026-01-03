@@ -363,7 +363,8 @@ ACCOUNT_TEMPLATE_EXTENSION = 'html'
 # Allow login with both email and username
 ACCOUNT_LOGIN_METHODS = ['email', 'username'] 
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Mandatory for regular signup flow
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  
+ACCOUNT_EMAIL_REQUIRED = True 
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 
