@@ -100,6 +100,15 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         from django.core.mail import EmailMultiAlternatives
         from django.template.loader import render_to_string
+        from django.conf import settings
+        
+        # Add site_url to context for logo and links
+        if hasattr(settings, 'IS_PRODUCTION') and settings.IS_PRODUCTION:
+            site_url = 'https://colorifystudio.ai'
+        else:
+            site_url = 'http://127.0.0.1:8000'
+        
+        context['site_url'] = site_url
         
         # Get subject
         subject = render_to_string(f'{template_prefix}_subject.txt', context)

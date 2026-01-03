@@ -24,7 +24,13 @@
             text-align: center;
         }
         .logo {
-            font-size: 32px;
+            max-width: 180px;
+            height: auto;
+            margin: 0 auto 15px;
+            display: block;
+        }
+        .brand-name {
+            font-size: 28px;
             font-weight: bold;
             color: #ffffff;
             text-decoration: none;
@@ -160,7 +166,8 @@
     <div class="email-container">
         <!-- Header with Logo -->
         <div class="header">
-            <div class="logo">🎨 Colorify Studio</div>
+            <img src="{{ site_url|default:'https://colorifystudio.ai' }}/static/images/logo%20birds-180px.png" alt="Colorify Studio" class="logo" />
+            <div class="brand-name">Colorify Studio</div>
             <div class="tagline">Where Creativity Comes to Life</div>
         </div>
 

@@ -727,10 +727,17 @@ class Invoice(models.Model):
             pdf_file = HTML(string=html_string).write_pdf()
             
             # Prepare email
+            # Determine site URL based on environment
+            if hasattr(settings, 'IS_PRODUCTION') and settings.IS_PRODUCTION:
+                site_url = 'https://colorifystudio.ai'
+            else:
+                site_url = 'http://127.0.0.1:8000'
+            
             subject = f'Invoice {self.invoice_number} - Colorify Studio'
             message = render_to_string('subscription_module/invoice_email.html', {
                 'invoice': self,
                 'user': self.user,
+                'site_url': site_url,
             })
             
             email = EmailMessage(
