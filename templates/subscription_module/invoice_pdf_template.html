@@ -144,14 +144,13 @@
     <!-- Header -->
     <div class="header">
         <div style="margin-bottom: 15px;">
-            <img src="file:///home/user/Desktop/Projects/Sawaria/colorify_dec_25/Colorify/static/images/logo birds-180px.png" 
-                 alt="Colorify Logo" 
-                 style="height: 60px; width: auto;">
+            <h1 style="font-size: 36px; color: #667eea; margin: 0; font-weight: bold;">🎨 Colorify Studio</h1>
+            <p style="color: #764ba2; margin: 5px 0 0 0; font-size: 14px;">Where Creativity Comes to Life</p>
         </div>
         <div class="company-details">
             {{ company_address }}<br>
-            Email: {{ company_email }}<br>
-            Phone: {{ company_phone }}<br>
+            Email: <a href="mailto:{{ company_email }}" style="color: #667eea; text-decoration: none;">{{ company_email }}</a><br>
+            Website: <a href="{{ company_website }}" style="color: #667eea; text-decoration: none;">{{ company_website }}</a><br>
             {% if company_gst %}GSTIN: {{ company_gst }}{% endif %}
         </div>
     </div>
@@ -253,8 +252,9 @@
     
     <!-- Footer -->
     <div class="footer">
-        <p><strong>Thank you for your business!</strong></p>
-        <p>For any questions regarding this invoice, please contact {{ company_email }}</p>
+        <p><strong>Thank you for choosing Colorify Studio!</strong></p>
+        <p>For any questions regarding this invoice, please contact us at <a href="mailto:{{ company_email }}" style="color: #667eea; text-decoration: none;">{{ company_email }}</a></p>
+        <p style="margin-top: 10px; color: #999; font-size: 10px;">This is a computer-generated invoice and does not require a signature.</p>
     </div>
 </body>
 </html>

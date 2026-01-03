@@ -58,14 +58,33 @@ def profile_dashboard_view(request):
         storage_remaining_gb = storage_limit_gb - storage_used_gb
         storage_percentage = (current_subscription.storage_used_mb / current_subscription.plan.storage_limit_mb) * 100
         
+        # Calculate file upload data
+        files_used = current_subscription.file_uploads_used
+        file_limit = current_subscription.plan.file_upload_limit
+        files_remaining = max(0, file_limit - files_used) if file_limit < 2147483647 else 999999
+        file_percentage = (files_used / file_limit) * 100 if file_limit > 0 and file_limit < 2147483647 else 0
+        is_unlimited_files = file_limit >= 2147483647
+        
+        # Average file size if files exist
+        avg_file_size_mb = round(current_subscription.storage_used_mb / files_used, 2) if files_used > 0 else 0
+        
         storage_data = {
+            # Storage info
             'used_gb': round(storage_used_gb, 2),
             'limit_gb': round(storage_limit_gb, 2),
             'remaining_gb': round(storage_remaining_gb, 2),
             'percentage': round(storage_percentage, 1),
             'used_mb': current_subscription.storage_used_mb,
             'limit_mb': current_subscription.plan.storage_limit_mb,
-            'remaining_mb': current_subscription.plan.storage_limit_mb - current_subscription.storage_used_mb
+            'remaining_mb': current_subscription.plan.storage_limit_mb - current_subscription.storage_used_mb,
+            
+            # File count info
+            'files_used': files_used,
+            'file_limit': file_limit,
+            'files_remaining': files_remaining,
+            'file_percentage': round(file_percentage, 1),
+            'is_unlimited_files': is_unlimited_files,
+            'avg_file_size_mb': avg_file_size_mb,
         }
 
     context = {

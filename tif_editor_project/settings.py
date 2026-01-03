@@ -362,6 +362,8 @@ ACCOUNT_TEMPLATE_EXTENSION = 'html'
 
 # New allauth settings (v0.50+)
 # Allow login with both email and username
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'  # Allow login with username OR email
+ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_LOGIN_METHODS = ['email', 'username'] 
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  
@@ -391,7 +393,7 @@ ACCOUNT_FORMS = {
 }
 
 # ACCOUNT_SIGNUP_FORM_CLASS = 'apps.api.forms.CustomSignupForm'
-ACCOUNT_ADAPTER = 'allauth.account.adapter.DefaultAccountAdapter'
+ACCOUNT_ADAPTER = 'apps.core.adapters.CustomAccountAdapter'
 
 
 

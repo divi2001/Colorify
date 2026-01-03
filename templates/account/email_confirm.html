@@ -14,7 +14,8 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: "#5c6cff",
+                        primary: "#667eea",
+                        primaryDark: "#5568d3",
                     },
                 },
             },
@@ -23,46 +24,207 @@
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
-        <div class="bg-white p-8 rounded-3xl shadow-lg">
+<div class="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-lg">
+        <div class="bg-white p-8 md:p-10 rounded-3xl shadow-2xl">
+
+            {% if confirmation %}
+            <!-- Success Icon -->
+            <div class="flex justify-center mb-6">
+                <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            {% else %}
+            <!-- Error Icon -->
+            <div class="flex justify-center mb-6">
+                <div class="w-20 h-20 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Messages -->
-            <div class="mb-8 text-center">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="text-green-600 mb-2">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
+            {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                <div class="p-4 rounded-xl mb-3 {% if message.tags == 'success' %}bg-green-50 text-green-800 border-l-4 border-green-500{% elif message.tags == 'error' %}bg-red-50 text-red-800 border-l-4 border-red-500{% else %}bg-blue-50 text-blue-800 border-l-4 border-blue-500{% endif %}">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            {% if message.tags == 'success' %}
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            {% else %}
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-sm font-semibold">{{ message }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
+            {% endif %}
 
             <!-- Email Confirmation Section -->
-            <div class="text-center">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Confirm Your Email Address</h3>
-                
-                {% if confirmation %}
-                    <p class="text-gray-600 mb-6">
-                        Please confirm that <strong>{{ confirmation.email_address.email }}</strong> is your email address.
+            {% if confirmation %}
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-3">
+                        Almost There!
+                    </h2>
+                    <p class="text-gray-600 text-lg">
+                        Just one more step to verify your account
                     </p>
-                    
-                    <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
-                        {% csrf_token %}
-                        <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
-                            Confirm Email
-                        </button>
-                    </form>
-                {% else %}
-                    <p class="text-gray-600 mb-6">
-                        This email confirmation link expired or is invalid. Please 
-                        <a href="{% url 'account_email' %}" class="text-primary hover:underline">issue a new email confirmation request</a>.
-                    </p>
-                {% endif %}
+                </div>
 
-                <p class="text-gray-600 mt-6 text-sm">
-                    If you didn't request this email, please ignore it or contact our support team.
+                <!-- Email Display Box -->
+                <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 mb-6">
+                    <div class="flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-600">Confirm this email address:</span>
+                    </div>
+                    <p class="text-center text-lg font-bold text-gray-800 break-all">
+                        {{ confirmation.email_address.email }}
+                    </p>
+                </div>
+
+                <!-- Confirmation Form -->
+                <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" id="confirmForm">
+                    {% csrf_token %}
+                    <button type="submit" 
+                        class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 mb-6">
+                        <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Confirm Email Address
+                    </button>
+                </form>
+
+                <!-- Information Box -->
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl mb-6">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-sm text-blue-800">
+                            By confirming your email, you'll get full access to all Colorify Studio features and start creating amazing color palettes!
+                        </p>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- Link Expired/Invalid -->
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-3">
+                        Link Expired
+                    </h2>
+                    <p class="text-gray-600 text-lg">
+                        This verification link is no longer valid
+                    </p>
+                </div>
+
+                <!-- Error Information -->
+                <div class="bg-red-50 border-l-4 border-red-500 p-5 rounded-r-xl mb-6">
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-red-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-semibold text-red-900 mb-2">
+                                This email confirmation link expired or is invalid.
+                            </p>
+                            <p class="text-sm text-red-800">
+                                Verification links expire after a certain period for security reasons. Please request a new verification email.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request New Link Button -->
+                <a href="{% url 'account_email' %}" 
+                   class="block w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-center mb-6">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Request New Verification Email
+                </a>
+            {% endif %}
+
+            <!-- Security Notice -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-xl mb-6">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <p class="text-sm text-yellow-800">
+                        <strong>Didn't request this?</strong> If you didn't sign up for Colorify Studio, you can safely ignore this page or contact our support team at 
+                        <a href="mailto:support@colorifystudio.ai" class="font-semibold hover:underline">support@colorifystudio.ai</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-4 bg-white text-gray-500">Quick Links</span>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="grid grid-cols-2 gap-3">
+                <a href="{% url 'account_login' %}" 
+                   class="flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 font-medium text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    Sign In
+                </a>
+                <a href="{% url 'home' %}" 
+                   class="flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 font-medium text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Home
+                </a>
+            </div>
+
+            <!-- Footer Note -->
+            <div class="mt-8 pt-6 border-t border-gray-200 text-center">
+                <p class="text-xs text-gray-500">
+                    Need help? Contact us at 
+                    <a href="mailto:support@colorifystudio.ai" class="text-purple-600 hover:text-purple-700 font-medium">
+                        support@colorifystudio.ai
+                    </a>
                 </p>
             </div>
+
         </div>
     </div>
 </div>
+
+<script>
+    // Simple loading state for confirm button
+    {% if confirmation %}
+    document.getElementById('confirmForm').addEventListener('submit', function() {
+        const button = this.querySelector('button[type="submit"]');
+        button.disabled = true;
+        button.textContent = 'Confirming...';
+        button.style.opacity = '0.7';
+    });
+    {% endif %}
+</script>
 {% endblock %}

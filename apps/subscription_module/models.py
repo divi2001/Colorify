@@ -716,10 +716,11 @@ class Invoice(models.Model):
                 'invoice': self,
                 'user': self.user,
                 'company_name': 'Colorify Studio',
-                'company_address': 'Your Company Address, City, State, PIN',
-                'company_email': 'support@colorify.com',
-                'company_phone': '+91-XXXXXXXXXX',
-                'company_gst': 'GST-IN-XXXXXXXXXX',  # Add your GST number
+                'company_address': 'India',
+                'company_email': 'support@colorifystudio.ai',
+                'company_phone': 'Contact us via email',
+                'company_gst': 'GST details available on request',
+                'company_website': 'https://colorifystudio.ai',
             })
             
             # Generate PDF in memory
