@@ -405,9 +405,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'divyangdusman@gmail.com'
-EMAIL_HOST_PASSWORD = 'qezu txkh tert gccn'
-DEFAULT_FROM_EMAIL = 'divyangdusman@gmail.com'
+EMAIL_HOST_USER = 'support@colorifystudio.ai'
+EMAIL_HOST_PASSWORD = 'wxqw jaff azsq fktu'
+DEFAULT_FROM_EMAIL = 'support@colorifystudio.ai'
 
 
 # Session settings

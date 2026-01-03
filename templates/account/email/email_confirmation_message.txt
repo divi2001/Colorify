@@ -1,0 +1,41 @@
+{% load i18n %}
+========================================
+COLORIFY STUDIO - EMAIL CONFIRMATION
+========================================
+
+Hello {{ user.get_username }},
+
+Welcome to Colorify Studio! 
+
+Thank you for signing up with us. We're excited to have you join our creative community.
+
+To complete your registration and start exploring our color palette tools, please confirm your email address by visiting the link below:
+
+{{ activate_url }}
+
+SECURITY NOTICE:
+This link will expire in 3 days for your security. If you didn't create an account with Colorify Studio, please ignore this email.
+
+WHAT'S NEXT?
+After confirming your email, you'll be able to:
+- Create and save custom color palettes
+- Access our TIF color picker tool
+- Get design inspiration from our community
+- Explore subscription plans for advanced features
+
+----------------------------------------
+Need Help?
+Contact our support team at: support@colorifystudio.ai
+Visit our website: https://colorifystudio.ai
+----------------------------------------
+
+© 2025 Colorify Studio. All rights reserved.
+
+This email was sent to {{ email }} because you registered for an account at Colorify Studio.
+If you did not request this email, please disregard it.
+
+Privacy Policy: https://colorifystudio.ai/privacy-policy/
+Terms of Service: https://colorifystudio.ai/terms-of-service/
+
+This is an automated message. Please do not reply to this email.
+
