@@ -290,17 +290,19 @@ from .payu_utils import PayUConfig
 
 # apps/subscription_module/views.py
 
-class SubscriptionPlansView(LoginRequiredMixin, View):
-    """View to display available subscription plans"""
+class SubscriptionPlansView(View):
+    """View to display available subscription plans - PUBLIC PAGE"""
     
     def get(self, request):
         plans = SubscriptionPlan.objects.filter(is_active=True).order_by('original_price')
         
         current_subscription = None
-        try:
-            current_subscription = UserSubscription.objects.get(user=request.user)
-        except UserSubscription.DoesNotExist:
-            pass
+        # Only check for subscription if user is authenticated
+        if request.user.is_authenticated:
+            try:
+                current_subscription = UserSubscription.objects.get(user=request.user)
+            except UserSubscription.DoesNotExist:
+                pass
             
         context = {
             'plans': plans,
