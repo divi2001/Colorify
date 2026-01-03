@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+{% load socialaccount %}
+
+{% block title %}Sign In with Google - Colorify{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full">
+        <!-- Logo/Brand -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Colorify
+            </h1>
+            <p class="mt-2 text-gray-600">Connecting your Google account</p>
+        </div>
+
+        <!-- Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <!-- Google Icon -->
+            <div class="flex justify-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Message -->
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                    Continue with Google
+                </h2>
+                <p class="text-gray-600">
+                    You are about to sign in using your Google account.
+                    {% if account %}
+                    <br>
+                    <span class="font-medium text-gray-900 mt-2 inline-block">{{ account.extra_data.email }}</span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Form -->
+            <form method="post" action="{% url 'socialaccount_login' %}">
+                {% csrf_token %}
+                
+                {% if process == "connect" %}
+                    <input type="hidden" name="process" value="connect">
+                {% endif %}
+                
+                <!-- Continue Button -->
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mb-3">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Continue to Colorify
+                </button>
+
+                <!-- Cancel Link -->
+                <a href="{% url 'account_login' %}" class="block w-full text-center text-gray-600 hover:text-gray-900 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors">
+                    Cancel
+                </a>
+            </form>
+
+            <!-- Security Note -->
+            <div class="mt-6 pt-6 border-t border-gray-100">
+                <div class="flex items-start text-xs text-gray-500">
+                    <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    <span>Your information is secure. We will never share your data without permission.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Links -->
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600">
+                By continuing, you agree to Colorify's
+                <a href="{% url 'terms_of_service' %}" class="text-blue-600 hover:text-blue-700 font-medium">Terms of Service</a>
+                and
+                <a href="{% url 'privacy_policy' %}" class="text-blue-600 hover:text-blue-700 font-medium">Privacy Policy</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-submit form after 1.5 seconds for seamless experience -->
+<script>
+    // Auto-submit for smooth user experience
+    setTimeout(function() {
+        document.querySelector('form').submit();
+    }, 1500);
+    
+    // Show loading state
+    setTimeout(function() {
+        const btn = document.querySelector('button[type="submit"]');
+        btn.innerHTML = '<svg class="animate-spin h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Connecting...';
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+    }, 1400);
+</script>
+{% endblock %}
+

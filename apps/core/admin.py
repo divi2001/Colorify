@@ -40,16 +40,31 @@ class ContactAdmin(admin.ModelAdmin):
 
 @admin.register(CustomUser)
 class CustomUserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'gender', 'designation', 'phone_number')
-    list_filter = ('gender', 'designation')
+    list_display = ('display_username', 'email', 'full_name', 'gender', 'designation', 'phone_number', 'date_joined')
+    list_filter = ('gender', 'designation', 'is_active', 'is_staff', 'date_joined')
     search_fields = ('username', 'email', 'first_name', 'last_name', 'phone_number')
+    readonly_fields = ('date_joined', 'last_login')
     fieldsets = (
         (None, {'fields': ('username', 'email', 'password')}),
-        ('Personal Info', {'fields': ('first_name', 'last_name', 'gender', 'designation', 'phone_number')}),
+        ('Personal Info', {'fields': ('first_name', 'last_name', 'gender', 'designation', 'phone_number', 'profile_photo')}),
         ('Address', {'fields': ('address_line', 'city', 'state', 'country')}),
+        ('Company Details', {'fields': ('company_name', 'company_website', 'company_size', 'company_industry', 'tax_id')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
+    
+    def display_username(self, obj):
+        """Display username with @ symbol"""
+        return f"@{obj.username}"
+    display_username.short_description = 'Username'
+    display_username.admin_order_field = 'username'
+    
+    def full_name(self, obj):
+        """Display full name or username if name not set"""
+        if obj.first_name or obj.last_name:
+            return f"{obj.first_name} {obj.last_name}".strip()
+        return f"@{obj.username}"
+    full_name.short_description = 'Full Name'
     
     def get_urls(self):
         urls = super().get_urls()
@@ -63,7 +78,7 @@ class CustomUserAdmin(admin.ModelAdmin):
         response['Content-Disposition'] = 'attachment; filename="users.csv"'
         
         writer = csv.writer(response)
-        writer.writerow(['Username', 'Email', 'First Name', 'Last Name', 'Gender', 'Designation', 'Phone', 'Address', 'City', 'State', 'Country', 'Date Joined'])
+        writer.writerow(['Username', 'Email', 'First Name', 'Last Name', 'Gender', 'Designation', 'Phone', 'Address', 'City', 'State', 'Country', 'Company Name', 'Company Website', 'Company Size', 'Company Industry', 'Tax ID', 'Date Joined'])
         
         users = CustomUser.objects.all()
         for user in users:
@@ -79,6 +94,11 @@ class CustomUserAdmin(admin.ModelAdmin):
                 user.city or '',
                 user.state or '',
                 user.country or '',
+                user.company_name or '',
+                user.company_website or '',
+                user.get_company_size_display() if user.company_size else '',
+                user.company_industry or '',
+                user.tax_id or '',
                 user.date_joined.strftime('%Y-%m-%d %H:%M:%S')
             ])
         

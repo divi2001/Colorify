@@ -28,11 +28,13 @@ class SubscriptionPlan(models.Model):
         default='monthly'
     )
     duration_in_days = models.IntegerField(
+        default=30,
         help_text="Total duration in days for the subscription"
     )
     original_price = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
+        default=0.00,
         help_text="Full price of the subscription"
     )
     discounted_price = models.DecimalField(
@@ -59,8 +61,8 @@ class SubscriptionPlan(models.Model):
         default=True,
         help_text="Whether this plan is available for purchase"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
     
     def __str__(self):
         return f"{self.name} ({self.get_subscription_type_display()})"
@@ -584,7 +586,7 @@ class Invoice(models.Model):
         related_name='invoices'
     )
     transaction = models.OneToOneField(
-        PaymentTransaction,
+        'PaymentTransaction',
         on_delete=models.CASCADE,
         related_name='invoice'
     )

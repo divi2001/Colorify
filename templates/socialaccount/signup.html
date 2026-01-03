@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+{% load socialaccount %}
+
+{% block title %}Complete Your Profile - Colorify{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full">
+        <!-- Logo/Brand -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Colorify
+            </h1>
+            <p class="mt-2 text-gray-600">Complete your profile</p>
+        </div>
+
+        <!-- Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <!-- Welcome Message -->
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg mx-auto mb-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                    Welcome to Colorify!
+                </h2>
+                <p class="text-gray-600">
+                    Your Google account has been connected.
+                    {% if account.extra_data.email %}
+                    <br>
+                    <span class="font-medium text-gray-900 mt-2 inline-block">{{ account.extra_data.email }}</span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                {{ form.non_field_errors }}
+                
+                {% for field in form %}
+                    {% if field.name != 'csrfmiddlewaretoken' %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ field.label }}
+                            {% if field.field.required %}
+                            <span class="text-red-500">*</span>
+                            {% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>
+                        {% endif %}
+                        {% if field.help_text %}
+                        <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 mt-6">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Create Account
+                </button>
+            </form>
+
+            <!-- Security Note -->
+            <div class="mt-6 pt-6 border-t border-gray-100">
+                <div class="flex items-start text-xs text-gray-500">
+                    <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    <span>Your information is secure and will never be shared without permission.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Links -->
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600">
+                By continuing, you agree to Colorify's
+                <a href="{% url 'terms_of_service' %}" class="text-blue-600 hover:text-blue-700 font-medium">Terms of Service</a>
+                and
+                <a href="{% url 'privacy_policy' %}" class="text-blue-600 hover:text-blue-700 font-medium">Privacy Policy</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Style the form inputs */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+    
+    input[type="text"]:hover,
+    input[type="email"]:hover,
+    input[type="password"]:hover {
+        border-color: #d1d5db;
+    }
+</style>
+{% endblock %}
+

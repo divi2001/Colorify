@@ -1,17 +1,57 @@
 # tif_editor_project\settings.py
 from pathlib import Path
 import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# ENVIRONMENT CONFIGURATION
+ENVIRONMENT = config('ENVIRONMENT', default='development')  # defaults to 'development'
+IS_PRODUCTION = ENVIRONMENT == 'production'
+IS_DEVELOPMENT = ENVIRONMENT == 'development'
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-r2)wh3bat$8gl#wr+6h3h_0kiov)zo%l-0#4nxj!z2dw&jdwfg'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = IS_DEVELOPMENT  # Only True in development
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*'] if IS_DEVELOPMENT else [
+    'colorifystudio.ai',
+    'www.colorifystudio.ai',
+]
+
+# Security settings
+if IS_PRODUCTION:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SECURE_PROXY_SSL_HEADER = None
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+
+USE_TZ = True
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://colorifystudio.ai',
+    'https://www.colorifystudio.ai',
+] if IS_PRODUCTION else [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://localhost',
+    'http://127.0.0.1',
+]
+
+# Additional CSRF settings
+CSRF_COOKIE_AGE = 31449600  # 1 year
+CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
+CSRF_COOKIE_DOMAIN = None  # Allow all subdomains
+CSRF_USE_SESSIONS = False  # Use cookies instead of sessions for CSRF
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1000 * 1024 * 1024  # 100MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5000 * 1024 * 1024   # 50MB
@@ -39,7 +79,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    # 'allauth.socialaccount.providers.google',  # Uncomment if needed
+    'allauth.socialaccount.providers.google',
 
     # Custom Apps
     'apps.api.apps.ApiConfig',
@@ -233,7 +273,8 @@ JAZZMIN_UI_TWEAKS = {
 
 PAYU_MERCHANT_KEY = 'ZocIjS'  # Replace with your actual PayU merchant key
 PAYU_MERCHANT_SALT = 'ZocIjS'  # Replace with your actual PayU salt
-PAYU_BASE_URL = 'https://secure.payu.in/_payment'  # Production URL
+# PayU URL - use sandbox in development, production in production
+PAYU_BASE_URL = 'https://secure.payu.in/_payment' if IS_PRODUCTION else 'https://sandboxsecure.payu.in/_payment'
 PAYU_TEST_URL = 'https://sandboxsecure.payu.in/_payment'  # Test URL
 
 ROOT_URLCONF = 'tif_editor_project.urls'
@@ -261,21 +302,36 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Database
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        # 'NAME': 'colorify3',
-        'NAME': 'colorify3',
-        'USER': 'root',
-        'PASSWORD': 'tanuj1221',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+if IS_PRODUCTION:
+    # In production, use environment variables for security
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('DB_NAME', default='colorify3'),
+            'USER': config('DB_USER', default='root'),
+            'PASSWORD': config('DB_PASSWORD', default='tanuj1221'),
+            'HOST': config('DB_HOST', default='127.0.0.1'),
+            'PORT': config('DB_PORT', default='3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            }
         }
     }
-}
+else:
+    # In development, use values from .env.local or defaults
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('DB_NAME', default='colorify'),
+            'USER': config('DB_USER', default='root'),
+            'PASSWORD': config('DB_PASSWORD', default='Root@123'),
+            'HOST': config('DB_HOST', default='127.0.0.1'),
+            'PORT': config('DB_PORT', default='3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            }
+        }
+    }
 
 # Authentication and AllAuth settings
 AUTHENTICATION_BACKENDS = [
@@ -283,16 +339,48 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend'
 ]
 
-SOCIALACCOUNT_PROVIDERS = {} 
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'APP': {
+            'client_id': config('GOOGLE_CLIENT_ID', default=''),
+            'secret': config('GOOGLE_CLIENT_SECRET', default=''),
+        },
+        'VERIFIED_EMAIL': True, 
+    }
+} 
 
 # AllAuth settings
 ACCOUNT_TEMPLATE_EXTENSION = 'html'
 
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory' 
+# New allauth settings (v0.50+)
+# Allow login with both email and username
+ACCOUNT_LOGIN_METHODS = ['email', 'username'] 
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Mandatory for regular signup flow
+ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+
+# Social Account Settings - Auto-verify emails from social providers
+SOCIALACCOUNT_AUTO_SIGNUP = True  
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  
+SOCIALACCOUNT_EMAIL_REQUIRED = True  # Require email from social provider
+SOCIALACCOUNT_QUERY_EMAIL = True  
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+ACCOUNT_EMAIL_SUBJECT_PREFIX = '[Colorify] '
+SOCIALACCOUNT_STORE_TOKENS = True  # Store OAuth tokens for future use
+ACCOUNT_PRESERVE_USERNAME_CASING = False  # Make usernames case-insensitive
+
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Match by email
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-connect if email matches  
+
 LOGIN_REDIRECT_URL = '/tif-editor'
 LOGOUT_REDIRECT_URL = '/'
 
@@ -325,7 +413,6 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Default backend
 SESSION_CACHE_ALIAS = 'default'
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SECURE = False  # Set to True for production
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 ACCOUNT_SESSION_REMEMBER = True
@@ -435,19 +522,19 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
-            'level': 'DEBUG',
+            'level': 'DEBUG' if IS_DEVELOPMENT else 'INFO',
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
         },
-        'console': {  # New console handler
-            'level': 'DEBUG',
+        'console': {
+            'level': 'DEBUG' if IS_DEVELOPMENT else 'INFO',
             'class': 'logging.StreamHandler',
         },
     },
     'loggers': {
         '': {
-            'handlers': ['file', 'console'],  # Add 'console' here
-            'level': 'DEBUG',
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG' if IS_DEVELOPMENT else 'INFO',
             'propagate': True,
         },
     },

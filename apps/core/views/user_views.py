@@ -3,13 +3,83 @@ from django.contrib.auth.hashers import make_password
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from ..models import CustomUser
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import os
 import uuid
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def check_username_availability(request):
+    """
+    Check if a username is available (not already taken)
+    """
+    username = request.GET.get('username', '').strip()
+    
+    if not username:
+        return Response({
+            'available': False,
+            'message': 'Username is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if username length is valid
+    if len(username) < 3:
+        return Response({
+            'available': False,
+            'message': 'Username must be at least 3 characters long'
+        }, status=status.HTTP_200_OK)
+    
+    # Check if username contains only valid characters
+    if not username.replace('_', '').isalnum():
+        return Response({
+            'available': False,
+            'message': 'Username can only contain letters, numbers, and underscores'
+        }, status=status.HTTP_200_OK)
+    
+    # Check if username already exists (case-insensitive)
+    username_exists = CustomUser.objects.filter(username__iexact=username).exists()
+    
+    if username_exists:
+        return Response({
+            'available': False,
+            'message': 'This username is already taken'
+        }, status=status.HTTP_200_OK)
+    
+    return Response({
+        'available': True,
+        'message': 'Username is available'
+    }, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def check_email_availability(request):
+    """
+    Check if an email is available (not already registered)
+    """
+    email = request.GET.get('email', '').strip()
+    
+    if not email:
+        return Response({
+            'available': False,
+            'message': 'Email is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if email already exists (case-insensitive)
+    email_exists = CustomUser.objects.filter(email__iexact=email).exists()
+    
+    if email_exists:
+        return Response({
+            'available': False,
+            'message': 'This email is already registered'
+        }, status=status.HTTP_200_OK)
+    
+    return Response({
+        'available': True,
+        'message': 'Email is available'
+    }, status=status.HTTP_200_OK)
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
@@ -441,6 +511,55 @@ def update_phone_number(request):
     return Response({
         'message': 'Phone number updated successfully',
         'phone_number': user.phone_number
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_company_details(request):
+    """
+    Update the user's company details
+    """
+    user = request.user
+    data = request.data
+    
+    company_name = data.get('company_name')
+    company_website = data.get('company_website')
+    company_size = data.get('company_size')
+    company_industry = data.get('company_industry')
+    tax_id = data.get('tax_id')
+    
+    # At least one field should be provided
+    if all(field is None for field in [company_name, company_website, company_size, company_industry, tax_id]):
+        return Response(
+            {'error': 'At least one company field is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if company_name is not None:
+        user.company_name = company_name
+    
+    if company_website is not None:
+        user.company_website = company_website
+    
+    if company_size is not None:
+        user.company_size = company_size
+    
+    if company_industry is not None:
+        user.company_industry = company_industry
+    
+    if tax_id is not None:
+        user.tax_id = tax_id
+    
+    user.save()
+    
+    return Response({
+        'message': 'Company details updated successfully',
+        'company_name': user.company_name,
+        'company_website': user.company_website,
+        'company_size': user.company_size,
+        'company_industry': user.company_industry,
+        'tax_id': user.tax_id
     }, status=status.HTTP_200_OK)
 
 

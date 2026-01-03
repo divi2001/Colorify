@@ -62,14 +62,11 @@
                 </div>
 
                 <!-- Social Login -->
+                {% load socialaccount %}
                 <div class="flex flex-col sm:flex-row gap-4 mb-6">
-                    <a href="{% url 'socialaccount_connections' %}" class="flex-1 flex items-center justify-center pr-2 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <a href="{% provider_login_url 'google' %}" class="flex-1 flex items-center justify-center pr-2 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <img src="{% static 'images/google-logo.png' %}" alt="Google" class="w-14 h-8" />
                         <span class="text-sm">Sign Up with Google</span>
-                    </a>
-                    <a href="{% url 'socialaccount_connections' %}" class="flex-1 flex items-center justify-center pr-2 gap-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <img src="{% static 'images/apple-logo.png' %}" alt="Apple" class="w-8 h-9" />
-                        <span class="text-sm">Sign up with Apple ID</span>
                     </a>
                 </div>
 
@@ -92,12 +89,30 @@
                             <label for="id_username" class="block text-sm font-medium mb-2">
                                 Username <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="username" id="id_username"
-                                placeholder="Username"
-                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.username.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
-                                required
-                                value="{{ form.username.value|default:'' }}"
-                            />
+                            <div class="relative">
+                                <input type="text" name="username" id="id_username"
+                                    placeholder="Username"
+                                    class="w-full px-4 py-3 pr-12 rounded-xl bg-gray-50 border {% if form.username.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
+                                    required
+                                    value="{{ form.username.value|default:'' }}"
+                                />
+                                <!-- Real-time validation indicator -->
+                                <div id="username-indicator" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                                    <!-- Loading spinner -->
+                                    <svg id="username-loading" class="animate-spin h-5 w-5 text-gray-400 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <!-- Success checkmark -->
+                                    <svg id="username-success" class="h-5 w-5 text-green-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <!-- Error X -->
+                                    <svg id="username-error-icon" class="h-5 w-5 text-red-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </div>
+                            </div>
                             <!-- Server-side errors -->
                             {% if form.username.errors %}
                                 <div class="mt-2 text-sm text-red-600">
@@ -106,6 +121,7 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <div id="username-feedback" class="mt-2 text-sm hidden"></div>
                             <!-- Client-side error container -->
                             <div id="username-error" class="mt-2 text-sm text-red-600 hidden"></div>
                         </div>
@@ -161,12 +177,30 @@
                             <label for="id_email" class="block text-sm font-medium mb-2">
                                 Email <span class="text-red-500">*</span>
                             </label>
-                            <input type="email" name="email" id="id_email"
-                                placeholder="you@demomail.com"
-                                class="w-full px-4 py-3 rounded-xl bg-gray-50 border {% if form.email.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
-                                required
-                                value="{{ form.email.value|default:'' }}"
-                            />
+                            <div class="relative">
+                                <input type="email" name="email" id="id_email"
+                                    placeholder="you@demomail.com"
+                                    class="w-full px-4 py-3 pr-12 rounded-xl bg-gray-50 border {% if form.email.errors %}border-red-500{% else %}border-gray-200{% endif %} focus:outline-none focus:border-primary"
+                                    required
+                                    value="{{ form.email.value|default:'' }}"
+                                />
+                                <!-- Real-time validation indicator -->
+                                <div id="email-indicator" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                                    <!-- Loading spinner -->
+                                    <svg id="email-loading" class="animate-spin h-5 w-5 text-gray-400 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <!-- Success checkmark -->
+                                    <svg id="email-success" class="h-5 w-5 text-green-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <!-- Error X -->
+                                    <svg id="email-error-icon" class="h-5 w-5 text-red-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </div>
+                            </div>
                             <!-- Server-side errors -->
                             {% if form.email.errors %}
                                 <div class="mt-2 text-sm text-red-600">
@@ -175,6 +209,8 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <!-- Real-time feedback messages -->
+                            <div id="email-feedback" class="mt-2 text-sm hidden"></div>
                             <!-- Client-side error container -->
                             <div id="email-error" class="mt-2 text-sm text-red-600 hidden"></div>
                         </div>
@@ -304,6 +340,174 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    let usernameAvailable = false;
+    let usernameChecked = false;
+    let lastCheckedUsername = '';  // Track what username was last validated  
+    
+    function showUsernameIndicator(type) {
+        const indicator = document.getElementById('username-indicator');
+        const loading = document.getElementById('username-loading');
+        const success = document.getElementById('username-success');
+        const errorIcon = document.getElementById('username-error-icon');
+        const feedback = document.getElementById('username-feedback');
+        
+        // Hide all first
+        loading.classList.add('hidden');
+        success.classList.add('hidden');
+        errorIcon.classList.add('hidden');
+        
+        if (type === 'loading') {
+            indicator.classList.remove('hidden');
+            loading.classList.remove('hidden');
+        } else if (type === 'success') {
+            indicator.classList.remove('hidden');
+            success.classList.remove('hidden');
+        } else if (type === 'error') {
+            indicator.classList.remove('hidden');
+            errorIcon.classList.remove('hidden');
+        } else {
+            indicator.classList.add('hidden');
+        }
+    }
+    
+    function showUsernameFeedback(message, isSuccess) {
+        const feedback = document.getElementById('username-feedback');
+        feedback.textContent = message;
+        feedback.classList.remove('hidden', 'text-red-600', 'text-green-600');
+        feedback.classList.add(isSuccess ? 'text-green-600' : 'text-red-600');
+    }
+    
+    async function checkUsernameAvailability(username) {
+        if (!username || username.length < 3) {
+            showUsernameIndicator('hide');
+            usernameAvailable = false;
+            usernameChecked = true;
+            lastCheckedUsername = username;
+            return;
+        }
+        
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            showUsernameIndicator('error');
+            showUsernameFeedback('Username can only contain letters, numbers, and underscores', false);
+            usernameAvailable = false;
+            usernameChecked = true;
+            lastCheckedUsername = username;
+            return;
+        }
+        
+        showUsernameIndicator('loading');
+        
+        try {
+            const response = await fetch(`/core/check-username/?username=${encodeURIComponent(username)}`);
+            const data = await response.json();
+            
+            usernameChecked = true;
+            lastCheckedUsername = username;
+            
+            if (data.available) {
+                showUsernameIndicator('success');
+                showUsernameFeedback('✓ Username is available', true);
+                usernameAvailable = true;
+                clearFieldError('username');
+            } else {
+                showUsernameIndicator('error');
+                showUsernameFeedback(data.message, false);
+                usernameAvailable = false;
+            }
+        } catch (error) {
+            console.error('Error checking username:', error);
+            showUsernameIndicator('hide');
+            usernameAvailable = false;
+            usernameChecked = true;
+            lastCheckedUsername = username;
+        }
+    }
+    
+    // Email validation with API (on blur)
+    let emailAvailable = false;
+    let emailChecked = false;  // Track if email has been validated
+    let lastCheckedEmail = '';  // Track what email was last validated
+    
+    function showEmailIndicator(type) {
+        const indicator = document.getElementById('email-indicator');
+        const loading = document.getElementById('email-loading');
+        const success = document.getElementById('email-success');
+        const errorIcon = document.getElementById('email-error-icon');
+        
+        // Hide all first
+        loading.classList.add('hidden');
+        success.classList.add('hidden');
+        errorIcon.classList.add('hidden');
+        
+        if (type === 'loading') {
+            indicator.classList.remove('hidden');
+            loading.classList.remove('hidden');
+        } else if (type === 'success') {
+            indicator.classList.remove('hidden');
+            success.classList.remove('hidden');
+        } else if (type === 'error') {
+            indicator.classList.remove('hidden');
+            errorIcon.classList.remove('hidden');
+        } else {
+            indicator.classList.add('hidden');
+        }
+    }
+    
+    function showEmailFeedback(message, isSuccess) {
+        const feedback = document.getElementById('email-feedback');
+        feedback.textContent = message;
+        feedback.classList.remove('hidden', 'text-red-600', 'text-green-600');
+        feedback.classList.add(isSuccess ? 'text-green-600' : 'text-red-600');
+    }
+    
+    async function checkEmailAvailability(email) {
+        if (!email) {
+            showEmailIndicator('hide');
+            emailAvailable = false;
+            emailChecked = true;
+            lastCheckedEmail = email;
+            return;
+        }
+        
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showEmailIndicator('error');
+            showEmailFeedback('Please enter a valid email address', false);
+            emailAvailable = false;
+            emailChecked = true;
+            lastCheckedEmail = email;
+            return;
+        }
+        
+        showEmailIndicator('loading');
+        
+        try {
+            const response = await fetch(`/core/check-email/?email=${encodeURIComponent(email)}`);
+            const data = await response.json();
+            
+            emailChecked = true;
+            lastCheckedEmail = email;
+            
+            if (data.available) {
+                showEmailIndicator('success');
+                showEmailFeedback('✓ Email is available', true);
+                emailAvailable = true;
+                clearFieldError('email');
+            } else {
+                showEmailIndicator('error');
+                showEmailFeedback(data.message, false);
+                emailAvailable = false;
+            }
+        } catch (error) {
+            console.error('Error checking email:', error);
+            showEmailIndicator('hide');
+            emailAvailable = false;
+            emailChecked = true;
+            lastCheckedEmail = email;
+        }
+    }
+
     // Validate username
     function validateUsername(username) {
         if (!username || username.trim() === '') {
@@ -393,8 +597,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const lastName = document.getElementById('id_last_name');
     const email = document.getElementById('id_email');
 
-    // Real-time password validation
-    password1.addEventListener('input', function() {
+    // Password validation on blur (not input - to avoid annoying errors while typing)
+    password1.addEventListener('blur', function() {
         const password = this.value;
         if (password) {
             const error = validatePassword(password);
@@ -403,11 +607,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 clearFieldError('password1');
             }
-        } else {
-            clearFieldError('password1');
         }
         
-        // Also validate password confirmation if it has a value
+        // Also revalidate password2 if it has a value
         if (password2.value) {
             const confirmError = validatePasswordConfirmation(password, password2.value);
             if (confirmError) {
@@ -417,9 +619,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    
+    // Clear password error on focus
+    password1.addEventListener('focus', function() {
+        clearFieldError('password1');
+    });
 
-    // Real-time password confirmation validation
-    password2.addEventListener('input', function() {
+    // Password confirmation validation on blur
+    password2.addEventListener('blur', function() {
         const password1Value = password1.value;
         const password2Value = this.value;
         
@@ -430,50 +637,139 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 clearFieldError('password2');
             }
-        } else {
-            clearFieldError('password2');
         }
     });
+    
+    // Clear password confirmation error on focus
+    password2.addEventListener('focus', function() {
+        clearFieldError('password2');
+    });
 
-    // Real-time validation for other fields
+    // Username validation - only check when user leaves field (blur)
     username.addEventListener('blur', function() {
-        const error = validateUsername(this.value);
-        if (error) {
-            displayClientError('username', error);
-        } else {
-            clearFieldError('username');
+        const value = this.value.trim();
+        
+        if (!value) {
+            showUsernameIndicator('hide');
+            document.getElementById('username-feedback').classList.add('hidden');
+            usernameAvailable = false;
+            usernameChecked = false;
+            return;
         }
+        
+        // Basic validation first
+        const basicError = validateUsername(value);
+        if (basicError) {
+            showUsernameIndicator('error');
+            showUsernameFeedback(basicError, false);
+            usernameAvailable = false;
+            usernameChecked = true;
+            return;
+        }
+        
+        // Check availability with API
+        checkUsernameAvailability(value);
+    });
+    
+    // Clear indicators when user focuses field
+    username.addEventListener('focus', function() {
+        const feedback = document.getElementById('username-feedback');
+        const indicator = document.getElementById('username-indicator');
+        feedback.classList.add('hidden');
+        showUsernameIndicator('hide');
+    });
+    
+    // Reset validation when user changes the value
+    username.addEventListener('input', function() {
+        usernameChecked = false;
+        usernameAvailable = false;
+        const feedback = document.getElementById('username-feedback');
+        feedback.classList.add('hidden');
+        showUsernameIndicator('hide');
     });
 
+    // First Name validation on blur
     firstName.addEventListener('blur', function() {
-        const error = validateName(this.value, 'First name');
-        if (error) {
-            displayClientError('first_name', error);
-        } else {
-            clearFieldError('first_name');
+        const value = this.value.trim();
+        if (value) {
+            const error = validateName(value, 'First name');
+            if (error) {
+                displayClientError('first_name', error);
+            } else {
+                clearFieldError('first_name');
+            }
         }
     });
+    
+    // Clear error when user focuses back
+    firstName.addEventListener('focus', function() {
+        clearFieldError('first_name');
+    });
 
+    // Last Name validation on blur
     lastName.addEventListener('blur', function() {
-        const error = validateName(this.value, 'Last name');
-        if (error) {
-            displayClientError('last_name', error);
-        } else {
-            clearFieldError('last_name');
+        const value = this.value.trim();
+        if (value) {
+            const error = validateName(value, 'Last name');
+            if (error) {
+                displayClientError('last_name', error);
+            } else {
+                clearFieldError('last_name');
+            }
         }
     });
+    
+    // Clear error when user focuses back
+    lastName.addEventListener('focus', function() {
+        clearFieldError('last_name');
+    });
 
+    // Email validation - only check when user leaves field (blur)
     email.addEventListener('blur', function() {
-        const error = validateEmail(this.value);
-        if (error) {
-            displayClientError('email', error);
-        } else {
-            clearFieldError('email');
+        const value = this.value.trim();
+        
+        if (!value) {
+            showEmailIndicator('hide');
+            document.getElementById('email-feedback').classList.add('hidden');
+            emailAvailable = false;
+            emailChecked = false;
+            return;
         }
+        
+        // Basic validation first
+        const basicError = validateEmail(value);
+        if (basicError) {
+            showEmailIndicator('error');
+            showEmailFeedback(basicError, false);
+            emailAvailable = false;
+            emailChecked = true;
+            return;
+        }
+        
+        // Check availability with API
+        checkEmailAvailability(value);
+    });
+    
+    // Clear indicators when user focuses field
+    email.addEventListener('focus', function() {
+        const feedback = document.getElementById('email-feedback');
+        const indicator = document.getElementById('email-indicator');
+        feedback.classList.add('hidden');
+        showEmailIndicator('hide');
+    });
+    
+    // Reset validation when user changes the value
+    email.addEventListener('input', function() {
+        emailChecked = false;
+        emailAvailable = false;
+        const feedback = document.getElementById('email-feedback');
+        feedback.classList.add('hidden');
+        showEmailIndicator('hide');
     });
 
     // Form submission validation
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();  // Always prevent default, we'll submit manually if valid
         clearClientErrors();
         let hasErrors = false;
         
@@ -490,6 +786,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (usernameError) {
             displayClientError('username', usernameError);
             hasErrors = true;
+        } else {
+            // If username hasn't been checked yet, check it now
+            if (!usernameChecked) {
+                await checkUsernameAvailability(usernameValue);
+            }
+            
+            // Now check if it's available
+            if (usernameChecked && !usernameAvailable) {
+                showUsernameIndicator('error');
+                showUsernameFeedback('Username is not available', false);
+                hasErrors = true;
+            }
         }
         
         // First name validation
@@ -511,6 +819,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (emailError) {
             displayClientError('email', emailError);
             hasErrors = true;
+        } else {
+            // If email hasn't been checked yet, check it now
+            if (!emailChecked) {
+                await checkEmailAvailability(emailValue);
+            }
+            
+            // Now check if it's available
+            if (emailChecked && !emailAvailable) {
+                showEmailIndicator('error');
+                showEmailFeedback('Email is not available', false);
+                hasErrors = true;
+            }
         }
         
         // Password validation
@@ -529,24 +849,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Prevent form submission if there are errors
         if (hasErrors) {
-            e.preventDefault();
+            // Scroll to first error
+            const firstError = document.querySelector('.border-red-500, #username-feedback.text-red-600, #email-feedback.text-red-600');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return false;
         }
-    });
-
-    // Clear error when user starts typing (for immediate feedback)
-    const allInputs = form.querySelectorAll('input');
-    allInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            const fieldName = this.name;
-            const errorElement = document.getElementById(fieldName + '-error');
-            if (errorElement && !errorElement.classList.contains('hidden')) {
-                // Only clear if user is actively typing (not just on blur)
-                if (this.value.length > 0) {
-                    clearFieldError(fieldName);
-                }
-            }
-        });
+        
+        // If no errors, submit the form
+        form.submit();
     });
 });
 </script>

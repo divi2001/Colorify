@@ -117,6 +117,20 @@ class CustomUser(AbstractUser):
     state = models.CharField(max_length=100, null=True, blank=True)
     country = models.CharField(max_length=100, null=True, blank=True)
     profile_photo = models.ImageField(upload_to=user_profile_photo_path, null=True, blank=True)
+    
+    # Company Details
+    company_name = models.CharField(max_length=200, null=True, blank=True)
+    company_website = models.URLField(max_length=200, null=True, blank=True)
+    company_size = models.CharField(max_length=50, null=True, blank=True, choices=[
+        ('1-10', '1-10 employees'),
+        ('11-50', '11-50 employees'),
+        ('51-200', '51-200 employees'),
+        ('201-500', '201-500 employees'),
+        ('501-1000', '501-1000 employees'),
+        ('1000+', '1000+ employees'),
+    ])
+    company_industry = models.CharField(max_length=100, null=True, blank=True)
+    tax_id = models.CharField(max_length=50, null=True, blank=True, help_text='VAT/GST/Tax ID')
 
     def __str__(self):
         return self.username

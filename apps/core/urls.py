@@ -25,8 +25,11 @@ from .views.user_views import (
     update_country,
     update_address,
     update_phone_number,
+    update_company_details,
     update_profile_photo,
-    delete_profile_photo
+    delete_profile_photo,
+    check_username_availability,
+    check_email_availability
 )
 
 urlpatterns = [
@@ -39,6 +42,10 @@ urlpatterns = [
     path('projects/', project_list, name='project-list'),
     path('projects/<int:project_id>/rename/', rename_project, name='rename-project'),
     path('projects/<int:project_id>/delete/', delete_project, name='delete-project'),
+    
+    # User validation endpoints (public)
+    path('check-username/', check_username_availability, name='check-username-availability'),
+    path('check-email/', check_email_availability, name='check-email-availability'),
     
     # User profile endpoints
     path('users/update-name/', update_user_name, name='update-user-name'),
@@ -57,6 +64,7 @@ urlpatterns = [
     path('users/update-country/', update_country, name='update-country'),
     path('users/update-address/', update_address, name='update-address'),
     path('users/update-phone-number/', update_phone_number, name='update-phone-number'),
+    path('users/update-company-details/', update_company_details, name='update-company-details'),
     
     # User photo endpoints
     path('users/update-profile-photo/', update_profile_photo, name='update-profile-photo'),
