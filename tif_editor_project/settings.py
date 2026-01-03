@@ -1,6 +1,7 @@
 # tif_editor_project\settings.py
 from pathlib import Path
 import os
+from pickle import TRUE
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -15,7 +16,7 @@ IS_DEVELOPMENT = ENVIRONMENT == 'development'
 SECRET_KEY = 'django-insecure-r2)wh3bat$8gl#wr+6h3h_0kiov)zo%l-0#4nxj!z2dw&jdwfg'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = IS_DEVELOPMENT  # Only True in development
+DEBUG = TRUE  # Only True in development
 
 ALLOWED_HOSTS = ['*'] if IS_DEVELOPMENT else [
     'colorifystudio.ai',
@@ -93,7 +94,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -501,14 +501,6 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# WhiteNoise configuration
-# Static files (CSS/JS/images from code) - served by WhiteNoise after collectstatic
-# Media files (user uploads) - served directly, no collectstatic needed
-if IS_PRODUCTION:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
-    WHITENOISE_MAX_AGE = 31536000  # Cache static files for 1 year
-else:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Default primary key field type
 

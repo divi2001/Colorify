@@ -26,11 +26,8 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    # In development: Serve static and media files through Django
+    # Add the main media URL patterns
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.PROFILE_PHOTOS_URL, document_root=settings.PROFILE_PHOTOS_ROOT)
-else:
-    # In production: Still serve media files through Django (for variable content)
-    # Note: For high-traffic sites, configure Nginx/Apache to serve these instead
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    
+    # Add profile photos URL patterns
     urlpatterns += static(settings.PROFILE_PHOTOS_URL, document_root=settings.PROFILE_PHOTOS_ROOT)
