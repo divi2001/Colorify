@@ -475,6 +475,24 @@ AUTH_USER_MODEL = 'core.CustomUser'
 
 LANGUAGE_CODE = 'en-us'
 
+# Supported languages
+LANGUAGES = [
+    ('en', 'English'),
+    ('hi', 'Hindi'),
+    ('gu', 'Gujarati'),
+    ('tr', 'Turkish'),
+    ('it', 'Italian'),
+    ('es', 'Spanish'),
+    ('zh-cn', 'Simplified Chinese'),
+    ('fr', 'French'),
+    ('vi', 'Vietnamese'),
+    ('ru', 'Russian'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
+
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
