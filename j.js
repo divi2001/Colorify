@@ -1073,13 +1073,13 @@
           <li>
             <a href="#" id="ssCollectionButton">
               <i class="bi bi-collection mx-1"></i>
-              <span class="textSpan">SS Collection</span>
+              <span class="textSpan">Light Matching</span>
             </a>
           </li>
           <li>
             <a href="#" id="awCollectionButton">
               <i class="bi bi-collection mx-1"></i>
-              <span class="textSpan">AW Collection</span>
+              <span class="textSpan">Dark Matching</span>
             </a>
           </li>
         </ul>
