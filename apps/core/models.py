@@ -12,7 +12,6 @@ class Contact(models.Model):
         ('technical_support', 'Technical Support'),
         ('feature_request', 'Feature Request'),
         ('billing', 'Billing Question'),
-        ('partnership', 'Partnership Inquiry'),
         ('general', 'General Inquiry'),
         ('other', 'Other'),
     ]

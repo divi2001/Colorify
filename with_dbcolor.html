@@ -7,6 +7,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Colorify - Home</title>
+  <!-- Browser tab icon (favicon) -->
+  <link rel="icon" type="image/png" href="{% static 'images/logo birds-180px.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'images/logo birds-180px.png' %}">
   <script src="{% static "js/talwind3.14.js" %}"></script>
   <!-- Google Fonts - Inter (similar to Figma's typography) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -191,6 +194,8 @@
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
       border: 1px solid rgba(226, 232, 240, 0.5);
+      display: flex;
+      flex-direction: column;
     }
 
     .feature-card:hover {
@@ -209,6 +214,16 @@
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       border: 1px solid rgba(226, 232, 240, 0.5);
       color: #1e293b;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Align card text to bottom while keeping image at top */
+    .feature-card h3 {
+      margin-top: auto;
+    }
+    .feature-card-primary h3 {
+      margin-top: auto;
     }
 
     .feature-card-primary:hover {
@@ -1753,7 +1768,7 @@
     <!-- Enhanced Bottom Footer -->
     <div class="mt-16 pt-8 border-t border-white/30 flex flex-col md:flex-row items-center justify-between">
       <p class="text-white/80 font-light">
-        © 2025 Colorify Studio | All Rights Reserved
+        © {% now "Y" %} Colorify Studio | All Rights Reserved
       </p>
       <div>
         <h4 class="text-white/90 font-light">Recognised By</h4>

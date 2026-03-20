@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="logo-container">
         <img src="{% static 'images/logo2.png' %}" alt="Colorify" class="colorify-logo">
       </div>
-      <div class="loading-text">COLORIFY</div>
+      
       <div class="progress-container">
         <div class="progress-bar">
           <div class="progress-fill" id="main-progress-fill"></div>
@@ -1284,7 +1284,6 @@ function showGlobalLoadingIndicator() {
                 <div class="logo-container">
                     <img src="{% static 'images/logo2.png' %}" alt="Colorify" class="colorify-logo">
                 </div>
-                <div class="loading-text">COLORIFY</div>
                 <div class="progress-container">
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill"></div>
@@ -2701,7 +2700,14 @@ document.getElementById('fileInput').onchange = function() {
     };
     
         // Function to show content
+        const scrollPositions = {};
+        let currentContentId = null;
         function showContent(contentId) {
+            // Save scroll position of the currently visible panel before switching
+            if (secondaryColumn && currentContentId) {
+              scrollPositions[currentContentId] = secondaryColumn.scrollTop;
+            }
+
             // Hide all content sections
             Object.values(contents).forEach(content => {
                 if (content) content.style.display = 'none';
@@ -2710,6 +2716,13 @@ document.getElementById('fileInput').onchange = function() {
             // Show the selected content
             const selectedContent = document.getElementById(contentId);
             if (selectedContent) selectedContent.style.display = 'block';
+
+            // Restore scroll for the selected panel so it doesn't inherit the previous tab's scroll.
+            if (secondaryColumn) {
+              secondaryColumn.scrollTop = scrollPositions[contentId] ?? 0;
+            }
+
+            currentContentId = contentId;
         }
     
         // Function to handle active state
