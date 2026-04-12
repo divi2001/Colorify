@@ -544,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <!-- Trending Content -->
      
           <div class="sidebar-content" id="trendingContent" style="display: none;">
-            <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Trending Palette</h2>
+            <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Color Matching</h2>
             <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -638,7 +638,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
     
         <div class="sidebar-content m-4" style="margin:0.75rem !important;" id="inspirationContent">
-          <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Inspirations</h2>
+          <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Inspirations</h2>
           <div class="inspiration-content">
               <div class="pdf-grid">
 
@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
       </div>
       <div class="sidebar-content" id="effectsContent" style="display: none;">
-        <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Effects</h2>
+        <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Effects</h2>
         <div class="effects-grid">
             <div class="effect-item" data-effect="grayscale">
                 <div class="effect-preview">
@@ -730,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
 <div class="sidebar-content" id="paletteGeneratorContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Color Picker</h2>
+  <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Color Picker</h2>
   <hr />
   
   <!-- Controls -->
@@ -883,7 +883,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
      <!-- SS Collection Content -->
      <div class="sidebar-content" id="ssCollectionContent" style="display: none;">
-      <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">SS Collection</h2>
+      <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Light Matching</h2>
       <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -977,7 +977,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
 
 <div class="sidebar-content" id="favCollectionContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Favourite Collection</h2>
+  <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Favourite Collection</h2>
   <hr />
   <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
       <!-- Favorites will be loaded dynamically here -->
@@ -986,7 +986,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Base Color Content -->
 <!-- Base Color Content -->
 <div class="sidebar-content" id="baseColorContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Base Colors</h2>
+  <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Base Colors</h2>
   <div class="base-colors-grid">
     <!-- Color blocks will be generated here -->
   </div>
@@ -1002,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- AW Collection Content -->
 <div class="sidebar-content" id="awCollectionContent" style="display: none;">
-  <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">AW Collection</h2>
+  <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Dark Matching</h2>
   <hr />
 <div class="layer-toggles d-flex gap-3 justify-content-center flex-wrap">
     {% if layers|length == 1 %}
@@ -1114,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <div class="sidebar-content" id="mockupsContent" style="display: none;">
-    <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Mockups</h2>
+    <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Mockups</h2>
     <div class="mockups-grid">
         <!-- Mockups will be loaded here via AJAX -->
         <div class="text-center">
@@ -1711,7 +1711,7 @@ function onAllCanvasesLoaded(loadedCount, errorCount) {
     if (errorCount > 0) {
         showWarning(`${errorCount} image(s) failed to load. You can click on failed images to retry.`);
     } else {
-        showSuccess('Please wait, loading color Matching!');
+        showSuccess('Please wait, loading color matching!');
     }
     
     // Enable any functionality that depends on loaded canvases
@@ -3427,7 +3427,7 @@ function loadInspirationContent() {
         .then(response => response.json())
         .then(data => {
             let htmlContent = `
-                <h2 class="ms-auto me-auto fw-bold text-center fs-4 sticky-header-custom">Inspirations</h2>
+                <h2 class="ms-auto me-auto fw-bold text-start fs-6 sticky-header-custom">Inspirations</h2>
                 <div class="inspiration-content">
                     <div class="pdf-grid">
             `;
@@ -14055,14 +14055,14 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
     
     // Skip spinner creation for export mode
     let spinnerOverlay = null;
-    let mainContent = null;
+    let spinnerMount = null;
     let originalPosition = null;
     
     if (!isExportMode) {
-        // Create and show spinner instead of full loading screen
-        mainContent = document.getElementById('mainContent');
-        if (!mainContent) {
-            console.error('mainContent div not found');
+        // Cover the full canvas viewport (#zoomContainer), not the whole workspace column
+        spinnerMount = document.getElementById('zoomContainer') || document.getElementById('mainContent');
+        if (!spinnerMount) {
+            console.error('zoomContainer / mainContent not found for palette spinner');
             return;
         }
         
@@ -14079,7 +14079,7 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            z-index: 10050;
         `;
         
         // Create spinner
@@ -14108,13 +14108,13 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
         
         spinnerOverlay.appendChild(spinner);
         
-        // Make mainContent relative if it's not already
-        originalPosition = getComputedStyle(mainContent).position;
+        // Ensure the mount can anchor the overlay (zoomContainer is already relative in CSS)
+        originalPosition = getComputedStyle(spinnerMount).position;
         if (originalPosition === 'static') {
-            mainContent.style.position = 'relative';
+            spinnerMount.style.position = 'relative';
         }
         
-        mainContent.appendChild(spinnerOverlay);
+        spinnerMount.appendChild(spinnerOverlay);
     }
     
     // Helper function to yield control to the browser (skip in export mode)
@@ -15013,8 +15013,8 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
         }
         
         // Restore original position if we changed it
-        if (!isExportMode && mainContent && originalPosition === 'static') {
-            mainContent.style.position = 'static';
+        if (!isExportMode && spinnerMount && originalPosition === 'static') {
+            spinnerMount.style.position = 'static';
         }
     }
 }
@@ -20933,7 +20933,7 @@ function hslToRgb(h, s, l) {
 
 
 // Helper function to create spinner (extract from existing code)
-function createSpinner(mainContent) {
+function createSpinner(mountEl) {
     const spinnerOverlay = document.createElement('div');
     spinnerOverlay.id = 'spinner-overlay';
     spinnerOverlay.style.cssText = `
@@ -20946,7 +20946,7 @@ function createSpinner(mainContent) {
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 9999;
+        z-index: 10050;
     `;
     
     const spinner = document.createElement('div');
@@ -20974,13 +20974,12 @@ function createSpinner(mainContent) {
     
     spinnerOverlay.appendChild(spinner);
     
-    // Make mainContent relative if it's not already
-    const originalPosition = getComputedStyle(mainContent).position;
+    const originalPosition = getComputedStyle(mountEl).position;
     if (originalPosition === 'static') {
-        mainContent.style.position = 'relative';
+        mountEl.style.position = 'relative';
     }
     
-    mainContent.appendChild(spinnerOverlay);
+    mountEl.appendChild(spinnerOverlay);
     return spinnerOverlay;
 }
 // Updated exportFile function to properly use the processed image
