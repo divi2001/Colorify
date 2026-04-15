@@ -8,7 +8,7 @@ import os
 
 class Contact(models.Model):
     SUBJECT_CHOICES = [
-        ('become_affiliate', 'Become a Promoter'),
+        ('become_affiliate', 'Become an Affiliate'),
         ('technical_support', 'Technical Support'),
         ('feature_request', 'Feature Request'),
         ('billing', 'Billing Question'),
