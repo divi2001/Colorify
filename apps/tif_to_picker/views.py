@@ -820,9 +820,13 @@ def upload_tiff(request, user_id=None, project_id=None):
             
             print(f"🔍 DEBUG: Output directory: {output_dir}")
             
-            # Handle existing file
+            # Handle existing file (replacement should not count as an additional upload)
+            replaced_existing_file = False
+            previous_file_size_mb = 0
             if os.path.exists(file_path):
                 try:
+                    previous_file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+                    replaced_existing_file = True
                     # Remove existing file
                     os.remove(file_path)
                     print(f"🔍 DEBUG: Removed existing file: {file_path}")
@@ -874,8 +878,10 @@ def upload_tiff(request, user_id=None, project_id=None):
                 print(f"🔍 DEBUG: Before update - Files: {user_subscription.file_uploads_used}, Storage: {user_subscription.storage_used_mb}MB")
                 
                 with transaction.atomic():
-                    user_subscription.file_uploads_used += 1
-                    user_subscription.storage_used_mb += precise_file_size_mb
+                    if not replaced_existing_file:
+                        user_subscription.file_uploads_used += 1
+                    storage_delta_mb = precise_file_size_mb - previous_file_size_mb
+                    user_subscription.storage_used_mb = max(0, user_subscription.storage_used_mb + storage_delta_mb)
                     user_subscription.save()
                     
                 print(f"🔍 DEBUG: After update - Files: {user_subscription.file_uploads_used}, Storage: {user_subscription.storage_used_mb}MB")
