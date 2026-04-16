@@ -13,6 +13,9 @@ from django.utils import timezone
 from apps.core.models import Contact, Affiliate
 import json
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
@@ -82,7 +85,9 @@ Submitted at: {contact.created_at}
             errors = [f"{field}: {error}" for field, errors in e.message_dict.items() for error in errors]
             return JsonResponse({'status': 'error', 'message': '; '.join(errors)})
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': 'An error occurred. Please try again.'})
+            logger.exception("Contact form submission failed")
+            error_message = str(e) if settings.DEBUG else 'An error occurred. Please try again.'
+            return JsonResponse({'status': 'error', 'message': error_message})
 
     return render(request, 'pages/contact.html')
 
@@ -161,7 +166,9 @@ Submitted at: {affiliate.created_at}
             errors = [f"{field}: {error}" for field, errors in e.message_dict.items() for error in errors]
             return JsonResponse({'status': 'error', 'message': '; '.join(errors)})
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': 'An error occurred. Please try again.'})
+            logger.exception("Affiliate form submission failed")
+            # Return actual exception text to quickly diagnose production failures.
+            return JsonResponse({'status': 'error', 'message': f'Affiliate submit failed: {str(e)}'})
 
     return render(request, 'pages/affiliate.html')
 
