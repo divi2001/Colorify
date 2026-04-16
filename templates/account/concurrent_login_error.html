@@ -41,14 +41,19 @@
 
             <!-- Action Buttons -->
             <div class="space-y-3">
+                <form method="post" action="{% url 'reset-sessions-and-login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="reset_token" value="{{ reset_token }}">
+                    <button type="submit"
+                            class="w-full text-white py-3 rounded-xl transition-colors text-center"
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        Log out all devices and continue here
+                    </button>
+                </form>
                 <a href="{% url 'account_login' %}" 
-                   class="block w-full text-white py-3 rounded-xl transition-colors text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                   class="block w-full bg-white text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition-colors text-center border border-gray-200">
                     Return to Login
                 </a>
-                <!-- <a href="{% url 'account_logout' %}" 
-                   class="block w-full bg-white text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition-colors text-center border border-gray-200">
-                    Logout from All Devices
-                </a> -->
             </div>
         </div>
     </div>

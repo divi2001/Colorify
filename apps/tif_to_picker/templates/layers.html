@@ -2255,7 +2255,7 @@ window.canvasErrorCount = 0;
     </main>
 
   <!-- Footer -->
-<footer class="bg-light text-center py-2 mt-auto visualizer_toolbar d-flex align-items-center justify-content-center gap-4">
+<footer class="bg-light text-center py-2 mt-auto visualizer_toolbar d-flex align-items-center justify-content-center gap-4" style="position: relative; z-index: 11060;">
      
 <div id="visualizer_buttons_left">
     <div class="d-flex align-items-center gap-2">
@@ -2383,7 +2383,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   .zoom-container {
     width: 100%;
-    height: 100vh; /* adjust as needed */
+    height: calc(100vh - 220px); /* fallback; JS sets exact fit */
     overflow: hidden;
     position: relative;
     background: #f0f0f0;
@@ -11088,6 +11088,20 @@ document.getElementById('zoomSlider').addEventListener('input', function() {
 const zoomContainer = document.getElementById('zoomContainer');
 const zoomWrapper = document.getElementById('zoomWrapper');
 
+function fitZoomContainerToViewport() {
+  const footer = document.querySelector('footer.visualizer_toolbar');
+  if (!zoomContainer || !footer) return;
+
+  const containerTop = zoomContainer.getBoundingClientRect().top;
+  const footerTop = footer.getBoundingClientRect().top;
+  const availableHeight = Math.max(260, Math.floor(footerTop - containerTop - 8));
+
+  zoomContainer.style.height = `${availableHeight}px`;
+}
+
+document.addEventListener('DOMContentLoaded', fitZoomContainerToViewport);
+window.addEventListener('resize', fitZoomContainerToViewport);
+
 let isDragging = false;
 let startX, startY, initialLeft, initialTop;
 
@@ -14059,8 +14073,11 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
     let originalPosition = null;
     
     if (!isExportMode) {
-        // Cover the full canvas viewport (#zoomContainer), not the whole workspace column
-        spinnerMount = document.getElementById('zoomContainer') || document.getElementById('mainContent');
+        // Mount on actual canvas area first so footer/toolbars never get covered
+        spinnerMount =
+            document.querySelector('#zoomContainer .canvas-container') ||
+            document.getElementById('zoomContainer') ||
+            document.getElementById('mainContent');
         if (!spinnerMount) {
             console.error('zoomContainer / mainContent not found for palette spinner');
             return;
@@ -14079,7 +14096,7 @@ async function processPallet(layerCtx, totalLayers, layerCanvas, currentLayerInd
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 10050;
+            z-index: 10040;
         `;
         
         // Create spinner
@@ -20024,6 +20041,15 @@ function handleSingleColorVariation(colorData) {
 
 // Helper functions for loader
 function showLoader(message = 'Loading...') {
+  const loaderMount =
+    document.querySelector('#zoomContainer .canvas-container') ||
+    document.getElementById('zoomContainer') ||
+    document.getElementById('mainContent');
+  if (!loaderMount) {
+    console.error('zoomContainer/mainContent not found for loader');
+    return;
+  }
+
   // Check if the loader already exists
   let loader = document.getElementById('color-shuffle-loader');
   
@@ -20034,7 +20060,7 @@ function showLoader(message = 'Loading...') {
     loader.classList.add('color-shuffle-loader');
     
     // Style the loader
-    loader.style.position = 'fixed';
+    loader.style.position = 'absolute';
     loader.style.top = '0';
     loader.style.left = '0';
     loader.style.width = '100%';
@@ -20043,7 +20069,7 @@ function showLoader(message = 'Loading...') {
     loader.style.display = 'flex';
     loader.style.justifyContent = 'center';
     loader.style.alignItems = 'center';
-    loader.style.zIndex = '9999';
+    loader.style.zIndex = '10040';
     
     // Create spinner and message
     const content = document.createElement('div');
@@ -20082,8 +20108,17 @@ function showLoader(message = 'Loading...') {
     `;
     document.head.appendChild(style);
     
+    // Ensure mount can anchor the absolute overlay
+    const mountPosition = getComputedStyle(loaderMount).position;
+    loader.dataset.mountOriginalPosition = mountPosition;
+    if (mountPosition === 'static') {
+      loaderMount.style.position = 'relative';
+    }
+    loader.dataset.mountAdjusted = mountPosition === 'static' ? '1' : '0';
+    loader.dataset.mountId = loaderMount.id;
+
     // Add to DOM
-    document.body.appendChild(loader);
+    loaderMount.appendChild(loader);
   } else {
     // Update existing loader message
     const messageElem = loader.querySelector('div > div:not(.spinner)');
@@ -20100,6 +20135,12 @@ function hideLoader() {
   const loader = document.getElementById('color-shuffle-loader');
   if (loader) {
     loader.style.display = 'none';
+    if (loader.dataset.mountAdjusted === '1' && loader.dataset.mountId) {
+      const mount = document.getElementById(loader.dataset.mountId);
+      if (mount) {
+        mount.style.position = loader.dataset.mountOriginalPosition || 'static';
+      }
+    }
   }
 }
 // Helper function to generate color variations

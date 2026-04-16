@@ -8,7 +8,8 @@ from .views.project_views import (
 )
 from .views.contact_views import (
     contact_form_submission,
-    affiliate_form_submission
+    affiliate_form_submission,
+    reset_sessions_and_continue_login,
 )
 from .views.user_views import (
     update_user_name,
@@ -36,6 +37,7 @@ urlpatterns = [
     # Contact and Affiliate endpoints
     path('contact-form-submission/', contact_form_submission, name='contact-form-submission'),
     path('affiliate-form-submission/', affiliate_form_submission, name='affiliate-form-submission'),
+    path('reset-sessions-and-login/', reset_sessions_and_continue_login, name='reset-sessions-and-login'),
     
     # Project endpoints
     path('create-new-project/', create_new_project, name='create-new-project'),

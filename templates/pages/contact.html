@@ -167,12 +167,25 @@
         const closeModal = document.getElementById('closeModal');
         const modalMessage = document.getElementById('modalMessage');
 
+        function normalizePhoneForBackend(rawPhone) {
+            if (!rawPhone) return '';
+            let digits = String(rawPhone).replace(/\D/g, '');
+            if (digits.startsWith('91') && digits.length > 10) {
+                digits = digits.slice(2);
+            }
+            return digits;
+        }
+
         form.addEventListener('submit', function(e) {
             e.preventDefault();
+            const formData = new FormData(form);
+            if (formData.has('phone_number')) {
+                formData.set('phone_number', normalizePhoneForBackend(formData.get('phone_number')));
+            }
             
             fetch('{% url "contact-form-submission" %}', {
                 method: 'POST',
-                body: new FormData(form),
+                body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,

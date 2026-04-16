@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.db import transaction
 from django.dispatch import receiver
 import logging
+import secrets
 
 logger = logging.getLogger(__name__)
 
@@ -104,13 +105,21 @@ class PreventConcurrentLoginsMiddleware:
             if current_session_key not in active_sessions:
                 # Check if adding this session would exceed the limit
                 if len(active_sessions) >= 30:
+                    reset_token = secrets.token_urlsafe(32)
+                    cache.set(
+                        f'force_login_reset_{reset_token}',
+                        {'user_id': user_id},
+                        timeout=600,
+                    )
+
                     # Delete the current session
                     Session.objects.filter(session_key=current_session_key).delete()
                     logout(request)
                     
                     # Render the custom template
                     return render(request, 'account/concurrent_login_error.html', {
-                        'error_message': f'This account is already logged in on {max_sessions} devices/browsers. Please log out from at least one session to continue.'
+                        'error_message': f'This account is already logged in on {max_sessions} devices/browsers. Please log out from at least one session to continue.',
+                        'reset_token': reset_token,
                     })
                 
                 # Add current session to active sessions

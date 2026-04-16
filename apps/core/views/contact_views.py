@@ -1,13 +1,18 @@
 # apps/core/views/contact_views.py
 from django.shortcuts import render
+from django.shortcuts import redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.contrib.sessions.models import Session
+from django.core.cache import cache
+from django.utils import timezone
 from apps.core.models import Contact, Affiliate
 import json
+import re
 
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
@@ -20,6 +25,11 @@ def contact_form_submission(request):
             subject = request.POST.get('subject')
             message = request.POST.get('message')
             phone_number = request.POST.get('phone_number', '')
+            # Normalize phone before validation/save:
+            # keep digits only and strip India country code if provided.
+            phone_number = re.sub(r'\D', '', phone_number or '')
+            if phone_number.startswith('91') and len(phone_number) > 10:
+                phone_number = phone_number[2:]
 
             # Validate required fields
             if not all([first_name, last_name, email, subject, message]):
@@ -86,6 +96,11 @@ def affiliate_form_submission(request):
             email = request.POST.get('email')
             message = request.POST.get('message')
             phone_number = request.POST.get('phone_number', '')
+            # Normalize phone before validation/save:
+            # keep digits only and strip India country code if provided.
+            phone_number = re.sub(r'\D', '', phone_number or '')
+            if phone_number.startswith('91') and len(phone_number) > 10:
+                phone_number = phone_number[2:]
             website_url = request.POST.get('website_url', '')
             social_media_followers = request.POST.get('social_media_followers', '')
             experience = request.POST.get('experience', '')
@@ -149,3 +164,50 @@ Submitted at: {affiliate.created_at}
             return JsonResponse({'status': 'error', 'message': 'An error occurred. Please try again.'})
 
     return render(request, 'pages/affiliate.html')
+
+
+@require_http_methods(["POST"])
+def reset_sessions_and_continue_login(request):
+    reset_token = request.POST.get('reset_token')
+    if not reset_token:
+        return redirect('account_login')
+
+    cache_key = f'force_login_reset_{reset_token}'
+    token_payload = cache.get(cache_key)
+    if not token_payload:
+        return redirect('account_login')
+
+    user_id = token_payload.get('user_id')
+    cache.delete(cache_key)
+    if not user_id:
+        return redirect('account_login')
+
+    # Remove all active sessions for this user across devices/browsers.
+    sessions = Session.objects.filter(expire_date__gte=timezone.now())
+    user_sessions = []
+    for session in sessions:
+        auth_user_id = session.get_decoded().get('_auth_user_id')
+        if str(auth_user_id) == str(user_id):
+            user_sessions.append(session.session_key)
+
+    if user_sessions:
+        Session.objects.filter(session_key__in=user_sessions).delete()
+
+    cache.set(f'user_sessions_{user_id}', [], timeout=None)
+
+    # Keep subscription/device usage in sync after force logout-all.
+    try:
+        from apps.subscription_module.models import Device, UserSubscription
+
+        Device.objects.filter(user_id=user_id, device_id__startswith='session_').update(is_active=False)
+        subscription = UserSubscription.objects.filter(user_id=user_id).order_by('-id').first()
+        if subscription:
+            for device in subscription.devices.filter(device_id__startswith='session_'):
+                subscription.devices.remove(device)
+            subscription.devices_used_count = 0
+            subscription.save(update_fields=['devices_used_count'])
+    except Exception:
+        # Do not block login flow if device cleanup fails.
+        pass
+
+    return redirect('account_login')
