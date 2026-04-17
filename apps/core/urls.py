@@ -11,6 +11,7 @@ from .views.contact_views import (
     affiliate_form_submission,
     reset_sessions_and_continue_login,
 )
+from .views.newsletter_views import newsletter_subscribe, newsletter_unsubscribe
 from .views.user_views import (
     update_user_name,
     update_first_name,
@@ -38,6 +39,8 @@ urlpatterns = [
     path('contact-form-submission/', contact_form_submission, name='contact-form-submission'),
     path('affiliate-form-submission/', affiliate_form_submission, name='affiliate-form-submission'),
     path('reset-sessions-and-login/', reset_sessions_and_continue_login, name='reset-sessions-and-login'),
+    path('newsletter-subscribe/', newsletter_subscribe, name='newsletter-subscribe'),
+    path('newsletter-unsubscribe/<str:token>/', newsletter_unsubscribe, name='newsletter-unsubscribe'),
     
     # Project endpoints
     path('create-new-project/', create_new_project, name='create-new-project'),

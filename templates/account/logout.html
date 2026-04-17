@@ -33,9 +33,9 @@
                     </a>
                 </div>
 
-                <!-- Sign Out Confirmation -->
+                <!-- Log Out Confirmation -->
                 <div class="w-full text-center">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Sign Out</h3>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Log Out</h3>
                     <p class="text-gray-600 mb-6">Are you sure you want to sign out?</p>
                     
                     <form method="post" action="{% url 'account_logout' %}">
@@ -44,7 +44,7 @@
                         <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
                         {% endif %}
                         <button type="submit" class="w-full text-white py-3 rounded-xl transition-colors" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            Sign Out
+                            Log Out
                         </button>
                     </form>
                 </div>

@@ -60,17 +60,18 @@
         <p class="text-white/90 mb-6 leading-relaxed">
           Get exclusive color trends, design tips, and special offers
         </p>
-        <div class="flex bg-white/10 rounded-xl border border-white/30 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-          <input type="email" placeholder="Enter your email"
-            class="flex-1 py-3 px-4 text-sm focus:outline-none bg-transparent text-white placeholder-white/70" />
-          <button>
+        <form id="newsletterForm" class="flex bg-white/10 rounded-xl border border-white/30 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+          <input id="newsletterEmail" type="email" placeholder="Enter your email"
+            class="flex-1 py-3 px-4 text-sm focus:outline-none bg-transparent text-white placeholder-white/70" required />
+          <button type="submit" aria-label="Subscribe to newsletter">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 pr-10" fill="none" viewBox="0 0 24 24"
               stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </button>
-        </div>
+        </form>
+        <p id="newsletterMessage" class="text-xs mt-2 text-white/80 hidden"></p>
       </div>
     </div>
 
@@ -109,3 +110,45 @@
     </div>
   </div> -->
 </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('newsletterForm');
+  const emailInput = document.getElementById('newsletterEmail');
+  const messageEl = document.getElementById('newsletterMessage');
+
+  if (!form || !emailInput || !messageEl) return;
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const email = (emailInput.value || '').trim();
+    if (!email) return;
+
+    messageEl.classList.remove('hidden');
+    messageEl.textContent = 'Subscribing...';
+
+    try {
+      const response = await fetch("{% url 'newsletter-subscribe' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+      messageEl.textContent = data.message || 'Done.';
+      messageEl.style.color = data.status === 'error' ? '#fecaca' : '#bbf7d0';
+
+      if (data.status === 'success') {
+        form.reset();
+      }
+    } catch (err) {
+      messageEl.textContent = 'Unable to subscribe right now. Please try again.';
+      messageEl.style.color = '#fecaca';
+    }
+  });
+});
+</script>
