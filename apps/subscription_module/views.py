@@ -324,21 +324,27 @@ def initiate_payment(request, plan_id):
     try:
         existing_subscription = UserSubscription.objects.get(user=request.user)
         if existing_subscription.is_active():
+            # Some legacy rows may have a NULL plan; treat them as non-comparable.
+            if not existing_subscription.plan:
+                messages.info(request, "Your existing subscription has no plan assigned. Proceeding with selected plan.")
+            else:
             # Allow upgrades: check if the new plan is more expensive than current plan
-            if plan.original_price <= existing_subscription.plan.original_price:
-                # This is not an upgrade (same price or downgrade)
-                if plan.id == existing_subscription.plan.id:
-                    messages.warning(request, "You already have this subscription plan.")
-                else:
-                    messages.warning(request, "Downgrades are not currently supported. Please contact support.")
-                return redirect('subscription_module:subscription_plans')
-            # If we reach here, it's an upgrade, so allow it to proceed
-            messages.info(request, f"Upgrading from {existing_subscription.plan.name} to {plan.name}")
+                if plan.original_price <= existing_subscription.plan.original_price:
+                    # This is not an upgrade (same price or downgrade)
+                    if plan.id == existing_subscription.plan.id:
+                        messages.warning(request, "You already have this subscription plan.")
+                    else:
+                        messages.warning(request, "Downgrades are not currently supported. Please contact support.")
+                    return redirect('subscription_module:subscription_plans')
+                # If we reach here, it's an upgrade, so allow it to proceed
+                messages.info(request, f"Upgrading from {existing_subscription.plan.name} to {plan.name}")
     except UserSubscription.DoesNotExist:
         pass
     
-    # Calculate final amount (consider referral codes if needed)
-    final_amount = plan.current_price
+    # Base checkout amount should be the plan's actual selected price.
+    # Any reduction must come only from an explicitly applied referral code.
+    base_amount = plan.original_price
+    final_amount = base_amount
     referral_code = None
     
     # Handle referral code if provided
@@ -351,7 +357,7 @@ def initiate_payment(request, plan_id):
             )
             if referral_code.is_valid():
                 if not referral_code.applicable_plans.exists() or plan in referral_code.applicable_plans.all():
-                    final_amount = referral_code.apply_discount(final_amount)
+                    final_amount = referral_code.apply_discount(base_amount)
                     messages.success(request, f"Referral code applied! {referral_code.discount_percentage}% discount")
                 else:
                     messages.warning(request, "Referral code is not applicable for this plan")
@@ -368,7 +374,7 @@ def initiate_payment(request, plan_id):
     transaction_type = 'subscription'
     try:
         existing_subscription = UserSubscription.objects.get(user=request.user)
-        if existing_subscription.is_active():
+        if existing_subscription.is_active() and existing_subscription.plan:
             transaction_type = 'upgrade'
     except UserSubscription.DoesNotExist:
         pass
@@ -404,6 +410,7 @@ def initiate_payment(request, plan_id):
             'order': order,
             'plan': plan,
             'transaction': transaction,
+            'base_amount': base_amount,
             'final_amount': final_amount,
             'razorpay_key_id': settings.RAZORPAY_KEY_ID,
             'user': request.user,
@@ -520,7 +527,7 @@ def payment_callback(request):
                 
                 # If referral code was used, calculate discount
                 if transaction.referral_code:
-                    original_price = float(transaction.subscription_plan.current_price)
+                    original_price = float(transaction.subscription_plan.original_price)
                     discount_amount = original_price - total_amount_paid
                 
                 # Create invoice - the model will calculate subtotal and tax from total

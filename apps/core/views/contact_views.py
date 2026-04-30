@@ -38,9 +38,10 @@ def contact_form_submission(request):
             if not all([first_name, last_name, email, subject, message]):
                 return JsonResponse({'status': 'error', 'message': 'All required fields must be filled.'})
 
-            # Create contact record
+            # Keep user nullable for non-authenticated contact submissions.
+            contact_user = request.user if request.user.is_authenticated else None
             contact = Contact(
-                user=request.user if request.user.is_authenticated else None,
+                user=contact_user,
                 first_name=first_name,
                 last_name=last_name,
                 email=email,
