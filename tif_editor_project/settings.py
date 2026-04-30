@@ -408,7 +408,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'support@colorifystudio.ai'
-EMAIL_HOST_PASSWORD = 'wxqw jaff azsq fktu'
+EMAIL_HOST_PASSWORD = 'ovma lbpu flgc ncsj'
 DEFAULT_FROM_EMAIL = 'support@colorifystudio.ai'
 
 
