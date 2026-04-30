@@ -708,6 +708,25 @@ def upload_tiff(request, user_id=None, project_id=None):
             messages.error(request, "Error initializing your account. Please contact support.")
             return redirect('home')
 
+    # Legacy safety: some rows may have a subscription record but a NULL plan.
+    if not getattr(user_subscription, 'plan', None):
+        print(f"🔍 DEBUG: Subscription has no plan, assigning default for user {request.user.id}")
+        from apps.subscription_module.models import SubscriptionPlan
+        try:
+            default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
+            user_subscription.plan = default_plan
+            user_subscription.start_date = user_subscription.start_date or timezone.now()
+            user_subscription.end_date = user_subscription.end_date or (
+                timezone.now() + timezone.timedelta(days=default_plan.duration_in_days)
+            )
+            user_subscription.active = True
+            user_subscription.save(update_fields=['plan', 'start_date', 'end_date', 'active'])
+            print(f"🔍 DEBUG: Assigned default plan {default_plan.name} to user {request.user.id}")
+        except Exception as e:
+            logger.error(f"Failed to assign default plan to existing subscription: {str(e)}")
+            messages.error(request, "Your subscription is incomplete. Please contact support.")
+            return redirect('subscription_module:subscription_plans')
+
     # Add comprehensive subscription debugging
     print(f"🔍 DEBUG: === SUBSCRIPTION STATUS ===")
     print(f"  User: {request.user.id}")
@@ -969,6 +988,19 @@ def checkout(request, plan_id):
 
 def render_limit_reached(request, error_message, user_subscription):
     """Helper function to render the limit reached template"""
+    if not user_subscription or not user_subscription.plan:
+        return render(request, 'subscription_module/limit_reached.html', {
+            'error_message': error_message,
+            'plan_name': 'No Plan Assigned',
+            'files_used': 0,
+            'file_limit': 0,
+            'files_used_percentage': 0,
+            'storage_used': 0,
+            'storage_limit': 0,
+            'storage_used_percentage': 0,
+            'days_remaining': 0
+        })
+
     today = timezone.now().date()
     end_date = user_subscription.end_date
     if isinstance(end_date, datetime):  # normalize if datetime
