@@ -61,6 +61,10 @@ class SubscriptionPlan(models.Model):
         default=True,
         help_text="Whether this plan is available for purchase"
     )
+    is_trial = models.BooleanField(
+        default=False,
+        help_text="Use this plan as default trial/free plan for new users"
+    )
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
     
@@ -113,6 +117,14 @@ class SubscriptionPlan(models.Model):
         """Determine if this plan should be marked as popular"""
         return self.name.lower() == 'pro'  # You can customize this logic
 
+    @classmethod
+    def get_trial_plan(cls):
+        """Return the active plan marked for trial/free onboarding."""
+        trial_plan = cls.objects.filter(is_trial=True, is_active=True).order_by('-id').first()
+        if not trial_plan:
+            raise cls.DoesNotExist("No active trial plan configured. Mark a plan with is_trial=True.")
+        return trial_plan
+
 # This model represents a user's subscription, linking them to a specific plan.
 # It includes fields for the user, plan, start and end dates, active status, and counts for devices, file uploads, and storage used.
 # It also includes methods for checking if the subscription is active, if devices can be added, if there is enough storage space,
@@ -128,6 +140,10 @@ class UserSubscription(models.Model):
         on_delete=models.SET_NULL, 
         null=True
     )
+    subscribed_plan_name = models.CharField(max_length=100, blank=True, default='')
+    subscribed_file_upload_limit = models.IntegerField(default=0)
+    subscribed_storage_limit_mb = models.IntegerField(default=0)
+    subscribed_max_devices = models.IntegerField(default=1)
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField()
     active = models.BooleanField(default=True)
@@ -140,20 +156,57 @@ class UserSubscription(models.Model):
     )
     
     def __str__(self):
-        return f'{self.user.username} - {self.plan.name if self.plan else "No Plan"}'
+        return f'{self.user.username} - {self.get_effective_plan_name()}'
+
+    def save(self, *args, **kwargs):
+        # Snapshot plan details so existing subscribers keep their entitlements
+        # even if an admin deletes or edits the plan later.
+        if self.plan:
+            self.subscribed_plan_name = self.plan.name or ''
+            self.subscribed_file_upload_limit = self.plan.file_upload_limit
+            self.subscribed_storage_limit_mb = self.plan.storage_limit_mb
+            self.subscribed_max_devices = self.plan.max_devices
+        super().save(*args, **kwargs)
     
     def is_active(self):
         """Check if subscription is currently active based on end date and active flag"""
         return self.active and self.end_date > timezone.now()
+
+    def has_entitlement_snapshot(self):
+        return (
+            self.subscribed_file_upload_limit > 0
+            and self.subscribed_storage_limit_mb > 0
+            and self.subscribed_max_devices > 0
+        )
+
+    def get_effective_plan_name(self):
+        if self.plan:
+            return self.plan.name
+        return self.subscribed_plan_name or "No Plan"
+
+    def get_effective_file_limit(self):
+        if self.plan:
+            return self.plan.file_upload_limit
+        return self.subscribed_file_upload_limit
+
+    def get_effective_storage_limit_mb(self):
+        if self.plan:
+            return self.plan.storage_limit_mb
+        return self.subscribed_storage_limit_mb
+
+    def get_effective_max_devices(self):
+        if self.plan:
+            return self.plan.max_devices
+        return self.subscribed_max_devices
         
     def can_add_device(self):
-        return self.devices_used_count < (self.plan.max_devices if self.plan else 1)
+        return self.devices_used_count < self.get_effective_max_devices()
     
     def has_storage_space(self, file_size_mb):
-        return (self.storage_used_mb + file_size_mb) <= (self.plan.storage_limit_mb if self.plan else 0)
+        return (self.storage_used_mb + file_size_mb) <= self.get_effective_storage_limit_mb()
     
     def can_upload_file(self):
-        return self.file_uploads_used < (self.plan.file_upload_limit if self.plan else 0)
+        return self.file_uploads_used < self.get_effective_file_limit()
     
     def days_remaining(self):
         return (self.end_date - timezone.now()).days if self.is_active() else 0
@@ -697,6 +750,28 @@ class Invoice(models.Model):
         if hasattr(self.user, 'country') and self.user.country:
             address_parts.append(self.user.country)
         return ', '.join(address_parts) if address_parts else ''
+
+    def get_user_tax_id(self):
+        """Get user's GST/Tax ID if available"""
+        return getattr(self.user, 'tax_id', '') or ''
+
+    def get_plan_file_upload_limit(self):
+        """Get plan file upload limit if available"""
+        if self.transaction.subscription_plan:
+            return self.transaction.subscription_plan.file_upload_limit
+        return None
+
+    def get_plan_storage_limit_mb(self):
+        """Get plan storage limit if available"""
+        if self.transaction.subscription_plan:
+            return self.transaction.subscription_plan.storage_limit_mb
+        return None
+
+    def get_plan_max_devices(self):
+        """Get plan max devices if available"""
+        if self.transaction.subscription_plan:
+            return self.transaction.subscription_plan.max_devices
+        return None
     
     def send_invoice_email(self):
         """Send invoice email to user with PDF attachment"""
@@ -719,8 +794,9 @@ class Invoice(models.Model):
                 'company_address': 'India',
                 'company_email': 'support@colorifystudio.ai',
                 'company_phone': 'Contact us via email',
-                'company_gst': 'GST details available on request',
+                'company_gst': '24AAMCC8602K1ZH',
                 'company_website': 'https://colorifystudio.ai',
+                'company_logo_url': 'https://colorifystudio.ai/static/images/logo2.png',
             })
             
             # Generate PDF in memory

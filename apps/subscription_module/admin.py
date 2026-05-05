@@ -27,8 +27,8 @@ from django.http import HttpResponseRedirect
 # The current price field is read-only to prevent accidental changes.
 @admin.register(SubscriptionPlan)
 class SubscriptionPlanAdmin(admin.ModelAdmin):
-    list_display = ('name', 'subscription_type', 'current_price', 'duration_in_days', 'is_active')
-    list_filter = ('subscription_type', 'is_active')
+    list_display = ('name', 'subscription_type', 'current_price', 'duration_in_days', 'is_active', 'is_trial')
+    list_filter = ('subscription_type', 'is_active', 'is_trial')
     search_fields = ('name', 'description')
     readonly_fields = ('current_price',)
 

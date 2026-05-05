@@ -690,7 +690,7 @@ def upload_tiff(request, user_id=None, project_id=None):
         # Create default subscription if none exists
         from apps.subscription_module.models import SubscriptionPlan, UserSubscription
         try:
-            default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
+            default_plan = SubscriptionPlan.get_trial_plan()
             start_date = timezone.now()
             end_date = start_date + timezone.timedelta(days=default_plan.duration_in_days)
             
@@ -710,34 +710,37 @@ def upload_tiff(request, user_id=None, project_id=None):
 
     # Legacy safety: some rows may have a subscription record but a NULL plan.
     if not getattr(user_subscription, 'plan', None):
-        print(f"🔍 DEBUG: Subscription has no plan, assigning default for user {request.user.id}")
-        from apps.subscription_module.models import SubscriptionPlan
-        try:
-            default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
-            user_subscription.plan = default_plan
-            user_subscription.start_date = user_subscription.start_date or timezone.now()
-            user_subscription.end_date = user_subscription.end_date or (
-                timezone.now() + timezone.timedelta(days=default_plan.duration_in_days)
-            )
-            user_subscription.active = True
-            user_subscription.save(update_fields=['plan', 'start_date', 'end_date', 'active'])
-            print(f"🔍 DEBUG: Assigned default plan {default_plan.name} to user {request.user.id}")
-        except Exception as e:
-            logger.error(f"Failed to assign default plan to existing subscription: {str(e)}")
-            messages.error(request, "Your subscription is incomplete. Please contact support.")
-            return redirect('subscription_module:subscription_plans')
+        if user_subscription.has_entitlement_snapshot():
+            print(f"🔍 DEBUG: Subscription plan deleted, using snapshot entitlements for user {request.user.id}")
+        else:
+            print(f"🔍 DEBUG: Subscription has no plan, assigning default for user {request.user.id}")
+            from apps.subscription_module.models import SubscriptionPlan
+            try:
+                default_plan = SubscriptionPlan.get_trial_plan()
+                user_subscription.plan = default_plan
+                user_subscription.start_date = user_subscription.start_date or timezone.now()
+                user_subscription.end_date = user_subscription.end_date or (
+                    timezone.now() + timezone.timedelta(days=default_plan.duration_in_days)
+                )
+                user_subscription.active = True
+                user_subscription.save(update_fields=['plan', 'start_date', 'end_date', 'active'])
+                print(f"🔍 DEBUG: Assigned default plan {default_plan.name} to user {request.user.id}")
+            except Exception as e:
+                logger.error(f"Failed to assign default plan to existing subscription: {str(e)}")
+                messages.error(request, "Your subscription is incomplete. Please contact support.")
+                return redirect('subscription_module:subscription_plans')
 
     # Add comprehensive subscription debugging
     print(f"🔍 DEBUG: === SUBSCRIPTION STATUS ===")
     print(f"  User: {request.user.id}")
-    print(f"  Plan: {user_subscription.plan.name}")
+    print(f"  Plan: {user_subscription.get_effective_plan_name()}")
     print(f"  Start Date: {user_subscription.start_date}")
     print(f"  End Date: {user_subscription.end_date}")
     print(f"  Active (DB field): {getattr(user_subscription, 'active', 'NO ACTIVE FIELD')}")
     print(f"  Files Used: {user_subscription.file_uploads_used}")
-    print(f"  File Limit: {user_subscription.plan.file_upload_limit}")
+    print(f"  File Limit: {user_subscription.get_effective_file_limit()}")
     print(f"  Storage Used (MB): {user_subscription.storage_used_mb}")
-    print(f"  Storage Limit (MB): {user_subscription.plan.storage_limit_mb}")
+    print(f"  Storage Limit (MB): {user_subscription.get_effective_storage_limit_mb()}")
     print(f"🔍 DEBUG: ============================")
 
     if request.method == 'POST' and form.is_valid():
@@ -769,19 +772,21 @@ def upload_tiff(request, user_id=None, project_id=None):
             # Check 2: File Upload Limit
             can_upload_result = user_subscription.can_upload_file()
             print(f"🔍 DEBUG: can_upload_file() method returned: {can_upload_result}")
-            print(f"🔍 DEBUG: Files check: {user_subscription.file_uploads_used} < {user_subscription.plan.file_upload_limit} = {user_subscription.file_uploads_used < user_subscription.plan.file_upload_limit}")
+            file_limit = user_subscription.get_effective_file_limit()
+            print(f"🔍 DEBUG: Files check: {user_subscription.file_uploads_used} < {file_limit} = {user_subscription.file_uploads_used < file_limit}")
             if not can_upload_result:
                 print(f"🚨 LIMIT HIT: Cannot upload file - file limit reached")
                 return render_limit_reached(
                     request,
-                    error_message=f"You've reached your file upload limit ({user_subscription.plan.file_upload_limit} files).",
+                    error_message=f"You've reached your file upload limit ({file_limit} files).",
                     user_subscription=user_subscription
                 )
             
             # Check 3: Storage Space
             has_storage_result = user_subscription.has_storage_space(file_size_mb)
             print(f"🔍 DEBUG: has_storage_space({file_size_mb:.2f}) method returned: {has_storage_result}")
-            print(f"🔍 DEBUG: Storage check: {user_subscription.storage_used_mb} + {file_size_mb:.2f} <= {user_subscription.plan.storage_limit_mb} = {(user_subscription.storage_used_mb + file_size_mb) <= user_subscription.plan.storage_limit_mb}")
+            storage_limit_mb = user_subscription.get_effective_storage_limit_mb()
+            print(f"🔍 DEBUG: Storage check: {user_subscription.storage_used_mb} + {file_size_mb:.2f} <= {storage_limit_mb} = {(user_subscription.storage_used_mb + file_size_mb) <= storage_limit_mb}")
             if not has_storage_result:
                 print(f"🚨 LIMIT HIT: Not enough storage space")
                 return render_limit_reached(
@@ -988,7 +993,7 @@ def checkout(request, plan_id):
 
 def render_limit_reached(request, error_message, user_subscription):
     """Helper function to render the limit reached template"""
-    if not user_subscription or not user_subscription.plan:
+    if not user_subscription:
         return render(request, 'subscription_module/limit_reached.html', {
             'error_message': error_message,
             'plan_name': 'No Plan Assigned',
@@ -1010,7 +1015,7 @@ def render_limit_reached(request, error_message, user_subscription):
     is_active_calc = end_date >= today
 
     print("=== DEBUG: render_limit_reached ===")
-    print("Plan:", user_subscription.plan.name)
+    print("Plan:", user_subscription.get_effective_plan_name())
     print("End Date (normalized):", end_date)
     print("Today:", today)
     print("Days Remaining:", days_remaining)
@@ -1019,26 +1024,26 @@ def render_limit_reached(request, error_message, user_subscription):
     print("====================================")
     print("=== DEBUG: upload_tiff limits check ===")
     print("Files used:", user_subscription.file_uploads_used)
-    print("File limit:", user_subscription.plan.file_upload_limit)
+    print("File limit:", user_subscription.get_effective_file_limit())
     print("Storage used (MB):", user_subscription.storage_used_mb)
-    print("Storage limit (MB):", user_subscription.plan.storage_limit_mb)
+    print("Storage limit (MB):", user_subscription.get_effective_storage_limit_mb())
 
 
     return render(request, 'subscription_module/limit_reached.html', {
         'error_message': error_message,
-        'plan_name': user_subscription.plan.name,
+        'plan_name': user_subscription.get_effective_plan_name(),
         'files_used': user_subscription.file_uploads_used,
-        'file_limit': user_subscription.plan.file_upload_limit,
-        'files_used_percentage': (user_subscription.file_uploads_used / user_subscription.plan.file_upload_limit) * 100,
+        'file_limit': user_subscription.get_effective_file_limit(),
+        'files_used_percentage': (user_subscription.file_uploads_used / max(1, user_subscription.get_effective_file_limit())) * 100,
         'storage_used': user_subscription.storage_used_mb,
-        'storage_limit': user_subscription.plan.storage_limit_mb,
-        'storage_used_percentage': (user_subscription.storage_used_mb / user_subscription.plan.storage_limit_mb) * 100,
+        'storage_limit': user_subscription.get_effective_storage_limit_mb(),
+        'storage_used_percentage': (user_subscription.storage_used_mb / max(1, user_subscription.get_effective_storage_limit_mb())) * 100,
         'days_remaining': days_remaining
     })
 
 
 def get_subscription_context(user_subscription):
-    if not user_subscription or not user_subscription.plan:
+    if not user_subscription:
         print("=== DEBUG: No active subscription or plan ===")
         return None
 
@@ -1051,7 +1056,7 @@ def get_subscription_context(user_subscription):
     is_active_calc = end_date >= today
 
     print("=== DEBUG: get_subscription_context ===")
-    print("Plan:", user_subscription.plan.name)
+    print("Plan:", user_subscription.get_effective_plan_name())
     print("End Date (normalized):", end_date)
     print("Today:", today)
     print("Days Remaining:", days_remaining)
@@ -1060,13 +1065,13 @@ def get_subscription_context(user_subscription):
     print("========================================")
 
     return {
-        'plan_name': user_subscription.plan.name,
+        'plan_name': user_subscription.get_effective_plan_name(),
         'files_used': user_subscription.file_uploads_used,
-        'file_limit': user_subscription.plan.file_upload_limit,
-        'files_used_percentage': (user_subscription.file_uploads_used / user_subscription.plan.file_upload_limit) * 100,
+        'file_limit': user_subscription.get_effective_file_limit(),
+        'files_used_percentage': (user_subscription.file_uploads_used / max(1, user_subscription.get_effective_file_limit())) * 100,
         'storage_used': user_subscription.storage_used_mb,
-        'storage_limit': user_subscription.plan.storage_limit_mb,
-        'storage_used_percentage': (user_subscription.storage_used_mb / user_subscription.plan.storage_limit_mb) * 100,
+        'storage_limit': user_subscription.get_effective_storage_limit_mb(),
+        'storage_used_percentage': (user_subscription.storage_used_mb / max(1, user_subscription.get_effective_storage_limit_mb())) * 100,
         'days_remaining': days_remaining,
         'is_active': is_active_calc
     }

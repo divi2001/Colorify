@@ -296,7 +296,7 @@
                                 {% if plan.original_price == 0 %}Free Plan{% else %}Inactive{% endif %}
                             </button>
                         {% elif plan.name == 'Pro' %}
-                            <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] text-white rounded-full py-3 px-4 transition-all duration-300 flex items-center justify-center no-underline hover:shadow-xl hover:scale-110 hover:-translate-y-1">
+                            <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full text-white rounded-full py-3 px-4 transition-all duration-300 flex items-center justify-center no-underline hover:shadow-xl hover:scale-110 hover:-translate-y-1" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                 Choose {{ plan.name }}
                                 <svg class="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -310,7 +310,7 @@
                                 </svg>
                             </button>
                         {% else %}
-                            <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full bg-gradient-to-r from-[#00C6FF] via-[#6F5DE5] to-[#FF00EA] text-white rounded-full py-3 px-4 transition-all duration-300 flex items-center justify-center no-underline hover:shadow-xl hover:scale-110 hover:-translate-y-1">
+                            <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full text-white rounded-full py-3 px-4 transition-all duration-300 flex items-center justify-center no-underline hover:shadow-xl hover:scale-110 hover:-translate-y-1" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                 Get Started
                                 <svg class="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

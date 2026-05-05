@@ -222,12 +222,12 @@ def update_color(request):
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def create_free_trial(user):
-    basic_plan = SubscriptionPlan.objects.get(name='Basic')
+    trial_plan = SubscriptionPlan.get_trial_plan()
     UserSubscription.objects.create(
         user=user,
-        plan=basic_plan,
+        plan=trial_plan,
         start_date=timezone.now(),
-        end_date=timezone.now() + timedelta(days=7),  # 7-day free trial
+        end_date=timezone.now() + timedelta(days=trial_plan.duration_in_days),
         active=True
     )
 
@@ -657,7 +657,13 @@ def invoice_detail(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
     
     context = {
-        'invoice': invoice
+        'invoice': invoice,
+        'company_name': 'Colorify Studio',
+        'company_address': 'India',
+        'company_email': 'support@colorifystudio.ai',
+        'company_phone': '+91-XXXXXXXXXX',
+        'company_website': 'https://colorifystudio.ai',
+        'company_gst': '24AAMCC8602K1ZH',
     }
     return render(request, 'subscription_module/invoice_detail.html', context)
 
@@ -676,9 +682,12 @@ def download_invoice_pdf(request, invoice_id):
         'invoice': invoice,
         'user': request.user,
         'company_name': 'Colorify Studio',
-        'company_address': 'Your Company Address',
-        'company_email': 'support@colorify.com',
+        'company_address': 'India',
+        'company_email': 'support@colorifystudio.ai',
         'company_phone': '+91-XXXXXXXXXX',
+        'company_website': 'https://colorifystudio.ai',
+        'company_gst': '24AAMCC8602K1ZH',
+        'company_logo_url': request.build_absolute_uri('/static/images/logo2.png'),
     })
     
     # Generate PDF

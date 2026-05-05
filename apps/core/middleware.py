@@ -164,12 +164,15 @@ class PreventConcurrentLoginsMiddleware:
             
             if subscription.plan:
                 if subscription.is_active():
-                    return subscription, subscription.plan.max_devices
+                    return subscription, subscription.get_effective_max_devices()
                 else:
                     # If subscription has expired, renew it
                     return self.create_or_renew_subscription(user, subscription)
             else:
-                # If subscription exists but has no plan, update it
+                # Preserve existing subscriber entitlements even if plan row was deleted.
+                if subscription.is_active() and subscription.has_entitlement_snapshot():
+                    return subscription, subscription.get_effective_max_devices()
+                # If there's no usable entitlement snapshot, create/renew with trial plan.
                 return self.create_or_renew_subscription(user, subscription)
             
         except Exception as e:
@@ -184,9 +187,9 @@ class PreventConcurrentLoginsMiddleware:
             
             # Get the default plan
             try:
-                default_plan = SubscriptionPlan.objects.get(name="Legacy Default Plan")
+                default_plan = SubscriptionPlan.get_trial_plan()
             except SubscriptionPlan.DoesNotExist:
-                logger.error(f"Legacy Default Plan does not exist in the database.")
+                logger.error("No active trial plan exists in the database.")
                 return None, self.DEFAULT_MAX_SESSIONS
             
             start_date = timezone.now()

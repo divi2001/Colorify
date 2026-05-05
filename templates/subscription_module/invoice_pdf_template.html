@@ -144,6 +144,9 @@
     <!-- Header -->
     <div class="header">
         <div style="margin-bottom: 15px; text-align: center;">
+            {% if company_logo_url %}
+            <img src="{{ company_logo_url }}" alt="{{ company_name }}" style="max-width: 180px; height: auto; margin-bottom: 8px;">
+            {% endif %}
             <h1 style="font-size: 32px; color: #667eea; margin: 0; font-weight: bold;">Colorify Studio</h1>
             <p style="color: #764ba2; margin: 5px 0 0 0; font-size: 14px;">Where Creativity Comes to Life</p>
         </div>
@@ -171,6 +174,9 @@
         <div style="color: #333; font-size: 11px;">{{ invoice.get_user_company }}</div>
         {% endif %}
         <div style="color: #666;">{{ user.email }}</div>
+        {% if invoice.get_user_tax_id %}
+        <div style="color: #666; font-size: 11px;">Tax/GST No: {{ invoice.get_user_tax_id }}</div>
+        {% endif %}
         {% if invoice.get_user_address %}
         <div style="color: #666; font-size: 10px; margin-top: 5px;">{{ invoice.get_user_address }}</div>
         {% endif %}
@@ -190,6 +196,13 @@
                 <td>
                     <strong>{{ invoice.get_plan_name }} Subscription</strong><br>
                     <span style="font-size: 11px; color: #666;">{{ invoice.transaction.get_transaction_type_display }}</span>
+                    {% if invoice.transaction.subscription_plan %}
+                    <div style="font-size: 10px; color: #666; margin-top: 4px;">
+                        Uploads: {{ invoice.get_plan_file_upload_limit }}/month |
+                        Storage: {{ invoice.get_plan_storage_limit_mb }} MB |
+                        Devices: {{ invoice.get_plan_max_devices }}
+                    </div>
+                    {% endif %}
                 </td>
                 <td class="text-right">{{ invoice.get_plan_duration }}</td>
                 <td class="text-right">₹{{ invoice.subtotal|floatformat:2 }}</td>
