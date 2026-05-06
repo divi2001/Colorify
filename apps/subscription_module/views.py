@@ -329,7 +329,7 @@ def initiate_payment(request, plan_id):
                 messages.info(request, "Your existing subscription has no plan assigned. Proceeding with selected plan.")
             else:
             # Allow upgrades: check if the new plan is more expensive than current plan
-                if plan.original_price <= existing_subscription.plan.original_price:
+                if plan.current_price <= existing_subscription.plan.current_price:
                     # This is not an upgrade (same price or downgrade)
                     if plan.id == existing_subscription.plan.id:
                         messages.warning(request, "You already have this subscription plan.")
@@ -341,9 +341,9 @@ def initiate_payment(request, plan_id):
     except UserSubscription.DoesNotExist:
         pass
     
-    # Base checkout amount should be the plan's actual selected price.
-    # Any reduction must come only from an explicitly applied referral code.
-    base_amount = plan.original_price
+    # Base checkout amount should always match the plan price shown to users.
+    # Use current_price so discounted plans are charged correctly as well.
+    base_amount = plan.current_price
     final_amount = base_amount
     referral_code = None
     
@@ -527,7 +527,7 @@ def payment_callback(request):
                 
                 # If referral code was used, calculate discount
                 if transaction.referral_code:
-                    original_price = float(transaction.subscription_plan.original_price)
+                    original_price = float(transaction.subscription_plan.current_price)
                     discount_amount = original_price - total_amount_paid
                 
                 # Create invoice - the model will calculate subtotal and tax from total
@@ -592,7 +592,8 @@ def validate_referral_code(request):
         data = json.loads(request.body)
         referral_code_str = data.get('referral_code', '').strip().upper()
         plan_id = data.get('plan_id')
-        original_amount = float(data.get('original_amount', 0))
+        # Never trust price from client; always resolve from selected plan.
+        original_amount = 0
         
         if not referral_code_str:
             return JsonResponse({'success': False, 'message': 'Please enter a referral code'})
@@ -618,7 +619,8 @@ def validate_referral_code(request):
                     'message': 'This referral code is not valid for the selected plan'
                 })
             
-            # Calculate discounted amount
+            # Calculate discounted amount from the plan's effective current price.
+            original_amount = float(plan.current_price)
             discounted_amount = referral_code.apply_discount(original_amount)
             
             return JsonResponse({
