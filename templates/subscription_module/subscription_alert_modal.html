@@ -1,0 +1,142 @@
+{% load static %}
+{% if subscription_alert and subscription_alert.show %}
+{{ subscription_alert|json_script:"subscription-alert-payload" }}
+<div id="subscriptionAlertOverlay" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="subscriptionAlertTitle" style="display: none;">
+  <div id="subscriptionAlertCard" class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div id="subscriptionAlertHeader" class="px-6 py-4">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span id="subscriptionAlertIcon" class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xl" aria-hidden="true"></span>
+          <h2 id="subscriptionAlertTitle" class="text-lg font-bold text-gray-900"></h2>
+        </div>
+        <button type="button" id="subscriptionAlertClose" class="text-gray-400 hover:text-gray-600 text-2xl leading-none" aria-label="Close">&times;</button>
+      </div>
+    </div>
+    <div class="px-6 pb-2">
+      <p id="subscriptionAlertMessage" class="text-gray-600 text-sm leading-relaxed"></p>
+      <div id="subscriptionAlertUsage" class="mt-4 space-y-3 hidden">
+        <div id="subscriptionAlertFilesBar" class="hidden">
+          <div class="flex justify-between text-xs text-gray-500 mb-1">
+            <span>File uploads</span>
+            <span id="subscriptionAlertFilesLabel"></span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div id="subscriptionAlertFilesProgress" class="h-2 rounded-full transition-all"></div>
+          </div>
+        </div>
+        <div id="subscriptionAlertStorageBar" class="hidden">
+          <div class="flex justify-between text-xs text-gray-500 mb-1">
+            <span>Storage</span>
+            <span id="subscriptionAlertStorageLabel"></span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div id="subscriptionAlertStorageProgress" class="h-2 rounded-full transition-all"></div>
+          </div>
+        </div>
+      </div>
+      <p id="subscriptionAlertDays" class="mt-3 text-sm font-medium hidden"></p>
+    </div>
+    <div class="px-6 py-4 flex flex-col sm:flex-row gap-2 border-t border-gray-100">
+      <a id="subscriptionAlertCta" href="#" class="flex-1 text-center text-white font-medium py-2.5 px-4 rounded-xl transition-opacity hover:opacity-90" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        View Plans
+      </a>
+      <button type="button" id="subscriptionAlertLater" class="flex-1 text-center text-gray-700 font-medium py-2.5 px-4 rounded-xl border border-gray-200 hover:bg-gray-50">
+        Remind Me Later
+      </button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const payloadEl = document.getElementById('subscription-alert-payload');
+  if (!payloadEl) return;
+
+  let alert;
+  try {
+    alert = JSON.parse(payloadEl.textContent);
+  } catch (e) {
+    return;
+  }
+  if (!alert || !alert.show) return;
+
+  const dismissKey = 'colorify_sub_alert_' + alert.type;
+  const dismissDurationMs = alert.dismissible ? 24 * 60 * 60 * 1000 : 4 * 60 * 60 * 1000;
+
+  if (sessionStorage.getItem(dismissKey)) {
+    const dismissedAt = parseInt(sessionStorage.getItem(dismissKey), 10);
+    if (!Number.isNaN(dismissedAt) && Date.now() - dismissedAt < dismissDurationMs) {
+      return;
+    }
+    sessionStorage.removeItem(dismissKey);
+  }
+
+  const overlay = document.getElementById('subscriptionAlertOverlay');
+  const header = document.getElementById('subscriptionAlertHeader');
+  const icon = document.getElementById('subscriptionAlertIcon');
+  const title = document.getElementById('subscriptionAlertTitle');
+  const message = document.getElementById('subscriptionAlertMessage');
+  const cta = document.getElementById('subscriptionAlertCta');
+  const laterBtn = document.getElementById('subscriptionAlertLater');
+  const closeBtn = document.getElementById('subscriptionAlertClose');
+  const daysEl = document.getElementById('subscriptionAlertDays');
+  const usageBlock = document.getElementById('subscriptionAlertUsage');
+
+  const styles = {
+    error: { header: 'bg-red-50', icon: 'bg-red-100 text-red-600', progress: 'bg-red-500', glyph: '!' },
+    warning: { header: 'bg-amber-50', icon: 'bg-amber-100 text-amber-600', progress: 'bg-amber-500', glyph: '!' },
+    info: { header: 'bg-blue-50', icon: 'bg-blue-100 text-blue-600', progress: 'bg-blue-500', glyph: 'i' },
+  };
+  const style = styles[alert.severity] || styles.info;
+
+  header.className = 'px-6 py-4 ' + style.header;
+  icon.className = 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold ' + style.icon;
+  icon.textContent = style.glyph;
+  title.textContent = alert.title;
+  message.textContent = alert.message;
+  cta.textContent = alert.cta_label || 'View Plans';
+  cta.href = alert.cta_url || '{% url "subscription_module:subscription_plans" %}';
+
+  if (alert.days_remaining !== undefined && alert.type === 'expiring_soon') {
+    daysEl.textContent = alert.days_remaining + ' day(s) remaining on your current plan';
+    daysEl.className = 'mt-3 text-sm font-medium text-amber-700';
+    daysEl.classList.remove('hidden');
+  }
+
+  if (alert.files_used_percentage !== undefined || alert.storage_used_percentage !== undefined) {
+    usageBlock.classList.remove('hidden');
+    if (alert.files_used_percentage !== undefined && alert.file_limit) {
+      const filesWrap = document.getElementById('subscriptionAlertFilesBar');
+      filesWrap.classList.remove('hidden');
+      document.getElementById('subscriptionAlertFilesLabel').textContent =
+        alert.files_used + ' / ' + alert.file_limit;
+      const bar = document.getElementById('subscriptionAlertFilesProgress');
+      bar.className = 'h-2 rounded-full transition-all ' + style.progress;
+      bar.style.width = Math.min(alert.files_used_percentage, 100) + '%';
+    }
+    if (alert.storage_used_percentage !== undefined) {
+      const storageWrap = document.getElementById('subscriptionAlertStorageBar');
+      storageWrap.classList.remove('hidden');
+      document.getElementById('subscriptionAlertStorageLabel').textContent =
+        alert.storage_used + ' / ' + alert.storage_limit + ' MB';
+      const bar = document.getElementById('subscriptionAlertStorageProgress');
+      bar.className = 'h-2 rounded-full transition-all ' + style.progress;
+      bar.style.width = Math.min(alert.storage_used_percentage, 100) + '%';
+    }
+  }
+
+  if (!alert.dismissible) {
+    laterBtn.classList.add('hidden');
+  }
+
+  function dismiss() {
+    sessionStorage.setItem(dismissKey, String(Date.now()));
+    overlay.style.display = 'none';
+  }
+
+  laterBtn.addEventListener('click', dismiss);
+  closeBtn.addEventListener('click', dismiss);
+
+  overlay.style.display = 'flex';
+})();
+</script>
+{% endif %}

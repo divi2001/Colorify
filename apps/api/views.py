@@ -50,35 +50,38 @@ def profile_dashboard_view(request):
     except UserSubscription.DoesNotExist:
         pass
 
-    # Calculate storage usage data
+    # Calculate storage usage data (plan or entitlement snapshot)
     storage_data = {}
-    if current_subscription and current_subscription.plan:
+    has_entitlements = (
+        current_subscription
+        and (current_subscription.plan or current_subscription.has_entitlement_snapshot())
+    )
+    if has_entitlements:
+        storage_limit_mb = current_subscription.get_effective_storage_limit_mb()
+        file_limit = current_subscription.get_effective_file_limit()
         storage_used_gb = current_subscription.storage_used_mb / 1024
-        storage_limit_gb = current_subscription.plan.storage_limit_mb / 1024
+        storage_limit_gb = storage_limit_mb / 1024
         storage_remaining_gb = storage_limit_gb - storage_used_gb
-        storage_percentage = (current_subscription.storage_used_mb / current_subscription.plan.storage_limit_mb) * 100
+        storage_percentage = (
+            (current_subscription.storage_used_mb / storage_limit_mb) * 100
+            if storage_limit_mb > 0 else 0
+        )
         
-        # Calculate file upload data
         files_used = current_subscription.file_uploads_used
-        file_limit = current_subscription.plan.file_upload_limit
         files_remaining = max(0, file_limit - files_used) if file_limit < 2147483647 else 999999
         file_percentage = (files_used / file_limit) * 100 if file_limit > 0 and file_limit < 2147483647 else 0
         is_unlimited_files = file_limit >= 2147483647
         
-        # Average file size if files exist
         avg_file_size_mb = round(current_subscription.storage_used_mb / files_used, 2) if files_used > 0 else 0
         
         storage_data = {
-            # Storage info
             'used_gb': round(storage_used_gb, 2),
             'limit_gb': round(storage_limit_gb, 2),
             'remaining_gb': round(storage_remaining_gb, 2),
             'percentage': round(storage_percentage, 1),
             'used_mb': current_subscription.storage_used_mb,
-            'limit_mb': current_subscription.plan.storage_limit_mb,
-            'remaining_mb': current_subscription.plan.storage_limit_mb - current_subscription.storage_used_mb,
-            
-            # File count info
+            'limit_mb': storage_limit_mb,
+            'remaining_mb': storage_limit_mb - current_subscription.storage_used_mb,
             'files_used': files_used,
             'file_limit': file_limit,
             'files_remaining': files_remaining,

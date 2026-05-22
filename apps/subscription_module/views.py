@@ -221,16 +221,6 @@ def update_color(request):
     
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-def create_free_trial(user):
-    trial_plan = SubscriptionPlan.get_trial_plan()
-    UserSubscription.objects.create(
-        user=user,
-        plan=trial_plan,
-        start_date=timezone.now(),
-        end_date=timezone.now() + timedelta(days=trial_plan.duration_in_days),
-        active=True
-    )
-
 @login_required
 def subscribe_user(request, plan_id):
     plan = SubscriptionPlan.objects.get(id=plan_id)
@@ -272,7 +262,6 @@ def register(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            create_free_trial(user)
             return redirect('login')
     else:
         form = UserCreationForm()

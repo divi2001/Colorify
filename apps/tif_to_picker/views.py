@@ -6,6 +6,7 @@ import json
 import base64
 import struct
 import logging
+import uuid
 from collections import Counter
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -26,7 +27,7 @@ from django.views.decorators.http import require_http_methods
 # Django imports
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -48,7 +49,8 @@ from .getcolors import analyze_image_colors
 from apps.core.models import Project
 from apps.subscription_module.models import InspirationPDF, PDFLike, Palette
 from apps.subscription_module.serializers import PaletteSerializer
-from apps.subscription_module.models import SubscriptionPlan
+from apps.subscription_module.models import SubscriptionPlan, UserSubscription
+from apps.subscription_module.subscription_access import require_active_plan
 
 # Logger
 logger = logging.getLogger(__name__)
@@ -681,54 +683,15 @@ def upload_tiff(request, user_id=None, project_id=None):
     # Initialize form
     form = TiffUploadForm(request.POST or None, request.FILES or None)
     
-    # Check user subscription
-    try:
-        user_subscription = request.user.subscription
-        print(f"🔍 DEBUG: Found existing subscription for user {request.user.id}")
-    except AttributeError:
-        print(f"🔍 DEBUG: No subscription found, creating default for user {request.user.id}")
-        # Create default subscription if none exists
-        from apps.subscription_module.models import SubscriptionPlan, UserSubscription
-        try:
-            default_plan = SubscriptionPlan.get_trial_plan()
-            start_date = timezone.now()
-            end_date = start_date + timezone.timedelta(days=default_plan.duration_in_days)
-            
-            with transaction.atomic():
-                user_subscription = UserSubscription.objects.create(
-                    user=request.user,
-                    plan=default_plan,
-                    start_date=start_date,
-                    end_date=end_date,
-                    active=True
-                )
-                print(f"Created/renewed subscription for user {request.user.id} with plan {default_plan.name}")
-        except Exception as e:
-            logger.error(f"Failed to create default subscription: {str(e)}")
-            messages.error(request, "Error initializing your account. Please contact support.")
-            return redirect('home')
+    plan_redirect = require_active_plan(
+        request,
+        "Please subscribe to a plan before uploading files.",
+    )
+    if plan_redirect:
+        return plan_redirect
 
-    # Legacy safety: some rows may have a subscription record but a NULL plan.
-    if not getattr(user_subscription, 'plan', None):
-        if user_subscription.has_entitlement_snapshot():
-            print(f"🔍 DEBUG: Subscription plan deleted, using snapshot entitlements for user {request.user.id}")
-        else:
-            print(f"🔍 DEBUG: Subscription has no plan, assigning default for user {request.user.id}")
-            from apps.subscription_module.models import SubscriptionPlan
-            try:
-                default_plan = SubscriptionPlan.get_trial_plan()
-                user_subscription.plan = default_plan
-                user_subscription.start_date = user_subscription.start_date or timezone.now()
-                user_subscription.end_date = user_subscription.end_date or (
-                    timezone.now() + timezone.timedelta(days=default_plan.duration_in_days)
-                )
-                user_subscription.active = True
-                user_subscription.save(update_fields=['plan', 'start_date', 'end_date', 'active'])
-                print(f"🔍 DEBUG: Assigned default plan {default_plan.name} to user {request.user.id}")
-            except Exception as e:
-                logger.error(f"Failed to assign default plan to existing subscription: {str(e)}")
-                messages.error(request, "Your subscription is incomplete. Please contact support.")
-                return redirect('subscription_module:subscription_plans')
+    user_subscription = request.user.subscription
+    print(f"🔍 DEBUG: Found active subscription for user {request.user.id}")
 
     # Add comprehensive subscription debugging
     print(f"🔍 DEBUG: === SUBSCRIPTION STATUS ===")
@@ -798,8 +761,12 @@ def upload_tiff(request, user_id=None, project_id=None):
             print(f"🔍 DEBUG: ✅ All subscription checks passed - proceeding with upload")
             print(f"🔍 DEBUG: ==========================================")
             
-            # Create file path
-            filename = f"project_{project_id}_{tiff_file.name}" if project else tiff_file.name
+            # Create file path (unique per upload unless replacing a project file)
+            if project:
+                filename = f"project_{project_id}_{tiff_file.name}"
+            else:
+                safe_name = os.path.basename(tiff_file.name)
+                filename = f"user_{request.user.id}_{uuid.uuid4().hex[:12]}_{safe_name}"
             file_path = os.path.join('media', 'uploads', filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             
@@ -901,18 +868,25 @@ def upload_tiff(request, user_id=None, project_id=None):
                 print(f"🔍 DEBUG: Updating subscription metrics...")
                 print(f"🔍 DEBUG: Before update - Files: {user_subscription.file_uploads_used}, Storage: {user_subscription.storage_used_mb}MB")
                 
-                with transaction.atomic():
-                    if not replaced_existing_file:
-                        user_subscription.file_uploads_used += 1
-                    storage_delta_mb = precise_file_size_mb - previous_file_size_mb
-                    user_subscription.storage_used_mb = max(0, user_subscription.storage_used_mb + storage_delta_mb)
-                    user_subscription.save()
+                storage_delta_mb = precise_file_size_mb - previous_file_size_mb
+                update_fields = {}
+                if not replaced_existing_file:
+                    update_fields['file_uploads_used'] = F('file_uploads_used') + 1
+                if storage_delta_mb:
+                    update_fields['storage_used_mb'] = F('storage_used_mb') + storage_delta_mb
+
+                if update_fields:
+                    with transaction.atomic():
+                        UserSubscription.objects.filter(pk=user_subscription.pk).update(**update_fields)
+                    user_subscription.refresh_from_db()
+                    if user_subscription.storage_used_mb < 0:
+                        user_subscription.storage_used_mb = 0
+                        user_subscription.save(update_fields=['storage_used_mb'])
                     
                 print(f"🔍 DEBUG: After update - Files: {user_subscription.file_uploads_used}, Storage: {user_subscription.storage_used_mb}MB")
                 
             except Exception as e:
-                logger.error(f"Error updating subscription metrics: {e}")
-                # Continue processing as this is not critical for file upload
+                logger.error(f"Error updating subscription metrics: {e}", exc_info=True)
             
             # Get image dimensions
             try:
