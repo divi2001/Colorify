@@ -111,12 +111,16 @@
                             <div class="mb-6 mt-4">
                                 <h3 class="text-sm font-semibold text-white uppercase mb-4 transition-all duration-300 group-hover:text-blue-100">{{ plan.name }}</h3>
                                 <div class="flex items-baseline mb-2">
+                                    {% if plan.is_free %}
+                                    <span class="text-5xl font-bold text-white transition-all duration-300">Free</span>
+                                    {% else %}
                                     <span class="text-5xl font-bold text-white transition-all duration-300">
                                         ₹{{ plan.current_price|floatformat:0 }}
                                     </span>
                                     <span class="text-white ml-2 transition-all duration-300">/ month</span>
+                                    {% endif %}
                                 </div>
-                                {% if plan.discounted_price %}
+                                {% if plan.discounted_price is not None and not plan.is_free %}
                                     <div class="mb-2">
                                         <span class="text-sm text-blue-100 line-through">₹{{ plan.original_price|floatformat:0 }}</span>
                                         <span class="ml-2 text-xs font-semibold bg-white/20 px-2 py-1 rounded-full">
@@ -216,13 +220,18 @@
                         <div class="mb-6">
                             <h3 class="text-sm font-semibold text-gray-600 uppercase mb-4 transition-all duration-300 group-hover:text-gray-800">{{ plan.name }}</h3>
                             <div class="flex items-baseline mb-2">
+                                {% if plan.is_free %}
+                                <span class="text-5xl font-bold transition-all duration-300 group-hover:text-blue-600
+                                    {% if not plan.is_active %}text-gray-600{% endif %}">Free</span>
+                                {% else %}
                                 <span class="text-5xl font-bold transition-all duration-300 group-hover:text-blue-600
                                     {% if not plan.is_active %}text-gray-600{% endif %}">
                                     ₹{{ plan.current_price|floatformat:0 }}
                                 </span>
                                 <span class="text-gray-500 ml-2 transition-all duration-300 group-hover:text-gray-700">/ month</span>
+                                {% endif %}
                             </div>
-                            {% if plan.discounted_price %}
+                            {% if plan.discounted_price is not None and not plan.is_free %}
                                 <div class="mb-2">
                                     <span class="text-sm text-gray-400 line-through">₹{{ plan.original_price|floatformat:0 }}</span>
                                     <span class="ml-2 text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full">
@@ -311,6 +320,13 @@
                             <button class="w-full bg-gray-400 text-white rounded-full py-3 px-4 transition-all duration-300 flex items-center justify-center cursor-not-allowed hover:bg-gray-500" disabled>
                                 {% if plan.original_price == 0 %}Free Plan{% else %}Inactive{% endif %}
                             </button>
+                        {% elif plan.is_free %}
+                            <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full text-white rounded-full py-3 px-4 transition-all duration-300 flex items-center justify-center no-underline hover:shadow-xl hover:scale-110 hover:-translate-y-1" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                {% if plan.is_trial %}Start Free Trial{% else %}Activate Free Plan{% endif %}
+                                <svg class="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
                         {% elif plan.name == 'Pro' %}
                             <a href="{% url 'subscription_module:initiate_payment' plan.id %}" class="w-full text-white rounded-full py-3 px-4 transition-all duration-300 flex items-center justify-center no-underline hover:shadow-xl hover:scale-110 hover:-translate-y-1" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                 Choose {{ plan.name }}

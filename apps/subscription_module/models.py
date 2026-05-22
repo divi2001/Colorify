@@ -73,7 +73,13 @@ class SubscriptionPlan(models.Model):
     
     @property
     def current_price(self):
-        return self.discounted_price if self.discounted_price else self.original_price
+        if self.discounted_price is not None:
+            return self.discounted_price
+        return self.original_price
+
+    @property
+    def is_free(self):
+        return self.current_price <= 0
     
     def save(self, *args, **kwargs):
         if self.subscription_type != 'custom' and not self.duration_in_days:
@@ -111,7 +117,7 @@ class SubscriptionPlan(models.Model):
     
     def get_price_display(self):
         """Get the current price to display"""
-        return self.discounted_price if self.discounted_price else self.original_price
+        return self.current_price
     
     def is_popular(self):
         """Determine if this plan should be marked as popular"""

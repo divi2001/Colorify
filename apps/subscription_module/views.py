@@ -34,6 +34,38 @@ from .razorpay_utils import RazorpayConfig
 logger = logging.getLogger(__name__)
 
 
+def apply_plan_to_user(user, plan, transaction_type='subscription'):
+    """Create or extend UserSubscription after payment or free activation."""
+    start_date = timezone.now()
+    end_date = start_date + timedelta(days=plan.duration_in_days)
+
+    try:
+        existing_subscription = UserSubscription.objects.get(user=user)
+
+        if transaction_type == 'upgrade' and existing_subscription.end_date > start_date:
+            start_date = existing_subscription.end_date
+
+        if transaction_type == 'renewal' and existing_subscription.end_date > start_date:
+            start_date = existing_subscription.end_date
+            end_date = start_date + timedelta(days=plan.duration_in_days)
+
+        existing_subscription.plan = plan
+        if transaction_type == 'subscription':
+            existing_subscription.start_date = start_date
+        existing_subscription.end_date = end_date
+        existing_subscription.active = True
+        existing_subscription.save()
+        return existing_subscription
+    except UserSubscription.DoesNotExist:
+        return UserSubscription.objects.create(
+            user=user,
+            plan=plan,
+            start_date=start_date,
+            end_date=end_date,
+            active=True,
+        )
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_favorite_palette(request):
@@ -331,10 +363,36 @@ def initiate_payment(request, plan_id):
         pass
     
     # Base checkout amount should always match the plan price shown to users.
-    # Use current_price so discounted plans are charged correctly as well.
     base_amount = plan.current_price
     final_amount = base_amount
     referral_code = None
+
+    # Free / zero-price plans (e.g. trial): activate immediately, no Razorpay.
+    if plan.is_free or final_amount <= 0:
+        transaction_type = 'subscription'
+        try:
+            existing_subscription = UserSubscription.objects.get(user=request.user)
+            if existing_subscription.is_active() and existing_subscription.plan:
+                if plan.id == existing_subscription.plan.id:
+                    messages.warning(request, "You already have this subscription plan.")
+                    return redirect('subscription_module:subscription_plans')
+                if plan.current_price <= existing_subscription.plan.current_price:
+                    messages.warning(request, "Downgrades are not currently supported. Please contact support.")
+                    return redirect('subscription_module:subscription_plans')
+                transaction_type = 'upgrade'
+        except UserSubscription.DoesNotExist:
+            pass
+
+        PaymentTransaction.objects.create(
+            user=request.user,
+            subscription_plan=plan,
+            amount=0,
+            transaction_type=transaction_type,
+            status='completed',
+        )
+        apply_plan_to_user(request.user, plan, transaction_type=transaction_type)
+        messages.success(request, f"{plan.name} activated successfully!")
+        return redirect('subscription_module:payment_success')
     
     # Handle referral code if provided
     referral_code_str = request.GET.get('referral_code')
@@ -466,46 +524,12 @@ def payment_callback(request):
             transaction.razorpay_signature = razorpay_signature
             transaction.mark_as_completed(razorpay_payment_id)
             
-            # Create or update subscription based on transaction type
-            start_date = timezone.now()
-            
             if transaction.transaction_type in ['subscription', 'renewal', 'upgrade']:
-                try:
-                    existing_subscription = UserSubscription.objects.get(user=transaction.user)
-                    
-                    if transaction.transaction_type == 'upgrade':
-                        # For upgrades, extend from current end_date if it's in the future
-                        if existing_subscription.end_date > start_date:
-                            start_date = existing_subscription.end_date
-                        end_date = start_date + timezone.timedelta(days=transaction.subscription_plan.duration_in_days)
-                        
-                        # Update existing subscription
-                        existing_subscription.plan = transaction.subscription_plan
-                        existing_subscription.end_date = end_date
-                        existing_subscription.active = True
-                        existing_subscription.save()
-                    else:
-                        # For renewal, extend from current end_date
-                        if transaction.transaction_type == 'renewal' and existing_subscription.end_date > start_date:
-                            start_date = existing_subscription.end_date
-                        
-                        end_date = start_date + timezone.timedelta(days=transaction.subscription_plan.duration_in_days)
-                        existing_subscription.plan = transaction.subscription_plan
-                        existing_subscription.start_date = start_date if transaction.transaction_type == 'subscription' else existing_subscription.start_date
-                        existing_subscription.end_date = end_date
-                        existing_subscription.active = True
-                        existing_subscription.save()
-                        
-                except UserSubscription.DoesNotExist:
-                    # Create new subscription
-                    end_date = start_date + timezone.timedelta(days=transaction.subscription_plan.duration_in_days)
-                    UserSubscription.objects.create(
-                        user=transaction.user,
-                        plan=transaction.subscription_plan,
-                        start_date=start_date,
-                        end_date=end_date,
-                        active=True
-                    )
+                apply_plan_to_user(
+                    transaction.user,
+                    transaction.subscription_plan,
+                    transaction_type=transaction.transaction_type,
+                )
             
             # Generate invoice after successful payment
             from .models import Invoice
