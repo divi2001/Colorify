@@ -9,6 +9,10 @@ PLANS_URL_NAME = 'subscription_module:subscription_plans'
 EXPIRING_SOON_DAYS = 7
 RESOURCE_WARNING_PERCENT = 90
 UNLIMITED_FILE_LIMIT = 2147483647
+EXPORT_RESTRICTED_MESSAGE = (
+    'Export is not available on the free trial plan. '
+    'Please upgrade to a paid plan to export your files.'
+)
 
 
 def user_has_active_plan(user):
@@ -20,6 +24,23 @@ def user_has_active_plan(user):
     except UserSubscription.DoesNotExist:
         return False
     return bool(subscription.plan_id) and subscription.is_active()
+
+
+def user_can_export(user):
+    """Paid, non-trial subscribers can export files."""
+    if not user.is_authenticated:
+        return False
+
+    try:
+        subscription = UserSubscription.objects.select_related('plan').get(user=user)
+    except UserSubscription.DoesNotExist:
+        return False
+
+    if not subscription.is_active() or not subscription.plan_id:
+        return False
+
+    plan = subscription.plan
+    return not (plan.is_trial or plan.is_free)
 
 
 def require_active_plan(request, message=None):

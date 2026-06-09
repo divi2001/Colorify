@@ -20168,6 +20168,12 @@ function areColorsDifferent(color1, color2, threshold = 5) {
            Math.abs(color1[2] - color2[2]) > threshold;
 }
 
+const exportAccess = {
+    canExport: {% if subscription_info and subscription_info.can_export %}true{% else %}false{% endif %},
+    message: "{% if subscription_info %}{{ subscription_info.export_restricted_message|escapejs }}{% else %}Export is not available on the free trial plan. Please upgrade to a paid plan to export your files.{% endif %}",
+    plansUrl: "{% if subscription_info %}{{ subscription_info.plans_url }}{% else %}{% url 'subscription_module:subscription_plans' %}{% endif %}"
+};
+
 // Modify your createColorButtons function to add layer index to buttons
 document.addEventListener('DOMContentLoaded', function() {
     // Fix the selector - add the dot for class selector
@@ -20176,6 +20182,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (exportButton) {
         exportButton.addEventListener('click', function() {
             console.log('Button clicked!'); // Add this to test if click is working
+
+            if (!exportAccess.canExport) {
+                if (typeof showNotification === 'function') {
+                    showNotification(exportAccess.message, 'warning');
+                } else {
+                    alert(exportAccess.message);
+                }
+                return;
+            }
             
             // Show format selection dialog first
             showFormatSelectionDialog()
@@ -21281,10 +21296,14 @@ async function exportFile(format = 'tiff') {
             console.error('❌ Export failed:', error);
             
             const errorMessage = error.message || 'Unknown export error';
+            const isUpgradeRequired = errorMessage.includes('free trial plan');
             if (typeof showNotification === 'function') {
-                showNotification('Export failed: ' + errorMessage, 'error');
+                showNotification(
+                    isUpgradeRequired ? errorMessage : 'Export failed: ' + errorMessage,
+                    isUpgradeRequired ? 'warning' : 'error'
+                );
             } else {
-                alert('Export failed: ' + errorMessage);
+                alert(isUpgradeRequired ? errorMessage : 'Export failed: ' + errorMessage);
             }
             
             reject(error);

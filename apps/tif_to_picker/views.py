@@ -50,7 +50,13 @@ from apps.core.models import Project
 from apps.subscription_module.models import InspirationPDF, PDFLike, Palette
 from apps.subscription_module.serializers import PaletteSerializer
 from apps.subscription_module.models import SubscriptionPlan, UserSubscription
-from apps.subscription_module.subscription_access import require_active_plan
+from django.urls import reverse
+from apps.subscription_module.subscription_access import (
+    require_active_plan,
+    user_can_export,
+    EXPORT_RESTRICTED_MESSAGE,
+    PLANS_URL_NAME,
+)
 
 # Logger
 logger = logging.getLogger(__name__)
@@ -659,11 +665,19 @@ def process_svg_upload(request):
     width = request.session.get('image_width', 0)
     height = request.session.get('image_height', 0)
     
+    subscription_info = None
+    if request.user.is_authenticated:
+        try:
+            subscription_info = get_subscription_context(request.user.subscription)
+        except UserSubscription.DoesNotExist:
+            pass
+
     return render(request, 'layers.html', {
         'layer_count': len(layers),
         'layers': layers,
         'width': width,
-        'height': height
+        'height': height,
+        'subscription_info': subscription_info,
     })
 
 
@@ -1047,7 +1061,10 @@ def get_subscription_context(user_subscription):
         'storage_limit': user_subscription.get_effective_storage_limit_mb(),
         'storage_used_percentage': (user_subscription.storage_used_mb / max(1, user_subscription.get_effective_storage_limit_mb())) * 100,
         'days_remaining': days_remaining,
-        'is_active': is_active_calc
+        'is_active': is_active_calc,
+        'can_export': user_can_export(user_subscription.user),
+        'export_restricted_message': EXPORT_RESTRICTED_MESSAGE,
+        'plans_url': reverse(PLANS_URL_NAME),
     }
 @login_required
 def upgrade_plan(request):
@@ -1066,6 +1083,16 @@ def upgrade_plan(request):
 
 def export_file(request):
     if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+
+        if not user_can_export(request.user):
+            return JsonResponse({
+                'error': EXPORT_RESTRICTED_MESSAGE,
+                'upgrade_required': True,
+                'plans_url': reverse(PLANS_URL_NAME),
+            }, status=403)
+
         try:
             layers_data = json.loads(request.POST.get('layers_data', '[]'))
             export_format = request.POST.get('export_format', 'tiff').lower()
